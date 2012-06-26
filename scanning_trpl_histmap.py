@@ -80,10 +80,16 @@ class ScanningTRPLHistMapApp(wx.App):
         self.frame.Bind(wx.EVT_BUTTON, self.on_start_scan, self.frame.m_button_start)
         self.frame.Bind(wx.EVT_BUTTON, self.on_stop_scan,  self.frame.m_button_stop)
 
-        self.timer = wx.Timer()
+        self.timer = wx.Timer(id=2001)
         self.timer.Bind(wx.EVT_TIMER, self.on_timer)
         
         self.timer.Start(2000)
+        
+        self.fast_timer = wx.Timer(id=2002)
+        self.fast_timer.Bind(wx.EVT_TIMER, self.on_fast_timer)
+        
+        self.frame.m_checkBox_picoharp_fastreadout.Bind(
+                                    wx.EVT_CHECKBOX, self.on_fast_timer_checkbox)
         
         self.update_display()
         self.frame.Show()
@@ -92,6 +98,18 @@ class ScanningTRPLHistMapApp(wx.App):
     def on_timer(self,e):
         self.read_from_hardware()
         self.update_display()
+    
+    def on_fast_timer(self,e):
+        self.picoharp.read_count_rates()
+        self.frame.m_textCtrl_count0.SetValue(str(self.picoharp.Countrate0))
+        self.frame.m_textCtrl_count1.SetValue(str(self.picoharp.Countrate1))
+    
+    def on_fast_timer_checkbox(self,e):
+        fast_timer_enable = self.frame.m_checkBox_picoharp_fastreadout.GetValue()
+        if fast_timer_enable:
+            self.fast_timer.Start(100)
+        else:
+            self.fast_timer.Stop()
 
     def on_start_scan(self,e):
         print "start scan"
@@ -184,17 +202,23 @@ class ScanningTRPLHistMapApp(wx.App):
                 #print "get pos: ", x1,y1
                 
                 # update display
-                self.update_display()
+                try:
+                    self.update_display()
+                except Exception, err:
+                    print "Failed to update_display", err
                 
                 if not (ii % 5):
                     #self.update_figure()
-                    print "updating figure"
-                    self.read_from_hardware()
-                    self.aximg.set_data(self.integrated_count_map_c1)
-                    count_min =  np.min(self.integrated_count_map_c1[np.nonzero(self.integrated_count_map_c1)])
-                    count_max = np.max(self.integrated_count_map_c1)
-                    self.aximg.set_clim(count_min, count_max + 1)
-                    self.wxfig.redraw()
+                    try:
+                        print "updating figure"
+                        self.read_from_hardware()
+                        self.aximg.set_data(self.integrated_count_map_c1)
+                        count_min =  np.min(self.integrated_count_map_c1[np.nonzero(self.integrated_count_map_c1)])
+                        count_max = np.max(self.integrated_count_map_c1)
+                        self.aximg.set_clim(count_min, count_max + 1)
+                        self.wxfig.redraw()
+                    except Exception, err:
+                        print "Failed to update figure:", err
 
         # clean up after scan
         self.aximg.set_data(self.integrated_count_map_c1)

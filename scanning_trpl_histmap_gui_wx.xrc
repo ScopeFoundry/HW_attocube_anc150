@@ -14,8 +14,13 @@
 				<border>5</border>
 				<object class="wxPanel" name="m_panel4">
 					<style>wxTAB_TRAVERSAL</style>
-					<object class="wxBoxSizer">
-						<orient>wxVERTICAL</orient>
+					<object class="wxFlexGridSizer">
+						<rows>0</rows>
+						<cols>1</cols>
+						<vgap>0</vgap>
+						<hgap>0</hgap>
+						<growablecols></growablecols>
+						<growablerows></growablerows>
 						<object class="sizeritem">
 							<option>1</option>
 							<flag>wxEXPAND | wxALL</flag>
@@ -749,6 +754,14 @@
 										<border>5</border>
 										<object class="wxTextCtrl" name="m_textCtrl_count1">
 											<style>wxTE_READONLY</style>
+											<font>
+												<size>16</size>
+												<family>swiss</family>
+												<style>normal</style>
+												<weight>normal</weight>
+												<underlined>0</underlined>
+												<face>MS Shell Dlg 2</face>
+											</font>
 											<value></value>
 											<maxlength>0</maxlength>
 										</object>
@@ -762,6 +775,37 @@
 											<wrap>-1</wrap>
 										</object>
 									</object>
+									<object class="spacer">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<size>0,0</size>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL</flag>
+										<border>5</border>
+										<object class="wxCheckBox" name="m_checkBox_picoharp_fastreadout">
+											<label>Fast Readout</label>
+											<checked>0</checked>
+										</object>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND | wxALL</flag>
+							<border>5</border>
+							<object class="wxPanel" name="m_panel_plot_ctrl">
+								<style>wxTAB_TRAVERSAL</style>
+								<object class="wxFlexGridSizer">
+									<rows>0</rows>
+									<cols>2</cols>
+									<vgap>0</vgap>
+									<hgap>0</hgap>
+									<growablecols></growablecols>
+									<growablerows></growablerows>
 								</object>
 							</object>
 						</object>

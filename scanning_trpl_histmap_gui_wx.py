@@ -24,7 +24,9 @@ class ScanningTRPLControlFrame ( wx.Frame ):
 		bSizer1 = wx.BoxSizer( wx.HORIZONTAL )
 		
 		self.m_panel4 = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
-		bSizer3 = wx.BoxSizer( wx.VERTICAL )
+		fgSizer4 = wx.FlexGridSizer( 0, 1, 0, 0 )
+		fgSizer4.SetFlexibleDirection( wx.BOTH )
+		fgSizer4.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_SPECIFIED )
 		
 		self.m_panel_scanarea = wx.Panel( self.m_panel4, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
 		fgSizer_scanarea = wx.FlexGridSizer( 0, 4, 0, 0 )
@@ -186,7 +188,7 @@ class ScanningTRPLControlFrame ( wx.Frame ):
 		self.m_panel_scanarea.SetSizer( fgSizer_scanarea )
 		self.m_panel_scanarea.Layout()
 		fgSizer_scanarea.Fit( self.m_panel_scanarea )
-		bSizer3.Add( self.m_panel_scanarea, 1, wx.EXPAND |wx.ALL, 5 )
+		fgSizer4.Add( self.m_panel_scanarea, 1, wx.EXPAND |wx.ALL, 5 )
 		
 		self.m_panel_measure = wx.Panel( self.m_panel4, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
 		fgSizer6 = wx.FlexGridSizer( 0, 6, 0, 0 )
@@ -335,6 +337,8 @@ class ScanningTRPLControlFrame ( wx.Frame ):
 		fgSizer6.Add( self.m_staticText2111, 0, wx.ALL, 5 )
 		
 		self.m_textCtrl_count1 = wx.TextCtrl( self.m_panel_measure, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_READONLY )
+		self.m_textCtrl_count1.SetFont( wx.Font( 16, 74, 90, 90, False, "MS Shell Dlg 2" ) )
+		
 		fgSizer6.Add( self.m_textCtrl_count1, 0, wx.ALL|wx.EXPAND, 5 )
 		
 		self.m_staticText2211 = wx.StaticText( self.m_panel_measure, wx.ID_ANY, u"Hz", wx.DefaultPosition, wx.DefaultSize, 0 )
@@ -342,15 +346,32 @@ class ScanningTRPLControlFrame ( wx.Frame ):
 		fgSizer6.Add( self.m_staticText2211, 0, wx.ALL, 5 )
 		
 		
+		fgSizer6.AddSpacer( ( 0, 0), 1, wx.EXPAND, 5 )
+		
+		self.m_checkBox_picoharp_fastreadout = wx.CheckBox( self.m_panel_measure, wx.ID_ANY, u"Fast Readout", wx.DefaultPosition, wx.DefaultSize, 0 )
+		fgSizer6.Add( self.m_checkBox_picoharp_fastreadout, 0, wx.ALL, 5 )
+		
+		
 		self.m_panel_measure.SetSizer( fgSizer6 )
 		self.m_panel_measure.Layout()
 		fgSizer6.Fit( self.m_panel_measure )
-		bSizer3.Add( self.m_panel_measure, 0, wx.ALL|wx.EXPAND, 5 )
+		fgSizer4.Add( self.m_panel_measure, 0, wx.ALL|wx.EXPAND, 5 )
+		
+		self.m_panel_plot_ctrl = wx.Panel( self.m_panel4, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
+		fgSizer3 = wx.FlexGridSizer( 0, 2, 0, 0 )
+		fgSizer3.SetFlexibleDirection( wx.BOTH )
+		fgSizer3.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_SPECIFIED )
 		
 		
-		self.m_panel4.SetSizer( bSizer3 )
+		self.m_panel_plot_ctrl.SetSizer( fgSizer3 )
+		self.m_panel_plot_ctrl.Layout()
+		fgSizer3.Fit( self.m_panel_plot_ctrl )
+		fgSizer4.Add( self.m_panel_plot_ctrl, 1, wx.EXPAND |wx.ALL, 5 )
+		
+		
+		self.m_panel4.SetSizer( fgSizer4 )
 		self.m_panel4.Layout()
-		bSizer3.Fit( self.m_panel4 )
+		fgSizer4.Fit( self.m_panel4 )
 		bSizer1.Add( self.m_panel4, 0, wx.ALL|wx.EXPAND, 5 )
 		
 		self.m_panel_plot = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
