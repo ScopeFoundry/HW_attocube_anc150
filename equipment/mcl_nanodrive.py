@@ -85,19 +85,25 @@ class MCLNanoDrive(object):
         
     def move_rel(self, dx, dy, dz=0):
         pass
+        #TODO
 
     def set_pos(self, x, y, z=None):
         assert 0 <= x <= self.cal_X
         assert 0 <= y <= self.cal_Y
         #TODO z-axis is ignored        
+        if z is not None:
+            assert 0 <= z <= self.cal_Z
+
         
         self.set_pos_ax(x, 1)
-        madlib.MCL_DeviceAttached(200, self._handle)
+        #madlib.MCL_DeviceAttached(200, self._handle)
         self.set_pos_ax(y, 2)
+        if z is not None:
+            self.set_pos_ax(z, 3)
         # MCL_DeviceAttached can be used as a simple wait function. In this case
         # it is being used to allow the nanopositioner to finish its motion before 
-        # reading its position.
-        madlib.MCL_DeviceAttached(200, self._handle)
+        # reading its position. (standard 200)
+        #madlib.MCL_DeviceAttached(100, self._handle)
         
     def set_pos_ax(self, pos, axis):
         if self.debug: print "set_pos_ax ", pos, axis
@@ -107,8 +113,9 @@ class MCLNanoDrive(object):
     def get_pos(self):
         self.x_pos = madlib.MCL_SingleReadN(1, self._handle)
         self.y_pos = madlib.MCL_SingleReadN(2, self._handle)
+        self.z_pos = madlib.MCL_SingleReadN(3, self._handle)
         
-        return (self.x_pos, self.y_pos)
+        return (self.x_pos, self.y_pos, self.z_pos)
         
 if __name__ == '__main__':
     print "MCL nanodrive test"
