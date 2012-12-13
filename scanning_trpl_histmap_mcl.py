@@ -211,6 +211,17 @@ class ScanningTRPLHistMapApp(wx.App):
             print "line time:", time.time() - line_time0
             print "pixel time:", float(time.time() - line_time0)/len(self.x_array)
             line_time0 = time.time()
+            
+            xdelta = self.x_array[0] -  self.xpos 
+            if abs(xdelta) > 2.0:
+                if xdelta > 0:
+                    step = +1.0
+                elif xdelta < 0:
+                    step = -1.0
+                for x in np.arange(self.xpos, self.x_array[0], step):
+                    self.nanodrive.set_pos_ax(x, 2)
+                    wx_yielded_sleep(0.1)
+
             for ii in range(self.Nx):
                 if not self.scanning:
                     break
