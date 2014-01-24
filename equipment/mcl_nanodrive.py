@@ -3,9 +3,15 @@ from ctypes import c_int, c_byte, c_ubyte, c_short, c_double, cdll, pointer, byr
 import time
 
 import os
-print os.path.join(__file__,"MADLib.dll")
-madlib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__),"MADLib.dll"))
+madlib_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__),"MADLib.dll"))
+wdapilib_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__),"wdapi1010.dll"))
 
+print "loading DLL:", repr(madlib_path)
+
+wdapidll = cdll.LoadLibrary(wdapilib_path)
+madlib = cdll.LoadLibrary(madlib_path)
 
 madlib.MCL_SingleReadZ.restype = c_double
 madlib.MCL_SingleReadN.restype = c_double
@@ -60,6 +66,7 @@ class MCLNanoDrive(object):
         
         self.num_axes = 0
     
+        self.cal = dict()
         for axname, axnum, axbitmap in [('X', 1, 0b001), ('Y', 2, 0b010), ('Z', 3, 0b100)]:
             axvalid = bool(self.prodinfo.axis_bitmap & axbitmap)
             if debug: print axname, axnum, "axbitmap:", bin(axbitmap), "axvalid", axvalid
@@ -73,6 +80,7 @@ class MCLNanoDrive(object):
             cal = madlib.MCL_GetCalibration(axnum, handle)
 
             setattr(self, 'cal_%s' % axname, cal)
+            self.cal[axnum] = cal
             if debug: print "cal_%s: %g" % (axname, cal)
         
         self.get_pos()
@@ -126,8 +134,8 @@ if __name__ == '__main__':
     for x,y in [ (30,0), (30,10), (30,30), (30,50), (30,25), (30,0)]:
         print "moving to ", x,y
         nanodrive.set_pos(x,y)
-        x1,y1 = nanodrive.get_pos()
-        print "moved to ", x1, y1
+        x1,y1,z = nanodrive.get_pos()
+        print "moved to ", x1, y1,z
         time.sleep(1)
     
     nanodrive.close()

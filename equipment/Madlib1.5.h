@@ -55,9 +55,6 @@ MADLIB_API	int		MCL_ThetaX(double milliradians, double *actual, int handle);
 MADLIB_API	int		MCL_ThetaY(double milliradians, double *actual, int handle);
 MADLIB_API	int		MCL_MoveZCenter(double position, double *actual, int handle);
 MADLIB_API	int		MCL_LevelZ(double position, int handle);
-MADLIB_API	int		MCL_CFocusSetFocusMode(bool focusModeOn, int handle);
-MADLIB_API	int		MCL_CFocusStep(double relativePositionChange, int handle);
-MADLIB_API	int		MCL_CFocusGetFocusMode(int *focusLocked, int handle);
 
 MADLIB_API	int		MCL_ReadWaveFormN(unsigned int axis,unsigned int DataPoints,double milliseconds,double* waveform, int handle);
 MADLIB_API	int		MCL_Setup_ReadWaveFormN(unsigned int axis,unsigned int DataPoints,double milliseconds, int handle);
@@ -66,12 +63,6 @@ MADLIB_API	int		MCL_LoadWaveFormN(unsigned int axis,unsigned int DataPoints,doub
 MADLIB_API	int		MCL_Setup_LoadWaveFormN(unsigned int axis,unsigned int DataPoints,double milliseconds,double *waveform, int handle);
 MADLIB_API	int		MCL_Trigger_LoadWaveFormN(unsigned int axis, int handle);
 MADLIB_API	int		MCL_TriggerWaveformAcquisition(unsigned int axis, unsigned int DataPoints, double* waveform, int handle);
-
-MADLIB_API  int     MCL_WfmaSetup(double *wfDacX, double *wfDacY, double *wfDacZ, int dataPointsPerAxis, double milliseconds, unsigned short iterations, int handle);
-MADLIB_API  int     MCL_WfmaTriggerAndRead(double *wfAdcX, double *wfAdcY, double *wfAdcZ, int handle);
-MADLIB_API  int     MCL_WfmaTrigger(int handle);
-MADLIB_API  int     MCL_WfmaRead(double *wfAdcX, double *wfAdcY, double *wfAdcZ, int handle);
-MADLIB_API  int     MCL_WfmaStop(int handle);
 
 MADLIB_API	int		MCL_IssBindClockToAxis(int clock, int mode, int axis, int handle);
 MADLIB_API	int		MCL_IssConfigurePolarity(int clock, int mode, int handle);
@@ -85,13 +76,13 @@ MADLIB_API	int		MCL_AuxClock(int handle);
 MADLIB_API	int		MCL_GetClockFrequency(double *adcfreq, double *dacfreq, int handle);
 
 MADLIB_API	double	MCL_GetCalibration(unsigned int axis, int handle);
-MADLIB_API	double	MCL_TipTiltHeight(int handle);
-MADLIB_API	double	MCL_TipTiltWidth(int handle);
+MADLIB_API	double	MCL_CTipTiltHeight(int handle);
+MADLIB_API	double	MCL_CTipTiltWidth(int handle);
 MADLIB_API	int		MCL_MinMaxThetaX(double *min, double *max, int handle);
 MADLIB_API	int		MCL_MinMaxThetaY(double *min, double *max, int handle);
-MADLIB_API	double	MCL_GetTipTiltThetaX(int handle);
-MADLIB_API	double	MCL_GetTipTiltThetaY(int handle);
-MADLIB_API	double	MCL_GetTipTiltCenter(int handle);
+MADLIB_API	double	MCL_GetCTipTiltThetaX(int handle);
+MADLIB_API	double	MCL_GetCTipTiltThetaY(int handle);
+MADLIB_API	double	MCL_GetCTipTiltCenter(int handle);
 MADLIB_API	int		MCL_CurrentMinMaxThetaX(double *min, double *max, int handle);
 MADLIB_API	int		MCL_CurrentMinMaxThetaY(double *min, double *max, int handle);
 MADLIB_API	int		MCL_CurrentMinMaxCenter(double *min, double *max, int handle);
@@ -100,8 +91,6 @@ MADLIB_API	int		MCL_GetSerialNumber(int handle);
 MADLIB_API	int		MCL_GetProductInfo(struct ProductInformation *pi, int handle);
 MADLIB_API	void	MCL_PrintDeviceInfo(int handle); 
 MADLIB_API	bool	MCL_DeviceAttached(int milliseconds, int handle);
-MADLIB_API  bool    MCL_CorrectDriverVersion();
-MADLIB_API  int     MCL_GetCommandedPosition(double *xCom, double *yCom, double *zCom, int handle);
 
 #ifdef __cplusplus
 	}
