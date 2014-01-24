@@ -87,12 +87,10 @@ class HydraHarp400(object):
         if retcode < 0: print "HH_SetSyncDiv error %i" % retcode
         
         self.SyncCFDLevel = int(SyncCFDLevel)
-        retcode = hhlib.HH_SetSyncCFDLevel(self.devnum, self.SyncCFDLevel)
-        if retcode < 0: print "HH_SetSyncCFDLevel error %i" % retcode
-
         self.SyncCFDZeroCross = int(SyncCFDZeroCross)
-        retcode = hhlib.HH_SetSyncCFDZeroCross(self.devnum, self.SyncCFDZeroCross)
-        if retcode < 0: print "HH_SetSyncCFDZeroCross error %i" % retcode
+
+        retcode = hhlib.HH_SetSyncCFD(self.devnum, self.SyncCFDLevel, self.SyncCFDZeroCross)
+        if retcode < 0: print "HH_SetSyncCFD error %i" % retcode
 
         self.SyncChannelOffset = int(SyncChannelOffset)
         retcode = hhlib.HH_SetSyncChannelOffset(self.devnum, self.SyncChannelOffset)
@@ -101,10 +99,8 @@ class HydraHarp400(object):
         self.InputCFDLevel = int(InputCFDLevel)
         self.InputCFDZeroCross = int(InputCFDZeroCross) 
         for chan_num in range(self.num_input_channels):
-            retcode = hhlib.HH_SetInputCFDLevel(self.devnum, chan_num, self.InputCFDLevel)
-            if retcode < 0: print "HH_SetInputCFDLevel error %i" % retcode
-            retcode = hhlib.HH_SetInputCFDZeroCross(self.devnum, chan_num, self.InputCFDZeroCross)
-            if retcode < 0: print "HH_SetInputCFDZeroCross error %i" % retcode
+            retcode = hhlib.HH_SetInputCFD(self.devnum, chan_num, self.InputCFDLevel, self.InputCFDZeroCross)
+            if retcode < 0: print "HH_SetInputCFD error %i" % retcode
             retcode = hhlib.HH_SetInputChannelOffset(self.devnum, chan_num, 0)
             if retcode < 0: print "HH_SetInputChannelOffset error %i" % retcode
 
