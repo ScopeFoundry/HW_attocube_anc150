@@ -32,7 +32,7 @@ class ScanningTRPLHistMapApp(wx.App):
 
         self.HARDWARE_DEBUG = HARDWARE_DEBUG
         
-        self.STORED_HISTCHAN = 20000
+        self.STORED_HISTCHAN = 4000#65535
         
         self.frame = ScanningTRPLControlFrame(None)
 
@@ -201,6 +201,8 @@ class ScanningTRPLHistMapApp(wx.App):
                    Tacq=self.tacq, SyncDivider=self.syncdiv, 
                    CFDZeroCross0=self.zerocross0, CFDLevel0=self.level0, 
                    CFDZeroCross1=self.zerocross1, CFDLevel1=self.level1 )
+                   
+        self.resolution = self.picoharp.Resolution
     
         line_time0 = time.time()
         for jj in range(self.Ny):
@@ -216,7 +218,14 @@ class ScanningTRPLHistMapApp(wx.App):
             print "line time:", time.time() - line_time0
             print "pixel time:", float(time.time() - line_time0)/len(self.x_array)
             line_time0 = time.time()
-            for ii in range(self.Nx):
+
+            if jj % 2: #odd lines
+                x_line_indicies = range(self.Nx)
+            else:       #even lines -- traverse in opposite direction
+                x_line_indicies = range(self.Nx)[::-1]                  
+                    
+            for ii in x_line_indicies:
+            #for ii in range(self.Nx):
                 if not self.scanning:
                     break
                 x = self.xpos  = self.x_array[ii]
@@ -279,7 +288,7 @@ class ScanningTRPLHistMapApp(wx.App):
         np.savetxt("%i_confocal_scan.csv" % t0, 
                    self.integrated_count_map_c1, delimiter=',')
         
-        save_params = ["time_trace_map", "x0", "x1", "y0", "y1", "tacq", "phrange", 
+        save_params = ["time_trace_map", "x0", "x1", "y0", "y1", "tacq", "phrange", "resolution",
                        "phoffset", "syncdiv", "Nx", "Ny", "zerocross0", "zerocross1",
                        "x_array", "y_array",
                        "level0", "level1", "dx", "dy", "integrated_count_map_c1"]
