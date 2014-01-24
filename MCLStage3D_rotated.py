@@ -53,6 +53,11 @@ class MCLStage3DApp(wx.App):
         self.frame.m_scrollBar_z.Bind(wx.EVT_SCROLL, self.on_scroll)
         
         
+        self.frame.m_textCtrl_x.Bind(wx.EVT_TEXT_ENTER, self.on_change_text)
+        self.frame.m_textCtrl_y.Bind(wx.EVT_TEXT_ENTER, self.on_change_text)
+        self.frame.m_textCtrl_z.Bind(wx.EVT_TEXT_ENTER, self.on_change_text)
+
+        
         
         # Figure
         self.wxfig = MPLFigureWithToolbarWX(self.frame.m_panel_plot)
@@ -96,6 +101,25 @@ class MCLStage3DApp(wx.App):
         #self.frame.m_scrollBar_x.Refresh()
         #self.frame.m_scrollBar_y.Refresh()
         #self.frame.m_scrollBar_z.Refresh()
+
+    def on_change_text(self,evt):
+        new_x = float(self.frame.m_textCtrl_x.GetValue())
+        new_y = float(self.frame.m_textCtrl_y.GetValue())
+        new_z = float(self.frame.m_textCtrl_z.GetValue())
+
+        self.nanodrive.set_pos(new_y, new_x, new_z)
+
+        y,x,z = self.nanodrive.get_pos()
+
+        self.frame.m_textCtrl_x.SetValue("%02.3f" % x)
+        self.frame.m_textCtrl_y.SetValue("%02.3f" % y)
+        self.frame.m_textCtrl_z.SetValue("%02.3f" % z)
+        
+        self.frame.m_scrollBar_x.SetScrollbar(100*x/self.nanodrive.cal_Y, 1, 100, 1, refresh=True)
+        self.frame.m_scrollBar_y.SetScrollbar(100*y/self.nanodrive.cal_X, 1, 100, 1, refresh=True)
+        self.frame.m_scrollBar_z.SetScrollbar(100*z/self.nanodrive.cal_Z, 1, 100, 1, refresh=True)
+
+        self.wxfig.redraw()
 
 if __name__ == '__main__':
     app = MCLStage3DApp()
