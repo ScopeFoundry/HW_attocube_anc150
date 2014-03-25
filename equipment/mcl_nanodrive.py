@@ -3,14 +3,25 @@ from ctypes import c_int, c_byte, c_ubyte, c_short, c_double, cdll, pointer, byr
 import time
 
 import os
-madlib_path = os.path.abspath(
-                os.path.join(os.path.dirname(__file__),"MADLib.dll"))
-wdapilib_path = os.path.abspath(
+import platform
+
+print platform.architecture()
+
+if platform.architecture()[0] == '64bit':
+    madlib_path = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__),"mcl_64bit/MADLib.dll"))
+else:
+    madlib_path = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__),"MADLib.dll"))
+
+    wdapilib_path = os.path.abspath(
                 os.path.join(os.path.dirname(__file__),"wdapi1010.dll"))
+    wdapidll = cdll.LoadLibrary(wdapilib_path)
+
 
 print "loading DLL:", repr(madlib_path)
 
-wdapidll = cdll.LoadLibrary(wdapilib_path)
+
 madlib = cdll.LoadLibrary(madlib_path)
 
 madlib.MCL_SingleReadZ.restype = c_double

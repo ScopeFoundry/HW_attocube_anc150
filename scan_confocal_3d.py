@@ -1,6 +1,7 @@
 from collections import namedtuple
 import numpy as np
-from equipment import MCLNanoDrive, PicoHarp300
+from equipment.mcl_nanodrive import MCLNanoDrive
+from equipment.pypicoharp import PicoHarp300
 import time
 
 """
@@ -63,9 +64,9 @@ class ConfocalTRPL3DScan(object):
         #DATA ARRAYS
         self.integrated_count_map = np.zeros((self.Nz, self.Ny, self.Nx, ), dtype=int)
         
-        print "size of time_trace_map", self.Nx* self.Ny * self.Nz * self.stored_histogram_chan
+        print "size of time_trace_map %e" %  (self.Nx* self.Ny * self.Nz * self.stored_histogram_chan)
         
-        self.time_trace_map = np.zeros( (self.Nz, self.Ny, self.Nx, self.stored_histogram_chan),dtype=np.int16)
+        self.time_trace_map = np.zeros( (self.Nz, self.Ny, self.Nx, self.stored_histogram_chan),dtype=np.uint16)
                     
     
     def run_3d_scan(self):
@@ -188,18 +189,18 @@ def ijk_generator(dims, axis_order=(0,1,2)):
 
 if __name__ == '__main__':
     params = dict(
-        x0 = 10,     x1 = 30,  dx = 0.3,
-        y0 = 20,    y1 = 30,  dy = 0.3,
-        z0 = 33,    z1 = 49,  dz = 0.3,
-        tacq = 100,
-        phrange = 0,
+        x0 = 30,     x1 = 45,  dx = 0.5,
+        y0 = 35,    y1 = 50,  dy = 0.5,
+        z0 = 20,    z1 = 50,  dz = 0.5,
+        tacq = 250,
+        phrange = 4,
         phoffset = 0,
         syncdiv = 8,
         zerocross0 = 5, level0 = 10,
         zerocross1 = 10, level1 = 50,
         axis_scan_order = (2,1,0),
         mcl_axis_translation = (2,1,3),
-        stored_histogram_chan = 3400
+        stored_histogram_chan = 850
         )
     
     scan = ConfocalTRPL3DScan(**params)

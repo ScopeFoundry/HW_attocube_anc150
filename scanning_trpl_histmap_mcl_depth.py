@@ -14,7 +14,8 @@ from scanning_trpl_histmap_gui_wx import ScanningTRPLControlFrame
 
 import pylab as pl
 
-from equipment import MCLNanoDrive, LockinStage, PicoHarp300
+from equipment.mcl_nanodrive import MCLNanoDrive
+from equipment.pypicoharp import PicoHarp300
 
 HARDWARE_DEBUG = False
 

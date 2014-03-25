@@ -14,7 +14,7 @@ from scanning_spectrum_gui_wx import ScanningSpectrumControlFrame
 
 import pylab as pl
 
-from equipment import MCLNanoDrive
+from equipment.mcl_nanodrive import MCLNanoDrive
 from equipment.acton_spec import ActonSpectrometer
 from equipment.andor_ccd import AndorCCD
 
@@ -44,7 +44,7 @@ ROW1 = 325
 
 HISTORY_LEN = 100
 
-SPEC_COMM_PORT = "COM4"
+SPEC_COMM_PORT = "COM8"
 
 class ScanningTRPLHistMapApp(wx.App):
 

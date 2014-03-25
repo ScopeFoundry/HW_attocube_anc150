@@ -11,7 +11,7 @@ import wx
 from lab_wx_utils import MPLFigureWithToolbarWX, wx_yielded_sleep
 
 
-from equipment import MCLNanoDrive
+from equipment.mcl_nanodrive import MCLNanoDrive
 
 HARDWARE_DEBUG = False
 
