@@ -1,9 +1,11 @@
+from __future__ import division
 import ctypes
 from ctypes import c_int, c_byte, c_ubyte, c_short, c_double, cdll, pointer, byref
 import time
 
 import os
 import platform
+import numpy as np
 
 print platform.architecture()
 
@@ -33,6 +35,7 @@ madlib.MCL_ReadEncoderZ.restype = c_double
 madlib.MCL_GetCalibration.restype = c_double
 #more...
 
+SLOW_STEP_PERIOD = 0.050  #units are seconds
 
 class MCLProductInformation(ctypes.Structure):
     _fields_ = [
@@ -94,7 +97,62 @@ class MCLNanoDrive(object):
             self.cal[axnum] = cal
             if debug: print "cal_%s: %g" % (axname, cal)
         
+        self.set_max_speed(100)  # default speed for slow movement is 100 microns/second
         self.get_pos()
+
+    def set_max_speed(self, max_speed):
+        '''
+        Units are in microns/second
+        '''
+        self.max_speed = float(max_speed)
+    
+    def get_max_speed(self):
+        return self.max_speed
+    
+    def set_pos_slow(self, x=None, y=None, z=None):
+        '''
+        x -> axis 1
+        y -> axis 2
+        z -> axis 3
+        '''
+        
+        x_start, y_start, z_start = self.get_pos()
+        
+        if x is not None:
+            dx = x - x_start
+        else:
+            dx = 0
+        if y is not None:            
+            dy = y - y_start
+        else:
+            dy = 0
+        if z is not None:
+            dz = z-z_start
+        else:
+            dz = 0
+        
+        # Compute the amount of time that will be needed to make the movement.
+        dt = np.sqrt(dx**2 + dy**2 + dz**2)/self.max_speed
+            
+        # Assume dt is in ms; divide the movement into SLOW_STEP_PERIOD chunks
+        steps = int( np.ceil(dt/SLOW_STEP_PERIOD))
+        x_step = dx/steps
+        y_step = dy/steps
+        z_step = dz/steps
+        
+        for i in range(1,steps+1):
+            t1 = time.time()         
+            self.set_pos(x_start+i*x_step, y_start+i*y_step, z_start+i*z_step)
+            t2 = time.time()
+            
+            if (t2-t1) < SLOW_STEP_PERIOD:
+                time.sleep(SLOW_STEP_PERIOD - (t2-t1))
+        
+        # Update internal variables with current position
+        self.get_pos()
+        
+        
+        
         
     def __del__(self):
         self.close()
@@ -127,7 +185,11 @@ class MCLNanoDrive(object):
     def set_pos_ax(self, pos, axis):
         if self.debug: print "set_pos_ax ", pos, axis
         assert 1 <= axis <= self.num_axes
+        assert 0 <= pos <= self.cal[axis]
         madlib.MCL_SingleWriteN(c_double(pos), axis, self._handle)
+    
+    def get_pos_ax(self, axis):
+        return madlib.MCL_SingleReadN(axis, self._handle)
         
     def get_pos(self):
         self.x_pos = madlib.MCL_SingleReadN(1, self._handle)
@@ -135,6 +197,34 @@ class MCLNanoDrive(object):
         self.z_pos = madlib.MCL_SingleReadN(3, self._handle)
         
         return (self.x_pos, self.y_pos, self.z_pos)
+    
+    def set_pos_ax_slow(self, pos, axis):
+        if self.debug: print "set_pos_slow_ax ", pos, axis
+        assert 1 <= axis <= self.num_axes
+        assert 0 <= pos <= self.cal[axis]
+        
+        start = self.get_pos_ax(axis)
+        
+        dl = pos - start
+        dt = abs(dl) / self.max_speed
+        
+         # Assume dt is in ms; divide the movement into SLOW_STEP_PERIOD chunks
+        steps = int(np.ceil(dt/SLOW_STEP_PERIOD))
+        l_step = dl/steps
+        
+        print "\t", steps, l_step, dl, dt, start        
+        
+        for i in range(1,steps+1):
+            t1 = time.time()         
+            self.set_pos_ax(start+i*l_step, axis)
+            t2 = time.time()
+            
+            if (t2-t1) < SLOW_STEP_PERIOD:
+                time.sleep(SLOW_STEP_PERIOD - (t2-t1))
+        # Update internal variables with current position
+        self.get_pos()
+        
+        
         
 if __name__ == '__main__':
     print "MCL nanodrive test"
