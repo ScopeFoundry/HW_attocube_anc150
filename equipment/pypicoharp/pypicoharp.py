@@ -1,12 +1,15 @@
 import ctypes
-from ctypes import create_string_buffer, c_int, c_char, c_char_p, c_byte, c_ubyte, c_short, c_double, cdll, pointer, byref
+from ctypes import create_string_buffer, c_int, c_double, byref
 import time
 import numpy
+import platform
 
-phlib = ctypes.WinDLL("phlib.dll")
+if platform.architecture()[0] == '64bit':
+    phlib = ctypes.WinDLL("phlib64.dll")
+else:
+    phlib = ctypes.WinDLL("phlib.dll")
 
-print phlib
-
+# updated for phlib v3.0 2014-04-02
 
 class PicoHarp300(object):
 
@@ -16,131 +19,174 @@ class PicoHarp300(object):
     def __init__(self, devnum=0, debug=False):
         self.debug = debug
         self.devnum = devnum
-        self.lib_version = create_string_buffer(8)
-        phlib.PH_GetLibraryVersion(self.lib_version);
-        if self.debug: print "PHLib Version: '%s'" % self.lib_version.value #% str(self.lib_version.raw).strip()
-        self.lib_version = self.lib_version.value
-        
-        self.hw_serial = create_string_buffer(8)
-        retcode = phlib.PH_OpenDevice(self.devnum, self.hw_serial) 
-        if(retcode==0):
-            self.hw_serial = self.hw_serial.value
-            if self.debug: print "Device %i Found, serial %s" % (self.devnum, self.hw_serial)
-        else:
-            print "failed to find device %i" % self.devnum
-            error_string = create_string_buffer(40)
-            phlib.PH_GetErrorString(error_string, retcode)
-            print "print Error: %s" % error_string.value
-        
-        if self.debug:  print "Initializing the device..."
-        retcode = phlib.PH_Initialize(self.devnum, self.MODE_HIST)
-        if retcode < 0:
-            print "PH init error %i. Aborted." % retcode
+        self.Countrate    = [None,None]
+        self.CFDLevel     = [None,None]
+        self.CFDZeroCross = [None, None]
+        self.histogram_data = numpy.zeros(self.HISTCHAN, dtype=numpy.uint32) #unsigned int counts[HISTCHAN];
+        self.time_array = numpy.arange(self.HISTCHAN, dtype=float)
 
-        self.hw_model   = create_string_buffer(8)
-        self.hw_version = create_string_buffer(16)
-        retcode = phlib.PH_GetHardwareVersion(self.devnum,self.hw_model,self.hw_version); #/*this is only for information*/
-        if retcode < 0:
-            print "PH_GetHardwareVersion error %d. Aborted." % retcode
-        else:
-            self.hw_model   = self.hw_model.value
-            self.hw_version = self.hw_version.value
-            print "Found Model %s Version %s" % (self.hw_model, self.hw_version)
+        self._err_buffer = create_string_buffer(40)
         
-        if self.debug: print "Calibrating..."
-        retcode = phlib.PH_Calibrate(self.devnum);
+        lib_version = create_string_buffer(8)
+        self.handle_err(phlib.PH_GetLibraryVersion(lib_version))
+        self.lib_version = lib_version.value
+        if self.debug: print "PHLib Version: '%s'" % self.lib_version
+        assert self.lib_version == "3.0"
+        
+        hw_serial = create_string_buffer(8)
+        self.handle_err(phlib.PH_OpenDevice(self.devnum, hw_serial)) 
+        self.hw_serial = hw_serial.value
+        if self.debug: print "Device %i Found, serial %s" % (self.devnum, self.hw_serial)
+
+        
+        if self.debug:  print "Initializing PicoHarp device..."
+        self.handle_err(phlib.PH_Initialize(self.devnum, self.MODE_HIST))
+        
+        hw_model   = create_string_buffer(16)
+        hw_partnum = create_string_buffer(8)
+        hw_version = create_string_buffer(8)
+        self.handle_err(phlib.PH_GetHardwareInfo(
+                                self.devnum,hw_model,hw_partnum, hw_version))
+        self.hw_model   = hw_model.value
+        self.hw_partnum = hw_partnum.value
+        self.hw_version = hw_version.value
+        if self.debug: 
+            print "Found Model %s PartNum %s Version %s" % (self.hw_model, self.hw_partnum, self.hw_version)
+        
+        if self.debug: print "PicoHarp Calibrating..."
+        self.handle_err( phlib.PH_Calibrate(self.devnum) )
+            
+        # automatically stops acquiring a histogram when a bin is filled to 2**16
+        self.handle_err(phlib.PH_SetStopOverflow(self.devnum,1,65535)) 
+    
+    def handle_err(self, retcode):
         if retcode < 0:
-            print "PH_Calibrate error %i" % retcode
+            phlib.PH_GetErrorString(self._err_buffer, retcode)
+            self.err_message = self._err_buffer.value
+            raise IOError(self.err_message)
+        return retcode
 
     def setup_experiment(self, 
-            Range=0, Offset=0, 
             Tacq=1000, #Measurement time in millisec, you can change this
+            Binning=0, SyncOffset=0, 
             SyncDivider = 8, 
             CFDZeroCross0=10, CFDLevel0=100, 
             CFDZeroCross1=10, CFDLevel1=100):
 
-        self.Tacq = int(Tacq)
-
-        self.SyncDivider = int(SyncDivider)
-        retcode = phlib.PH_SetSyncDiv(self.devnum, self.SyncDivider)
-        if retcode < 0: print "PH_SetSyncDiv error %i" % retcode
+        self.Tacq = self.set_Tacq(Tacq)
         
-        self.CFDLevel0 = int(CFDLevel0)
-        retcode = phlib.PH_SetCFDLevel(self.devnum, 0, self.CFDLevel0)
-        if retcode < 0: print "PH_SetCFDLevel error %i" % retcode
+        self.write_Binning(Binning)
+        self.write_SyncOffset(SyncOffset)
+        self.write_SyncDivider(SyncDivider)
+        self.write_InputCFD(0, CFDLevel0, CFDZeroCross0)
+        self.write_InputCFD(1, CFDLevel1, CFDZeroCross1)
 
-        self.CFDZeroCross0 = int(CFDZeroCross0)
-        retcode = phlib.PH_SetCFDZeroCross(self.devnum,0, self.CFDZeroCross0)
-        if retcode < 0: print "PH_SetCFDZeroCross error %i" % retcode
-
-        self.CFDLevel1 = int(CFDLevel1)
-        retcode = phlib.PH_SetCFDLevel(self.devnum, 1, self.CFDLevel1)
-        if retcode < 0: print "PH_SetCFDLevel error %i" % retcode
-
-        self.CFDZeroCross1 = int(CFDZeroCross1)
-        retcode = phlib.PH_SetCFDZeroCross(self.devnum,1, self.CFDZeroCross1)
-        if retcode < 0: print "PH_SetCFDZeroCross error %i" % retcode
-        
-        self.Range = int(Range)
-        retcode = phlib.PH_SetRange(self.devnum, self.Range)
-        if retcode < 0: print "PH_SetRange error %i" % retcode
-        
-        self.Offset = int(Offset)
-        retcode = phlib.PH_SetOffset(self.devnum, self.Offset)
-        if retcode < 0: print "PH_SetOffset error %i" % retcode
-        
-        self.Resolution = phlib.PH_GetResolution(self.devnum)
-        
-        #Note: after Init or SetSyncDiv you must allow 100 ms for valid new count rate readings
-        time.sleep(0.2);
-        self.Countrate0 = phlib.PH_GetCountRate(self.devnum,0);
-        self.Countrate1 = phlib.PH_GetCountRate(self.devnum,1);
-
+        self.read_count_rates()
         if self.debug: print "Resolution=%1dps Countrate0=%1d/s Countrate1=%1d/s" % (self.Resolution, self.Countrate0, self.Countrate1)
 
-        phlib.PH_SetStopOverflow(self.devnum,1,65535)
+    def set_Tacq(self, Tacq):
+        self.Tacq = int(Tacq)
+        return self.Tacq
+
+    def write_SyncDivider(self, SyncDivider):
+        self.SyncDivider = int(SyncDivider)
+        if self.debug: print "write_SyncDivider", self.SyncDivider
+        self.handle_err(phlib.PH_SetSyncDiv(self.devnum, self.SyncDivider))
+        #Note: after Init or SetSyncDiv you must allow 100 ms for valid new count rate readings
+        time.sleep(0.11)
+
+    
+    def write_InputCFD(self, chan, level, zerocross):
+        self.CFDLevel[chan] = int(level)
+        self.CFDZeroCross[chan] = int(zerocross)
+        if self.debug: print "write_InputCFD", chan, level, zerocross
+        self.handle_err(phlib.PH_SetInputCFD(self.devnum, chan, int(level), int(zerocross)))
         
+    def write_CFDLevel0(self, level):
+        self.write_InputCFD(0, level, self.CFDZeroCross[0])
+        
+    def write_CFDLevel1(self, level):
+        self.write_InputCFD(1, level, self.CFDZeroCross[1])
+
+    def write_CFDZeroCross0(self, zerocross):
+        self.write_InputCFD(0, self.CFDLevel[0], zerocross)
+    
+    def write_CFDZeroCross1(self, zerocross):
+        self.write_InputCFD(1, self.CFDLevel[1], zerocross)
+        
+        
+    def write_Binning(self, Binning):
+        self.Binning = int(Binning)
+        self.handle_err(phlib.PH_SetBinning(self.devnum, self.Binning))
+        self.read_Resolution()
+        self.time_array = numpy.arange(self.HISTCHAN, dtype=float)*self.Resolution
+        
+    def read_Resolution(self):
+        r = c_double(0)
+        self.handle_err(phlib.PH_GetResolution(self.devnum, byref(r)))
+        self.Resolution = r.value
+        return self.Resolution
+
+    def write_SyncOffset(self, SyncOffset):
+        """
+        :param SyncOffset: time offset in picoseconds
+        :type SyncOffset: int
+        """     
+        self.SyncOffset = int(SyncOffset)
+        self.handle_err(phlib.PH_SetOffset(self.devnum, self.SyncOffset))
+
+    def read_count_rate(self, chan):
+        cr = c_int(-1)
+        self.handle_err(phlib.PH_GetCountRate(self.devnum, chan, byref(cr)))
+        self.Countrate[chan] = cr.value
+        return cr.value
+    
+    def read_count_rate0(self):
+        self.Countrate0 = self.read_count_rate(0)
+        return self.Countrate0
+    
+    def read_count_rate1(self):
+        self.Countrate1 = self.read_count_rate(1)
+        return self.Countrate1
+
     def read_count_rates(self):
-        self.Countrate0 = phlib.PH_GetCountRate(self.devnum,0);
-        self.Countrate1 = phlib.PH_GetCountRate(self.devnum,1);
+        self.read_count_rate0()
+        self.read_count_rate1()
         return self.Countrate0, self.Countrate1
         
     def start_histogram(self, Tacq=None):
         if self.debug: print "Starting Histogram"
-        phlib.PH_ClearHistMem(self.devnum, 0) # always use Block 0 if not Routing
+
+        self.handle_err(phlib.PH_ClearHistMem(self.devnum, 0))
+        # always use Block 0 if not Routing
         
         # set a new acquisition time if given
         if Tacq:
-            self.Tacq = int(Tacq)
+            self.set_Tacq(Tacq)
             
-        retcode = phlib.PH_StartMeas(self.devnum, self.Tacq)
-        if retcode < 0: "PH_StartMeas error %i" % retcode
-        
-        return
+        self.handle_err(phlib.PH_StartMeas(self.devnum, self.Tacq))        
+
     
     def check_done_scanning(self):
-        status = phlib.PH_CTCStatus(self.devnum)
-        if status == 0: # not done
+        status = c_int()
+        self.handle_err(phlib.PH_CTCStatus(self.devnum, byref(status)))
+        if status.value == 0: # not done
             return False
         else: # scanning done
             return True
             
     def stop_histogram(self):
         if self.debug: print "Stop Histogram"
-        retcode = phlib.PH_StopMeas(self.devnum)
-        if retcode < 0: "PH_StopMeas error %i" % retcode
+        self.handle_err(phlib.PH_StopMeas(self.devnum))
         
     def read_histogram_data(self):
         if self.debug: print "Read Histogram Data"
-        
-        #unsigned int counts[HISTCHAN];
-        self.hist_data = numpy.zeros(self.HISTCHAN, dtype=numpy.uint32)
-        
-        retcode = phlib.PH_GetBlock(self.devnum, self.hist_data.ctypes.data, 0) # grab block 0
-        if retcode < 0: "PH_GetBlock error %i" % retcode
+        self.handle_err(phlib.PH_GetHistogram(self.devnum, self.histogram_data.ctypes.data, 0)) # grab block 0
+        return self.histogram_data
 
-        return self.hist_data
-
+    def close(self):
+        return self.handle_err(phlib.PH_CloseDevice(self.devnum))
+    
 
 if __name__ == '__main__':
     
@@ -157,5 +203,5 @@ if __name__ == '__main__':
     ph.read_histogram_data()
     
     pl.figure(1)
-    pl.plot(ph.hist_data)
+    pl.plot(ph.histogram_data)
     pl.show()
