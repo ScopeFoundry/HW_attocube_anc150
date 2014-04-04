@@ -1,58 +1,122 @@
 import serial
+import subprocess
+import ctypes as ct
 
-class crystaltech_dds(object):
+AOTFCMD_PATH = r"C:\Program Files\Crystal Technology\AotfCmd\AotfCmd.exe"
+AOTFLIB_PATH = r"C:\Program Files\Crystal Technology\AotfCmd\AotfLibrary.dll"
 
-    def __init__(self, port='/dev/ttyS3', debug=False):
+
+class CrystalTechDDS(object):
+
+    def __init__(self, comm="serial", port=0, debug=False):
     
+        self.comm = comm
         self.port = port
         self.debug = debug
         
+        assert comm in ['serial', 'aotfcmd', 'aotflib']
+        
         self.frequency = [0,0,0,0,0,0,0,0]
         self.amplitude = [0,0,0,0,0,0,0,0]
-                
-        self.ser = serial.Serial(port, 38400, timeout=1,
-                    parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, xonxoff=False, rtscts=False)
+        
+        if self.comm == "serial":
+            self.ser = serial.Serial(port, 38400, timeout=2,
+                        parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, xonxoff=False, rtscts=False)
+            
+            self.ser.flush()
+            out = "x"
+            while out != "":
+                out = self.ser.read()
+            self.ser.write("\x04")
+            for i in range(4):
+                print i
+                self.readline()
+        elif self.comm == "aotfcmd":
+            self._proc = subprocess.Popen([AOTFCMD_PATH,"-i","dds f 0"], shell=True,
+                                    #stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE)#, stderr=subprocess.STDOUT)
+            self.readline()
+            self.readline()
+            self.readline()
+
+        elif self.comm == 'aotflib':
+            self.port = int(self.port)
+            self._lib = ct.cdll.LoadLibrary(AOTFLIB_PATH)
+            self._handle = self._lib.AotfOpen(self.port)
+            assert self._handle
+    
     
     def readline(self):
-        data = self.ser.readline()
+        if self.comm == 'serial':
+            data = self.ser.readline()
+        elif self.comm == 'aotfcmd':
+            data = self._proc.stdout.readline()
+        elif self.comm == 'aotflib':
+            if self._lib.AotfIsReadDataAvailable(self._handle):
+                bytes_read = c_uint(0)
+                read_buf = ct.create_string_buffer(256)
+                retval = AotfRead(self._handle,  len(read_buf), byref(read_buf), byref(bytes_read))
+                assert retval
+            else:
+                if self.debug: print "crystaltech_dds readline: no data available"
         if self.debug: print "crystaltech_dds readline:", data                  
         return data
+        
     def read(self): # read one character from buffer
         data = self.ser.read()
         if self.debug: print "crystaltech_dds read:", data
         #data = data.lstrip('\n')
+
         #data = data.lstrip('* ')
         return data
+
     def write(self, data):
-        self.ser.write(data  + '\r\n')
+        if self.comm == 'serial':
+            self.ser.write(data  + '\r\n')
+        elif self.comm == 'aotfcmd':
+            self._proc.stdin.write(data  + '\r\n')
+        elif self.comm == 'aotfcmd':
+            data_buf = ct.create_string_buffer(data)
+            retval = self._lib.AotfWrite(self._handle, len(data), ct.byref(data_buf))
+            assert retval
         return
+        
     def write_with_echo(self, data):
         if self.debug: print "crystaltech_dds write_with_echo:", data
+
         self.write(data)
-       # return self.readline()
+        return self.readline()
 
     def close(self):
-        self.ser.close()
-        
+        if self.comm =="serial":
+            self.ser.flush()        
+            self.ser.close()
+        elif self.comm == 'aotfcmd':
+            self._proc.terminate()      
+        elif self.comm == 'aotflib':
+            retval = self._lib.AotfClose(self._handle)
+            assert retval                 
+                    
     def set_calibration(self, c0,c1,c2,c3):
         for i, c in enumerate([c0,c1,c2,c3]):
             self.write_with_echo("cal tuning %i %g" % (i, c))
             
     def get_calibration(self):
     
-        # out put should look like this: "Tuning Polynomial Coefficient 0 is 3.531000e+02"
+        # old version: out put should look like this: "Tuning Polynomial Coefficient 0 is 3.531000e+02"
+        # new version: Channel 0 profile 0 frequency 0.000000e+00Hz (Ftw 0)
         
         c = [0,0,0,0]
         for i in [0,1,2,3]:
             self.write_with_echo("cal tuning %i" % i)
-            output = self.readline()
+            output = self.readline() 
 
             c[i] = float( output.split()[-1] )
         
         return tuple(c)
     
     def set_frequency(self, freq, channel=0):
-        assert 50e6 < freq < 200e6
+        assert 10 < freq < 200
         self.write_with_echo("dds f %i %f" % (channel, freq))
         
     def set_wavelength(self, wl,  channel=0):
@@ -61,10 +125,10 @@ class crystaltech_dds(object):
         
     def get_frequency(self, channel=0):
     
-        #output in the form:"Channel 0 profile 0 frequency 8.278661e+07Hz (Ftw 888914432)"
+        #output in the form:"* Channel 0 profile 0 frequency 8.278661e+07Hz (Ftw 888914432)"
         self.write_with_echo("dds f %i" % channel)
         output = self.readline()
-        self.frequency[channel] = output.split()[5][:-2]
+        self.frequency[channel] = float(output.split()[-3][:-2])/1.e6
         return self.frequency[channel]
     
     def get_wavelength(self, channel=0):
@@ -86,16 +150,23 @@ class crystaltech_dds(object):
         return self.amplitude[channel]
 
     def modulation_enable(self):
-        self.write_with_echo("dau en mod")
+        self.write_with_echo("dau en")
         self.write_with_echo("dau gain * 255")
         
     def modulation_disable(self):
         self.write_with_echo("dau gain * 0")
-        self.write_with_echo("dau dis mod" )
-        
+        self.write_with_echo("dau dis" )
+    
+    def set_modulation(self, mod=True):
+        if mod:
+            self.modulation_enable()
+        else:
+            self.modulation_disable()
+            
 if __name__ == '__main__':
 
-    cdds = crystaltech_dds(port='/dev/ttyS1', debug=True)
+    cdds = CrystalTechDDS(comm="serial", port="COM1", debug=True)
     
     print cdds.get_calibration()
-        
+    
+    cdds.close()
