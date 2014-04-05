@@ -34,6 +34,17 @@ madlib.MCL_ReadEncoderZ.restype = c_double
 
 madlib.MCL_GetCalibration.restype = c_double
 #more...
+MCL_ERROR_CODES = {
+   0: "MCL_SUCCESS",
+   -1: "MCL_GENERAL_ERROR",
+    -2: "MCL_DEV_ERROR",
+    -3: "MCL_DEV_NOT_ATTACHED",
+    -4: "MCL_USAGE_ERROR",
+    -5: "MCL_DEV_NOT_READY",
+    -6: "MCL_ARGUMENT_ERROR",
+    -7: "MCL_INVALID_AXIS",
+    -8: "MCL_INVALID_HANDLE"
+}
 
 SLOW_STEP_PERIOD = 0.050  #units are seconds
 
@@ -62,6 +73,7 @@ class MCLNanoDrive(object):
     def __init__(self, debug=False):
         self.debug = debug
         
+        self.MCL_ERROR_CODES = MCL_ERROR_CODES
         handle = self._handle = madlib.MCL_InitHandle()
 
         if self.debug: print "handle:", hex(handle)
@@ -186,7 +198,8 @@ class MCLNanoDrive(object):
         if self.debug: print "set_pos_ax ", pos, axis
         assert 1 <= axis <= self.num_axes
         assert 0 <= pos <= self.cal[axis]
-        madlib.MCL_SingleWriteN(c_double(pos), axis, self._handle)
+        self.handle_err(madlib.MCL_SingleWriteN(c_double(pos), axis, self._handle))
+        
     
     def get_pos_ax(self, axis):
         return madlib.MCL_SingleReadN(axis, self._handle)
@@ -208,7 +221,7 @@ class MCLNanoDrive(object):
         dl = pos - start
         dt = abs(dl) / self.max_speed
         
-         # Assume dt is in ms; divide the movement into SLOW_STEP_PERIOD chunks
+        # Assume dt is in ms; divide the movement into SLOW_STEP_PERIOD chunks
         steps = int(np.ceil(dt/SLOW_STEP_PERIOD))
         l_step = dl/steps
         
@@ -224,7 +237,10 @@ class MCLNanoDrive(object):
         # Update internal variables with current position
         self.get_pos()
         
-        
+    def handle_err(self, retcode):
+        if retcode < 0:
+            raise IOError(self.MCL_ERROR_CODES[retcode])
+        return retcode
         
 if __name__ == '__main__':
     print "MCL nanodrive test"
