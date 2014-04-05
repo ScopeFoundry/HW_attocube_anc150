@@ -37,7 +37,7 @@ class NI_FreqCounter(object):
             edge = DAQmx_Val_Rising,
             measMethod = DAQmx_Val_LargeRng2Ctr,
             measTime = 0.01, # applies measMethod is DAQmx_Val_HighFreq2Ctr
-            divisor = 500, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+            divisor = 100, # applies measMethod is DAQmx_Val_LargeRng2Ctr
             customScaleName = None,
             )
         

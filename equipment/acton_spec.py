@@ -19,6 +19,7 @@ class ActonSpectrometer(object):
         self.model = self.write_command("MODEL")
         self.serial_number = self.write_command("SERIAL")
         # load grating info
+        self.read_grating_info()
         
     
     def read_done_status(self):
@@ -86,6 +87,10 @@ class ActonSpectrometer(object):
         resp = self.write_command("?GRATING")
         self.grating = int(resp)
         return self.grating
+        
+    def read_grating_name(self):
+        self.read_grating()
+        return self.gratings[self.grating-1]
         
     def write_grating(self, grating):
         assert 0 < grating < 10 
@@ -165,7 +170,6 @@ class ActonSpectrometer(object):
         #assert out[-3:] == ";FF"
         #assert out[:7] == "@%03iACK" % self.address   
         
-        print "asdf", repr(out[-5:])
         assert out[-5:] == bytearray(" ok\r\n")
         return out[:-5].strip()
         
