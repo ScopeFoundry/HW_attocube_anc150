@@ -14,21 +14,29 @@ from collections import OrderedDict
 class Measurement(QtCore.QObject):
     
     measurement_sucessfully_completed = QtCore.Signal(()) # signal sent when full measurement is complete
-
-    def __init__(self, gui):
+    measurement_interrupted = QtCore.Signal(()) # signal sent when  measurement is complete due to an interruption
+    measurement_state_changed = QtCore.Signal(bool) # signal sent when measurement started or stopped
+    
+    def __init__(self, gui, name):
         """type gui: MicroscopeGUI
         """
         
         QtCore.QObject.__init__(self)
 
         self.gui = gui
-
+        self.name = name
+        
         self.display_update_period = 0.1 # seconds
         self.display_update_timer = QtCore.QTimer(self.gui.ui)
         self.display_update_timer.timeout.connect(self.on_display_update_timer)
         self.acq_thread = None
         
         self.logged_quantities = OrderedDict()
+        
+        #self.setup()
+        
+        #self._add_control_widgets_to_measurements_tab()
+
 
     def setup_figure(self):
         pass
@@ -38,22 +46,34 @@ class Measurement(QtCore.QObject):
     
     @QtCore.Slot()
     def start(self):
+        print "measurement", self.name, "start"
         self.interrupt_measurement_called = False
         if (self.acq_thread is not None) and self.is_measuring():
             raise RuntimeError("Cannot start a new measurement while still measuring")
         self.acq_thread = threading.Thread(target=self._run)
         # TODO Stop Display Timers
         self.gui.stop_display_timers()
+        self.measurement_state_changed.emit(True)
         self.acq_thread.start()
         self.t_start = time.time()
         self.display_update_timer.start(self.display_update_period*1000)
     
     @QtCore.Slot()
     def interrupt(self):
+        print "measurement", self.name, "interrupt"
         self.interrupt_measurement_called = True
         #Make sure display is up to date        
         #self.on_display_update_timer()
 
+    def start_stop(self, start):
+        print self.name, "start_stop", start
+        if start:
+            self.start()
+        else:
+            self.interrupt()
+
+
+        
     def is_measuring(self):
         return self.acq_thread.is_alive()
         
@@ -69,3 +89,6 @@ class Measurement(QtCore.QObject):
         lq = LoggedQuantity(name=name, **kwargs)
         self.logged_quantities[name] = lq
         return lq
+
+    #def _add_control_widgets_to_measurements_tab(self):
+

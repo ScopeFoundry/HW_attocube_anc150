@@ -709,7 +709,7 @@ Continuously</string>
            </widget>
           </item>
           <item row="0" column="3">
-           <widget class="QCheckBox" name="apd_optimize_timer_checkBox">
+           <widget class="QCheckBox" name="apd_optimize_startstop_checkBox">
             <property name="text">
              <string>Fast update
 for optimizer</string>
@@ -1257,7 +1257,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>6</number>
+       <number>8</number>
       </property>
       <widget class="QWidget" name="plot2d_widget">
        <attribute name="title">
@@ -1472,11 +1472,42 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>707</width>
+             <width>729</width>
              <height>907</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="measurements_tab">
+       <attribute name="title">
+        <string>Page</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_12">
+        <item>
+         <widget class="QScrollArea" name="scrollArea">
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOn</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="measurements_tab_scrollArea_content_widget">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>729</width>
+             <height>907</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_13"/>
           </widget>
          </widget>
         </item>
