@@ -18,6 +18,10 @@ class ScanningPLEMeasurement(object):
 ROW0 = 241
 ROW1 = 271
 
+PM_SAMPLE_NUMBER = 3
+
+UP_AND_DOWN_SWEEP = True
+
 class PLEPointMeasurement(QtCore.QObject):
     
     measurement_sucessfully_completed = QtCore.Signal(()) # signal sent when full measurement is complete
@@ -26,7 +30,8 @@ class PLEPointMeasurement(QtCore.QObject):
     def __init__(self, gui):
         QtCore.QObject.__init__(self)
         
-        self.gui= gui        
+        self.gui= gui
+        self.name = "ple_point"        
         
         # This is a "brilliant" hack to make the autocompletion work in the Spyder 
         # IDE.  This does not serve any functional purpose!
@@ -79,10 +84,20 @@ class PLEPointMeasurement(QtCore.QObject):
 
   
         # List of frequency steps to take based on min, max and step size specified 
-        # in the GUI        
-        freqs = self.freqs = np.arange(self.gui.ui.aotf_freq_start_doubleSpinBox.value(),
+        # in the GUI
+        freqs1 = np.arange(self.gui.ui.aotf_freq_start_doubleSpinBox.value(),
                           self.gui.ui.aotf_freq_stop_doubleSpinBox.value(),
                           self.gui.ui.aotf_freq_step_doubleSpinBox.value())
+        
+        # Sweep the frequencies up and down or just up?
+        if UP_AND_DOWN_SWEEP:            
+            freqs2 = np.flipud(freqs1)
+            self.freqs = np.concatenate((freqs1,freqs2))
+        else:
+            self.freqs = freqs1
+
+        # Define a local variable for quicker reference.
+        freqs = self.freqs
                           
         # Data recorded from the measurement
         self.oo_specs = np.zeros( (len(freqs), len(self.oo_wavelengths)), dtype=int)
@@ -93,7 +108,6 @@ class PLEPointMeasurement(QtCore.QObject):
         
 
         # setup figure plotlines
-
         for ax in [self.ax_excite_power, self.ax_laser_spec, self.ax_emission_intensity, self.ax_result]:
             ax.lines = []
             
@@ -122,9 +136,41 @@ class PLEPointMeasurement(QtCore.QObject):
             wl = self.oo_wavelengths[max_i]
             self.oo_wl_maxs[ii] = wl
             
-            self.gui.power_meter_wavelength.update_value(wl)
-            time.sleep(0.100)
-            pm_power = self.gui.laser_power.read_from_hardware(send_signal=True)
+            try_count = 0
+            while True:
+                try:
+                    self.gui.power_meter_wavelength.update_value(wl)
+                    break
+                except (ValueError, IOError):
+                    try_count = try_count + 1
+                    if try_count > 9:
+                        break
+                    time.sleep(0.010)
+                    print "  Trying to set wavelength again..."
+            
+            time.sleep(0.150)
+            
+            samp_count = 0
+            pm_power = 0.
+            for samp in range(0, PM_SAMPLE_NUMBER):
+                try_count = 0
+                while True:
+                    try:
+                        pm_power = pm_power + self.gui.laser_power.read_from_hardware(send_signal=True)
+                        samp_count = samp_count + 1
+                        break 
+                    except (ValueError, IOError):
+                        try_count = try_count + 1
+                        if try_count > 9:
+                            break
+                        time.sleep(0.010)
+             
+            if samp_count > 0:              
+                pm_power = pm_power/samp_count
+            else:
+                print "  Failed to read power"
+                pm_power = 10000.
+                
             self.pm_powers[ii] = pm_power
             
             ccd.start_acquisition()
