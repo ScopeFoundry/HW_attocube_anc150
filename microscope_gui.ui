@@ -195,11 +195,17 @@
           </item>
           <item row="0" column="1">
            <widget class="QDoubleSpinBox" name="cx_doubleSpinBox">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
             <property name="buttonSymbols">
              <enum>QAbstractSpinBox::NoButtons</enum>
+            </property>
+            <property name="keyboardTracking">
+             <bool>false</bool>
             </property>
             <property name="decimals">
              <number>5</number>
@@ -232,11 +238,17 @@
           </item>
           <item row="1" column="1">
            <widget class="QDoubleSpinBox" name="cy_doubleSpinBox">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
             <property name="buttonSymbols">
              <enum>QAbstractSpinBox::NoButtons</enum>
+            </property>
+            <property name="keyboardTracking">
+             <bool>false</bool>
             </property>
             <property name="decimals">
              <number>5</number>
@@ -269,11 +281,17 @@
           </item>
           <item row="2" column="1">
            <widget class="QDoubleSpinBox" name="cz_doubleSpinBox">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
             <property name="buttonSymbols">
              <enum>QAbstractSpinBox::NoButtons</enum>
+            </property>
+            <property name="keyboardTracking">
+             <bool>false</bool>
             </property>
             <property name="decimals">
              <number>5</number>
@@ -363,7 +381,11 @@
            </widget>
           </item>
           <item row="0" column="2" colspan="2">
-           <widget class="QLineEdit" name="aotf_freq_set_lineEdit"/>
+           <widget class="QLineEdit" name="aotf_freq_set_lineEdit">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+           </widget>
           </item>
           <item row="0" column="4">
            <widget class="QLabel" name="label_3">
@@ -525,7 +547,7 @@
           <string>Andor CCD</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
-          <item row="5" column="1">
+          <item row="4" column="1">
            <widget class="QDoubleSpinBox" name="acton_spec_center_wl_doubleSpinBox">
             <property name="enabled">
              <bool>true</bool>
@@ -553,17 +575,10 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="0">
+          <item row="4" column="0">
            <widget class="QLabel" name="label_23">
             <property name="text">
              <string>Center WL (nm)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_25">
-            <property name="text">
-             <string>ADC</string>
             </property>
            </widget>
           </item>
@@ -574,29 +589,29 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="0">
+          <item row="5" column="0">
            <widget class="QLabel" name="label_24">
             <property name="text">
              <string>Grating</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="label_22">
             <property name="text">
              <string>Temperature</string>
             </property>
            </widget>
           </item>
-          <item row="8" column="1">
+          <item row="7" column="1">
            <widget class="QCheckBox" name="andor_ccd_shutter_open_checkBox">
             <property name="text">
              <string>Shutter Open</string>
             </property>
+            <property name="tristate">
+             <bool>false</bool>
+            </property>
            </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QComboBox" name="adc_comboBox"/>
           </item>
           <item row="1" column="1">
            <widget class="QDoubleSpinBox" name="andor_ccd_int_time_doubleSpinBox">
@@ -627,7 +642,7 @@
             </property>
            </widget>
           </item>
-          <item row="8" column="2">
+          <item row="7" column="2">
            <widget class="QCheckBox" name="andor_ccd_acquire_cont_checkBox">
             <property name="text">
              <string>Acquire 
@@ -635,8 +650,12 @@ Continuously</string>
             </property>
            </widget>
           </item>
-          <item row="6" column="1" colspan="2">
-           <widget class="QLineEdit" name="acton_spec_grating_lineEdit"/>
+          <item row="5" column="1" colspan="2">
+           <widget class="QLineEdit" name="acton_spec_grating_lineEdit">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+           </widget>
           </item>
           <item row="1" column="2">
            <widget class="QLabel" name="andor_ccd_status_label">
@@ -648,8 +667,11 @@ Continuously</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
+          <item row="3" column="1">
            <widget class="QDoubleSpinBox" name="andor_ccd_temp_doubleSpinBox">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -692,6 +714,27 @@ Continuously</string>
             </property>
            </widget>
           </item>
+          <item row="8" column="2">
+           <widget class="QCheckBox" name="andor_ccd_bgsub_checkBox">
+            <property name="text">
+             <string>BG Substract</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QPushButton" name="andor_ccd_acq_bg_pushButton">
+            <property name="text">
+             <string>Acq Background</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QPushButton" name="andor_ccd_abort_bg_pushButton">
+            <property name="text">
+             <string>Abort BG</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -709,7 +752,7 @@ Continuously</string>
            </widget>
           </item>
           <item row="0" column="3">
-           <widget class="QCheckBox" name="apd_optimize_timer_checkBox">
+           <widget class="QCheckBox" name="apd_optimize_startstop_checkBox">
             <property name="text">
              <string>Fast update
 for optimizer</string>
@@ -1147,6 +1190,9 @@ for optimizer</string>
               </disabled>
              </palette>
             </property>
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -1257,7 +1303,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>6</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="plot2d_widget">
        <attribute name="title">
@@ -1312,7 +1358,7 @@ Continuously</string>
            <item row="0" column="1">
             <widget class="QComboBox" name="ple_point_scan_detector_comboBox">
              <property name="enabled">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <property name="editable">
               <bool>false</bool>
@@ -1352,6 +1398,44 @@ Continuously</string>
            <string>Plot</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_5"/>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="ple2d_tab">
+       <attribute name="title">
+        <string>2D PLE</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_14" stretch="0,1">
+        <item>
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="title">
+           <string>2D PLE Scan</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_11">
+           <item row="0" column="1">
+            <widget class="QPushButton" name="ple2d_stop_pushButton">
+             <property name="text">
+              <string>Stop</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QPushButton" name="ple2d_start_pushButton">
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="ple2d_plot_groupBox">
+          <property name="title">
+           <string>2D PLE Scan Plot</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_15"/>
          </widget>
         </item>
        </layout>
@@ -1472,11 +1556,42 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>707</width>
-             <height>907</height>
+             <width>872</width>
+             <height>926</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="measurements_tab">
+       <attribute name="title">
+        <string>Measurement</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_12">
+        <item>
+         <widget class="QScrollArea" name="scrollArea">
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOn</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="measurements_tab_scrollArea_content_widget">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>872</width>
+             <height>926</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_13"/>
           </widget>
          </widget>
         </item>
@@ -1494,12 +1609,66 @@ Continuously</string>
      <x>0</x>
      <y>0</y>
      <width>1276</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>h0_doubleSpinBox</tabstop>
+  <tabstop>h1_doubleSpinBox</tabstop>
+  <tabstop>v0_doubleSpinBox</tabstop>
+  <tabstop>v1_doubleSpinBox</tabstop>
+  <tabstop>dh_spinBox</tabstop>
+  <tabstop>dv_spinBox</tabstop>
+  <tabstop>x_set_lineEdit</tabstop>
+  <tabstop>y_set_lineEdit</tabstop>
+  <tabstop>z_set_lineEdit</tabstop>
+  <tabstop>nanodrive_move_slow_doubleSpinBox</tabstop>
+  <tabstop>atof_freq_doubleSpinBox</tabstop>
+  <tabstop>aotf_freq_set_lineEdit</tabstop>
+  <tabstop>aotf_power_doubleSpinBox</tabstop>
+  <tabstop>aotf_mod_enable_checkBox</tabstop>
+  <tabstop>aotf_freq_start_doubleSpinBox</tabstop>
+  <tabstop>aotf_freq_stop_doubleSpinBox</tabstop>
+  <tabstop>aotf_freq_step_doubleSpinBox</tabstop>
+  <tabstop>oo_spec_acquire_cont_checkBox</tabstop>
+  <tabstop>oo_spec_int_time_doubleSpinBox</tabstop>
+  <tabstop>andor_ccd_int_time_doubleSpinBox</tabstop>
+  <tabstop>andor_ccd_emgain_doubleSpinBox</tabstop>
+  <tabstop>andor_ccd_temp_doubleSpinBox</tabstop>
+  <tabstop>acton_spec_center_wl_doubleSpinBox</tabstop>
+  <tabstop>acton_spec_grating_lineEdit</tabstop>
+  <tabstop>andor_ccd_shutter_open_checkBox</tabstop>
+  <tabstop>andor_ccd_acquire_cont_checkBox</tabstop>
+  <tabstop>andor_ccd_acq_bg_pushButton</tabstop>
+  <tabstop>andor_ccd_abort_bg_pushButton</tabstop>
+  <tabstop>andor_ccd_bgsub_checkBox</tabstop>
+  <tabstop>apd_counter_output_lineEdit</tabstop>
+  <tabstop>apd_optimize_startstop_checkBox</tabstop>
+  <tabstop>scan_apd_start_pushButton</tabstop>
+  <tabstop>scan_apd_stop_pushButton</tabstop>
+  <tabstop>apd_scan_int_doubleSpinBox</tabstop>
+  <tabstop>power_meter_wl_doubleSpinBox</tabstop>
+  <tabstop>power_meter_acquire_cont_checkBox</tabstop>
+  <tabstop>slow_display_timer_checkBox</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>ple_point_scan_detector_comboBox</tabstop>
+  <tabstop>ple_point_scan_start_pushButton</tabstop>
+  <tabstop>ple_point_scan_stop_pushButton</tabstop>
+  <tabstop>clearfig_pushButton</tabstop>
+  <tabstop>picoharp_acquire_one_pushButton</tabstop>
+  <tabstop>picoharp_interrupt_pushButton</tabstop>
+  <tabstop>trpl_map_interrupt_pushButton</tabstop>
+  <tabstop>trpl_map_start_pushButton</tabstop>
+  <tabstop>trpl_map_stored_channels_doubleSpinBox</tabstop>
+  <tabstop>hardware_tab_scrollArea</tabstop>
+  <tabstop>scrollArea</tabstop>
+  <tabstop>cx_doubleSpinBox</tabstop>
+  <tabstop>cz_doubleSpinBox</tabstop>
+  <tabstop>cy_doubleSpinBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

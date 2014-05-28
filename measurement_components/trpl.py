@@ -15,7 +15,7 @@ from .measurement import Measurement
 class PicoHarpMeasurement(Measurement):
     
     def __init__(self, gui):
-        Measurement.__init__(self, gui)
+        Measurement.__init__(self, gui, "picoharp_live")
 
         self.display_update_period = 0.1 #seconds
         
@@ -49,6 +49,12 @@ class PicoHarpMeasurement(Measurement):
         ph.stop_histogram()
         ph.read_histogram_data()
         
+        #is this right place to put this?
+        self.measurement_state_changed.emit(False)
+        if not self.interrupt_measurement_called:
+            self.measurement_sucessfully_completed.emit()
+        else:
+            self.measurement_interrupted.emit()        
 
                
     @QtCore.Slot()
@@ -59,27 +65,12 @@ class PicoHarpMeasurement(Measurement):
         Measurement.on_display_update_timer(self)
         
         
-class TRPLPointMeasurement(Measurement):
-     
-    def setup_figure(self):
-        pass
-        
-    def _run(self):
-        pass
-         
-    def on_display_update_timer(self):
-        #update figure
-                
-        if not self.is_measuring():
-            self.display_update_timer.stop()
 
 class TRPLScanMeasurement(Measurement):
     
     def __init__(self, gui):
-        Measurement.__init__(self, gui)
+        Measurement.__init__(self, gui, "trpl_scan")
         
-        self.name = "trpl_scan"
-
         self.display_update_period = 0.1 #seconds
         
         #connect events
@@ -142,7 +133,7 @@ class TRPLScanMeasurement(Measurement):
         self.imgplot = self.aximg.imshow(self.integrated_count_map, 
                                     origin='lower',
                                     vmin=1e4, vmax=1e5, interpolation='nearest', 
-                                    extent=[self.h0, self.h1, self.v0, self.v1])
+                                    extent=self.extent)
 
         # set up experiment
         # experimental parameters already connected via LoggedQuantities

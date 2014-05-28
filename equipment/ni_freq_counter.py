@@ -19,12 +19,12 @@ class NI_FreqCounter(object):
         self.counter_chan = counter_chan
         self.input_terminal = input_terminal
         self.debug = debug
-    
-    	self.create_task()
+        
+        self.create_task()
     
     def create_task(self):
     
-    	# need to check if task exists and fail
+        # need to check if task exists and fail
     
         self.task = PyDAQmx.Task()
         
@@ -72,17 +72,17 @@ class NI_FreqCounter(object):
     
     
     def start(self):
-    	self.task.StartTask()
+        self.task.StartTask()
     
     def stop(self):
-    	self.task.StopTask()
+        self.task.StopTask()
     
     def reset(self):
-    	self.task.StopTask()
-    	self.task.ClearTask()
-    	self.create_task()
-    	self.start()
-    
+        self.task.StopTask()
+        self.task.ClearTask()
+        self.create_task()
+        self.start()
+
     def read_freq_buffer(self):
         self.task.ReadCounterF64(
             numSampsPerChan = -1,
@@ -96,16 +96,20 @@ class NI_FreqCounter(object):
         return self._sample_buffer_count.value, self.sample_buffer
 
     def read_average_freq_in_buffer(self):
-        num_samples, buffer = self.read_freq_buffer()
-        if self.debug: print num_samples, buffer
-        return np.average(buffer[:num_samples])
+        num_samples, _buffer = self.read_freq_buffer()
+        if self.debug: print num_samples, _buffer
+        result =  np.average(_buffer[:num_samples])
+        if np.isnan(result):
+            return -1
+        else:
+            return result
 
     def close(self):
         if hasattr(self,'task'):
             self.task.StopTask()
             self.task.ClearTask()
     
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type_, value, traceback):
         self.close()
         return False
         

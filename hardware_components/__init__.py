@@ -8,7 +8,13 @@ class HardwareComponent(QtCore.QObject):
         lq = LoggedQuantity(name=name, **kwargs)
         self.logged_quantities[name] = lq
         return lq
-    
+
+    def add_operation(self, name, op_func):
+        """type name: str
+           type op_func: QtCore.Slot
+        """
+        self.operations[name] = op_func   
+            
     def __init__(self, gui, debug=False):
         """type gui: MicroscopeGUI
         """        
@@ -18,10 +24,15 @@ class HardwareComponent(QtCore.QObject):
         self.debug = debug
 
         self.logged_quantities = OrderedDict()
+        self.operations = OrderedDict()
         
         self.setup()
         
         self._add_control_widgets_to_hardware_tab()
+        
+        self.has_been_connected_once = False
+        
+        self.is_connected = False
         
     def setup(self):
         """
@@ -29,7 +40,7 @@ class HardwareComponent(QtCore.QObject):
         Should generate desired LoggedQuantities
         """
         raise NotImplementedError()
-    
+
     def _add_control_widgets_to_hardware_tab(self):
         cwidget = self.gui.ui.hardware_tab_scrollArea_content_widget
         
@@ -50,47 +61,28 @@ class HardwareComponent(QtCore.QObject):
             #: :type lq: LoggedQuantity
             if lq.choices is not None:
                 widget = QtGui.QComboBox()
-                for c in lq.choices:
-                    widget.addItem((lq.fmt % c))
-                #events
-                lq.updated_choice_value[int].connect(widget.setCurrentIndex)
-                widget.currentIndexChanged.connect(lq.update_choice_value)
-                
             elif lq.dtype in [int, float]:
                 widget = QtGui.QDoubleSpinBox()
-                widget.setKeyboardTracking(False)
-                if lq.vmin is not None:
-                    widget.setMinimum(lq.vmin)
-                if lq.vmax is not None:
-                    widget.setMaximum(lq.vmax)
-                if lq.unit is not None:
-                    widget.setSuffix(" "+lq.unit)
-                if lq.dtype == int:
-                    widget.setDecimals(0)
-                if lq.ro:
-                    widget.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
-                    widget.setReadOnly(True)
-                #events
-                lq.updated_value[float].connect(widget.setValue )
-                widget.valueChanged[float].connect(lq.update_value)
             elif lq.dtype in [bool]:
                 widget = QtGui.QCheckBox()  
-                lq.update_value[bool].connect(widget.setChecked)
-                widget.stateChanged.connect(widget.update_value) 
             elif lq.dtype in [str]:
                 widget = QtGui.QLineEdit()
-                lq.updated_text_value[str].connect(widget.setText)
-                widget.setReadOnly(True)
-            if lq.ro:
-                widget.setReadOnly(True)
+            lq.connect_bidir_to_widget(widget)
+
             # Add to formlayout
             self.controls_formLayout.addRow(lqname, widget)
             self.control_widgets[lqname] = widget
         
+        
+        self.op_buttons = OrderedDict()
+        for op_name, op_func in self.operations.items(): 
+            op_button = QtGui.QPushButton(op_name)
+            op_button.clicked.connect(op_func)
+            self.controls_formLayout.addRow(op_name, op_button)
+        
         self.read_from_hardware_button = QtGui.QPushButton("Read From Hardware")
         self.read_from_hardware_button.clicked.connect(self.read_from_hardware)
-        self.controls_formLayout.addRow("", self.read_from_hardware_button)
-        
+        self.controls_formLayout.addRow("Logged Quantities:", self.read_from_hardware_button)
 
     @QtCore.Slot()    
     def read_from_hardware(self):
