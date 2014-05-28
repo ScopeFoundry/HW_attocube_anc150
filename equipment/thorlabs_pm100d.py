@@ -1,7 +1,8 @@
 import visa
+import time
 
-
-
+TRIES_BEFORE_FAILURE = 10
+RETRY_SLEEP_TIME = 0.010  # in seconds
 
 class ThorlabsPM100D(object):
     """
@@ -61,12 +62,39 @@ class ThorlabsPM100D(object):
         if self.debug: print "PM100D written --->", repr(resp)
         
     def get_wavelength(self):
-        self.wl = float(self.ask("SENS:CORR:WAV?"))
-        if self.debug: print "wl:", repr(self.wl)
+        try_count = 0
+        while True:
+            try:
+                self.wl = float(self.ask("SENS:CORR:WAV?"))
+                if self.debug: print "wl:", repr(self.wl)
+                break
+            except:
+                if try_count > 9:
+                    print "Failed to get wavelength."
+                    break
+                else:
+                    time.sleep(RETRY_SLEEP_TIME)  #take a rest..
+                    try_count = try_count + 1
+                    print "trying to get the wavelength again.."
         return self.wl
     
     def set_wavelength(self, wl):
-        self.write("SENS:CORR:WAV %f" % wl)
+        try_count = 0
+        while True:
+            try:
+                self.write("SENS:CORR:WAV %f" % wl)
+                time.sleep(0.005) # Sleep for 5 ms before rereading the wl.
+                break
+            except:
+                if try_count > 9:
+                    print "Failed to set wavelength."
+                    time.sleep(0.005) # Sleep for 5 ms before rereading the wl.
+                    break
+                else:
+                    time.sleep(RETRY_SLEEP_TIME)  #take a rest..
+                    try_count = try_count + 1
+                    print "trying to set wavelength again.."
+
         return self.get_wavelength()
     
     def get_attenuation_dB(self):
