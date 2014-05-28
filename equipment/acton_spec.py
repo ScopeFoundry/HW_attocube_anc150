@@ -178,5 +178,8 @@ class ActonSpectrometer(object):
 
         
         return out
+    
+    def close(self):
+        self.ser.close()
         
         

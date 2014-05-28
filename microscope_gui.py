@@ -20,11 +20,12 @@ from equipment.mcl_nanodrive import MCLNanoDrive
 from equipment.crystaltech_dds import CrystalTechDDS
 from equipment.thorlabs_pm100d import ThorlabsPM100D
 from equipment.ocean_optics_seabreeze import OceanOpticsSpectrometer
-from equipment.acton_spec import ActonSpectrometer
+#from equipment.acton_spec import ActonSpectrometer
 
 from hardware_components.picoharp import PicoHarpHardwareComponent
 from hardware_components.apd_counter import APDCounterHardwareComponent
 from hardware_components.andor_ccd import AndorCCDHardwareComponent
+from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
 from measurement_components.trpl import PicoHarpMeasurement, TRPLScanMeasurement
@@ -94,7 +95,7 @@ class MicroscopeGUI(object):
         self.picoharp_hc = self.add_hardware_component(PicoHarpHardwareComponent(self))
         self.apd_counter_hc = self.add_hardware_component(APDCounterHardwareComponent(self))
         self.andor_ccd_hc = self.add_hardware_component(AndorCCDHardwareComponent(self))
-
+        self.acton_spec_hc = self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
         self.setup_hardware()
 
         # Create the measurement objects
@@ -298,22 +299,6 @@ class MicroscopeGUI(object):
         self.oo_spec_int_time.updated_value[float].connect(self.ui.oo_spec_int_time_doubleSpinBox.setValue)
         self.oo_spec_int_time.update_value(0.1)
         self.oo_spectrometer.start_threaded_acquisition()
-
-        ### Acton Spectrometer
-        print "Initializing Acton spectrometer functionality"
-        self.acton_spectrometer = ActonSpectrometer(port=ACTON_SPEC_PORT, debug=True, dummy=False)
-        
-        self.acton_spec_center_wl = self.add_logged_quantity(name="acton_spec_center_wl", dtype=float,
-                                                             hardware_read_func=self.acton_spectrometer.read_wl)
-        self.acton_spec_center_wl.updated_value[float].connect(self.ui.acton_spec_center_wl_doubleSpinBox.setValue)
-        
-        self.acton_spec_grating = self.add_logged_quantity(name="acton_spec_grating", dtype=str, fmt="%s",
-                                                           hardware_read_func=self.acton_spectrometer.read_grating_name)
-    
-        self.acton_spec_grating.updated_text_value.connect(self.ui.acton_spec_grating_lineEdit.setText)    
-        
-        self.acton_spec_center_wl.read_from_hardware()
-        self.acton_spec_grating.read_from_hardware()
         
         
         
