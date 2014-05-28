@@ -7,6 +7,8 @@ import os
 
 import platform
 
+from enum import Enum
+
 if platform.architecture()[0] == '64bit':
     andorlibpath = str(os.path.join(os.path.dirname(__file__),"atmcd64d.dll"))
 else:
@@ -17,9 +19,18 @@ andorlib = windll.LoadLibrary(andorlibpath)
 
 import andor_ccd_consts as consts
 
-EM_MODE_I = 0 # 0 is electron mulitplication, 1 is conventional
-DEFAULT_TEMPERATURE = -80    
-    
+DEFAULT_TEMPERATURE = -80
+DEFAULT_EM_GAIN = 10
+DEFAULT_OUTPUT_AMP = 0  # 0 is electron multitplication, 1 is conventional    
+
+# Read modes for the EMCCD:
+class AndorReadMode(Enum):
+    FullVerticalBinning = 0
+    MultiTrack = 1
+    RandomTrack = 2
+    SingleTrack = 3
+    Image = 4
+
 
 class AndorCCD(object):
     
@@ -93,8 +104,8 @@ class AndorCCD(object):
         
         #shift speeds
         self.read_shift_speeds()
-
-        self.set_hs_speed()
+        self.set_hs_speed_em()
+        self.set_hs_speed_conventional()
         self.set_vs_speed()
 
         # gains
@@ -111,7 +122,7 @@ class AndorCCD(object):
             assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
             self.preamp_gains.append(gain.value)
         if self.debug: print 'Preamp gains available: ', self.preamp_gains
-        
+
         self.set_preamp_gain()
         
 
@@ -119,17 +130,23 @@ class AndorCCD(object):
         self.get_EM_gain_range()
         self.get_EMCCD_gain()
 
-        # temperature
-        
+        # temperature        
         self.get_temperature_range()
         self.get_temperature()
 
         self.set_temperature(DEFAULT_TEMPERATURE)
-
+        self.set_cooler_on()
         
-        self.set_cooler_on()    
+        # Initialize the camera
+        self.set_shutter_open(False)             # Shutter closed
+        self.set_output_amp(DEFAULT_OUTPUT_AMP)  # Default output amplifier
+        self.set_EMCCD_gain(DEFAULT_EM_GAIN)     # Default EM Gain
+        
     
     #####
+    
+    
+    
     
     def set_ad_channel(self,chan_i=0):
         assert chan_i in range(0,self.numADChan)
@@ -139,18 +156,31 @@ class AndorCCD(object):
         return self.ad_chan
     
     ##### ReadOut Modes #######################
-    def set_ro_full_vertical_binning(self):
+    def set_readout_mode(self, ro_mode):
+        if (ro_mode == AndorReadMode.FullVerticalBinning):
+            self.set_ro_full_vertical_binning()
+        elif (ro_mode == AndorReadMode.Image):
+            self.set_ro_image_mode()
+        elif (ro_mode == AndorReadMode.MultiTrack):
+            raise NotImplementedError()
+        elif (ro_mode == AndorReadMode.RandomTrack):
+            raise NotImplementedError()
+        elif (ro_mode == AndorReadMode.SingleTrack):
+            self.set_ro_single_track(256, 20)
+    
+    def set_ro_full_vertical_binning(self, hbin=1):
         self.ro_mode = 'FULL_VERTICAL_BINNING'
-        retval = andorlib.SetReadMode(0)
+        retval = andorlib.SetReadMode(0) # sets to FVB
+        assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+        self.ro_fvb_hbin = hbin
+        retval = andorlib.SetFVBHBin(self.ro_fvb_hbin)
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
         #self.outputHeight = 1
-        # TODO create buffer
-        self.Nx_ro = self.Nx              
+        self.Nx_ro = int(self.Nx/hbin)              
         self.Ny_ro = 1
+        self.buffer = np.zeros(shape=(self.Ny_ro, self.Nx_ro), dtype=np.int32 )       
 
-        self.buffer = np.zeros( self.Nx_ro , dtype = np.int32 )        
-
-    def set_ro_single_track(self, center, width = 1):
+    def set_ro_single_track(self, center, width = 1, hbin = 1):
         self.ro_mode = 'SINGLE_TRACK'
         retval = andorlib.SetReadMode(3)
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
@@ -159,14 +189,17 @@ class AndorCCD(object):
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
         #self.outputHeight = ?
         #not tested...
-
-        self.Nx_ro = self.Nx              
+    
+        retval =  andorlib.SetSingleTrackHBin(c_int(hbin)) 
+        assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+        
+        self.ro_st_hbin = hbin
+        self.Nx_ro = int(self.Nx/hbin)              
         self.Ny_ro = 1
 
         self.ro_single_track_center = center
         self.ro_single_track_width = width
-        self.buffer = np.zeros( self.Nx_ro , dtype = np.int32 )
-        
+        self.buffer = np.zeros(shape=(self.Ny_ro, self.Nx_ro), dtype=np.int32 )
         
         
     def set_ro_multi_track(self, number, height, offset):
@@ -182,7 +215,7 @@ class AndorCCD(object):
         #SetRandomTracks(numberoftracks, positionarray)
         raise NotImplementedError
     
-    def set_ro_image_mode(self,hbin=1,vbin=1,hstart=0,hend=None,vstart=0,vend=None):
+    def set_ro_image_mode(self,hbin=1,vbin=1,hstart=1,hend=None,vstart=1,vend=None):
         self.ro_mode = 'IMG'
         retval = andorlib.SetReadMode(4)
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
@@ -205,14 +238,16 @@ class AndorCCD(object):
         self.vend   = vend
         
         retval = andorlib.SetImage(c_int(hbin),   c_int(vbin), 
-                          c_int(hstart+1), c_int(hend),
-                          c_int(vstart+1), c_int(vend) )
+                          c_int(hstart), c_int(hend),
+                          c_int(vstart), c_int(vend) )
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
         
-        self.Nx_ro = int((self.hend-self.hstart)/self.hbin)                
-        self.Ny_ro = int((self.vend-self.vstart)/self.vbin)
+        self.Nx_ro = int((self.hend-self.hstart+1)/self.hbin)                
+        self.Ny_ro = int((self.vend-self.vstart+1)/self.vbin)
+        
+        print self.Nx_ro, self.Ny_ro 
 
-        self.buffer = np.zeros( shape=(self.Nx_ro, self.Ny_ro), dtype=np.int32 )
+        self.buffer = np.zeros(shape=(self.Ny_ro, self.Nx_ro), dtype=np.int32 )
 
         
     
@@ -280,26 +315,41 @@ class AndorCCD(object):
     def read_shift_speeds(self):
         # h speeds
         numHSSpeeds = c_int(-1)
-        self.numHSSpeeds = []
+        self.numHSSpeeds_EM = []
+        self.numHSSpeeds_Conventional = []
         for chan_i in range(self.numADChan):
-            retval = andorlib.GetNumberHSSpeeds(chan_i, EM_MODE_I, byref(numHSSpeeds)) # EM mode
+            retval = andorlib.GetNumberHSSpeeds(chan_i, 0, byref(numHSSpeeds)) # EM mode
             assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
-            self.numHSSpeeds.append( numHSSpeeds.value )
+            self.numHSSpeeds_EM.append(numHSSpeeds.value)
+            retval = andorlib.GetNumberHSSpeeds(chan_i, 1, byref(numHSSpeeds)) # conventional mode mode
+            assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+            self.numHSSpeeds_Conventional.append(numHSSpeeds.value)
+            
 
-        print '# of horizontal speeds: ', self.numHSSpeeds
+        print '# of horizontal speeds EM: ', self.numHSSpeeds_EM
+        print '# of horizontal speeds Conventional: ', self.numHSSpeeds_Conventional
         
-        self.HSSpeeds = []
+        self.HSSpeeds_EM = []
+        self.HSSpeeds_Conventional = []
         speed = c_float(0)
         for chan_i in range(self.numADChan):
-            self.HSSpeeds.append([])
-            hsspeeds = self.HSSpeeds[chan_i]
-            for i in range(self.numHSSpeeds[chan_i]):
-                retval = andorlib.GetHSSpeed(chan_i, EM_MODE_I, i, byref(speed)) # EM mode
+            self.HSSpeeds_EM.append([])
+            hsspeeds = self.HSSpeeds_EM[chan_i]
+            for i in range(self.numHSSpeeds_EM[chan_i]):
+                retval = andorlib.GetHSSpeed(chan_i, 0, i, byref(speed)) # EM mode
                 assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
                 hsspeeds.append(speed.value)
+            self.HSSpeeds_Conventional.append([])
+            hsspeeds = self.HSSpeeds_Conventional[chan_i]
+            for i in range(self.numHSSpeeds_Conventional[chan_i]):
+                print chan_i, i
+                retval = andorlib.GetHSSpeed(chan_i,  1, i, byref(speed)) # Conventional mode
+                assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+                hsspeeds.append(speed.value)
+            
 
-        print 'Horizontal speeds [MHz]: ', self.HSSpeeds
-        
+        print 'EM Horizontal speeds [MHz]: ', self.HSSpeeds_EM
+        print 'Conventional Horizontal speeds [MHz]: ', self.HSSpeeds_Conventional        
         #Vertical  speeds
         numVSSpeeds = c_int(-1)
         retval = andorlib.GetNumberVSSpeeds(byref(numVSSpeeds))
@@ -313,14 +363,18 @@ class AndorCCD(object):
             assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
             self.VSSpeeds.append(speed.value)
         if self.debug: print 'Vertical speeds [microseconds per pixel shift]: ', self.VSSpeeds
-
     
-    def set_hs_speed(self,speed_index=0):
-        #if typ == "standard": typ = 0
-        #elif typ == "EM":     typ = 1
-        #assert typ in [0,1]
-        assert 0 <= speed_index < self.numHSSpeeds[self.ad_chan]
-        retval = andorlib.SetHSSpeed(EM_MODE_I, speed_index) # 0 = default speed (fastest)
+    def get_hs_speed_val_conventional(self, speed_index):
+        pass;
+
+    def set_hs_speed_em(self,speed_index=0):
+        assert 0 <= speed_index < self.numHSSpeeds_EM[self.ad_chan]
+        retval = andorlib.SetHSSpeed(0, speed_index) # 0 = default speed (fastest), #arg0 -> EM mode = 0
+        assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+
+    def set_hs_speed_conventional(self,speed_index=0):
+        assert 0 <= speed_index < self.numHSSpeeds_Conventional[self.ad_chan]
+        retval = andorlib.SetHSSpeed(1, speed_index) # 0 = default speed (fastest), #arg0 -> conventional = 1
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
 
     def set_vs_speed(self, speed_index=0):
@@ -350,6 +404,22 @@ class AndorCCD(object):
         retval = andorlib.SetImageFlip( c_int(bool(hflip)), c_int(bool(vflip)))
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
     
+    def get_image_hflip(self):
+        return self.get_image_flip()[0]
+    
+    def set_image_hflip(self, hflipNew):
+        hflipOld, vflipOld = self.get_image_flip()
+        self.set_image_flip(hflipNew, vflipOld)
+        print "set_image_hflip: ", hflipNew 
+    
+    def get_image_vflip(self):
+        return self.get_image_flip()[1]
+    
+    def set_image_vflip(self, vflipNew):
+        hflipOld, vflipOld = self.get_image_flip()
+        self.set_image_flip(hflipOld, vflipNew)
+        print "set_image_vflip: ", vflipNew
+        
     def set_image_rotate(self, rotate=0):
         # 0 - No rotation
         # 1 - Rotate 90 degrees clockwise
@@ -382,9 +452,22 @@ class AndorCCD(object):
     def set_cooler_on(self):
         retval = andorlib.CoolerON()
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+        self.cooler_on = True
+        
     def set_cooler_off(self):
         retval = andorlib.CoolerOFF()
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+        self.cooler_on = False
+        
+    def set_cooler(self, coolerOn):
+        if coolerOn:
+            self.set_cooler_on()
+        else:
+            self.set_cooler_off()
+
+    def get_cooler(self):
+        return self.cooler_on 
+
 
     def get_temperature_range(self):
         min_t, max_t = c_int(0), c_int(0)
@@ -410,7 +493,20 @@ class AndorCCD(object):
         self.temperature_status = retval
         return self.temperature
 
-    #TODO is_temperature_stable
+    """
+    @property
+    def temperature_status_str(self):
+        DRV_TEMP_STABILIZED 
+        DRV_TEMP_NOT_REACHED 
+        DRV_TEMP_DRIFT 
+        DRV_TEMP_NOT_STABILIZED        
+
+    def is_temperature_stable(self):
+        "call get_temperature first"
+        if self.temperature_status == consts.
+    """    
+
+        
     
     
     #### Acquire ####
@@ -419,6 +515,10 @@ class AndorCCD(object):
     
     def start_acquisition(self):
         retval = andorlib.StartAcquisition()
+        assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+
+    def abort_acquisition(self):
+        retval = andorlib.AbortAcquisition()
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
 
     _status_name_dict = {
@@ -437,7 +537,7 @@ class AndorCCD(object):
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
         self.status_id   = status.value
         self.status_name = self._status_name_dict[self.status_id]
-        return self.status_id, self.status_name            
+        return self.status_name            
 
     
     def get_acquired_data(self):
@@ -498,8 +598,20 @@ class AndorCCD(object):
         assert low <= gain <= high
         retval = andorlib.SetEMCCDGain(c_int(gain))
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
-
-
+    
+    def set_output_amp(self, amp):
+        retval = andorlib.SetOutputAmplifier(c_int(amp))
+        assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+        self.output_amp = amp
+        
+    def get_output_amp(self):
+        return self.output_amp
+    
+    def close(self):
+        retval = andorlib.ShutDown()
+        assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
+    
+    
 if __name__ == '__main__':
     import time
     
@@ -507,8 +619,17 @@ if __name__ == '__main__':
     
     cam.set_ro_image_mode()
     cam.set_trigger_mode('internal')
-    cam.set_exposure(1.0)
-    cam.set_shutter_open()
+    cam.set_exposure_time(1.0)
+    #cam.set_shutter_open()
+    andorlib.SetOutputAmplifier(0) # EMCCD
+    
+    cam.read_shift_speeds()
+    
+    andorlib.SetOutputAmplifier(1) # Conventional
+    
+    #cam.set_hs_speed(1)
+    andorlib.SetEMGainMode(1)
+    print "EM_gain_range", cam.get_EM_gain_range()
     cam.start_acquisition()
     stat = "ACQUIRING",
     while stat != "IDLE":
