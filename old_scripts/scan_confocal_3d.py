@@ -72,7 +72,7 @@ class ConfocalTRPL3DScan(object):
     def run_3d_scan(self):
         
         self.picoharp.setup_experiment(
-                   Range=self.phrange, Offset=self.phoffset, 
+                   Binning=self.phrange, SyncOffset=self.phoffset, 
                    Tacq=self.tacq, SyncDivider=self.syncdiv, 
                    CFDZeroCross0=self.zerocross0, CFDLevel0=self.level0, 
                    CFDZeroCross1=self.zerocross1, CFDLevel1=self.level1 )
@@ -86,7 +86,12 @@ class ConfocalTRPL3DScan(object):
     
         for iii, ijk in enumerate(ijk_generator((self.Nx, self.Ny, self.Nz), self.axis_scan_order)):
 
-
+            if iii == 0:
+                i,j,k = ijk
+                print "moving to start position"
+                self.nanodrive.set_pos_ax_slow( self.x_array[i] , self.mcl_axis_translation.x )
+                self.nanodrive.set_pos_ax_slow( self.y_array[j] , self.mcl_axis_translation.y )
+                self.nanodrive.set_pos_ax_slow( self.z_array[k] , self.mcl_axis_translation.z )
 
             #previous ijk
             ip, jp, kp = self.set_ijk
@@ -189,18 +194,18 @@ def ijk_generator(dims, axis_order=(0,1,2)):
 
 if __name__ == '__main__':
     params = dict(
-        x0 = 30,     x1 = 45,  dx = 0.5,
-        y0 = 35,    y1 = 50,  dy = 0.5,
-        z0 = 20,    z1 = 50,  dz = 0.5,
-        tacq = 250,
+        x0 = 20,    x1 = 55,  dx = 1.0,
+        y0 = 20,    y1 = 55,  dy = 1.0,
+        z0 =  0.0,    z1 = 50.0,  dz = 1.0,
+        tacq = 500,
         phrange = 4,
         phoffset = 0,
         syncdiv = 8,
-        zerocross0 = 5, level0 = 10,
-        zerocross1 = 10, level1 = 50,
+        zerocross0 = 8, level0 = 10,
+        zerocross1 = 10, level1 = 100,
         axis_scan_order = (2,1,0),
         mcl_axis_translation = (2,1,3),
-        stored_histogram_chan = 850
+        stored_histogram_chan = 250
         )
     
     scan = ConfocalTRPL3DScan(**params)

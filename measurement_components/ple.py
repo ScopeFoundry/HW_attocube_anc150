@@ -18,6 +18,8 @@ UP_AND_DOWN_SWEEP = True
 
 class PLEPointMeasurement(Measurement):
     
+    #TODO store information about the acton_spectrometer position and grating
+    
     def __init__(self, gui):
         Measurement.__init__(self, gui = gui, name = "ple_point")
         
@@ -322,6 +324,9 @@ MASK_2D_WITH_APD_MAP = True
 MASK_INT_THRESHOLD = 1.e2
 
 class PLE2DScanMeasurement(Measurement):
+
+    #TODO store information about the acton_spectrometer position and grating
+    
     def __init__(self, gui):
         Measurement.__init__(self, gui = gui, name = "ple2d")
         
