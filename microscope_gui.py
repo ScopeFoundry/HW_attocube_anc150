@@ -9,6 +9,7 @@ import collections
 from PySide import QtCore, QtGui, QtUiTools
 
 import matplotlib
+matplotlib.rcParams['backend.qt4'] = 'PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar2
 
@@ -17,7 +18,7 @@ from matplotlib.figure import Figure
 
 
 from equipment.mcl_nanodrive import MCLNanoDrive
-from equipment.crystaltech_dds import CrystalTechDDS
+#from equipment.crystaltech_dds import CrystalTechDDS
 from equipment.thorlabs_pm100d import ThorlabsPM100D
 from equipment.ocean_optics_seabreeze import OceanOpticsSpectrometer
 #from equipment.acton_spec import ActonSpectrometer
@@ -26,11 +27,14 @@ from hardware_components.picoharp import PicoHarpHardwareComponent
 from hardware_components.apd_counter import APDCounterHardwareComponent
 from hardware_components.andor_ccd import AndorCCDHardwareComponent
 from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
+from hardware_components.flip_mirror import FlipMirrorHardwareComponent
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
 from measurement_components.trpl import PicoHarpMeasurement, TRPLScanMeasurement
 from measurement_components.apd_confocal import APDOptimizerMeasurement, APDConfocalScanMeasurement
 from measurement_components.andor_ccd_readout import AndorCCDReadout, AndorCCDReadBackground
+from measurement_components.hyperspectral import SpectrumScan2DMeasurement
+from measurement_components.power_scan import PowerScanContinuous
 
 from logged_quantity import LoggedQuantity
 
@@ -41,9 +45,9 @@ MCL_AXIS_ID = dict(X = 2, Y = 1, Z = 3)
 
 HAXIS = "X"
 #FOR LATERAL SCAN
-VAXIS = "Y"
+#VAXIS = "Y"
 #FOR DEPTH SCAN
-#VAXIS = "Z"
+VAXIS = "Z"
 
 HAXIS_ID = MCL_AXIS_ID[HAXIS] 
 VAXIS_ID = MCL_AXIS_ID[VAXIS]
@@ -96,6 +100,7 @@ class MicroscopeGUI(object):
         self.apd_counter_hc = self.add_hardware_component(APDCounterHardwareComponent(self))
         self.andor_ccd_hc = self.add_hardware_component(AndorCCDHardwareComponent(self))
         self.acton_spec_hc = self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
+        self.flip_mirror_hc = self.add_hardware_component(FlipMirrorHardwareComponent(self))
         self.setup_hardware()
 
         # Create the measurement objects
@@ -104,17 +109,25 @@ class MicroscopeGUI(object):
         self.apd_scan_measure = self.add_measurement_component(APDConfocalScanMeasurement(self))
         self.ple_point_measure = self.add_measurement_component(PLEPointMeasurement(self))
         self.ple2d_measure = self.add_measurement_component(PLE2DScanMeasurement(self))
-        self.pico_harp_measure = self.add_measurement_component(PicoHarpMeasurement(self))
+        self.picoharp_measure = self.add_measurement_component(PicoHarpMeasurement(self))
         self.trpl_scan_measure = self.add_measurement_component(TRPLScanMeasurement(self))
         self.andor_ro_measure = self.add_measurement_component(AndorCCDReadout(self))
         self.andor_bg_measure = self.add_measurement_component(AndorCCDReadBackground(self))
-        
+        self.spec_map_measure = self.add_measurement_component(SpectrumScan2DMeasurement(self))
+        self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self))
 
         # Setup the figures         
         for name, measure in self.measurement_components.items():
-            print "setting up figures for", name, "measurement"
+            print "setting up figures for", name, "measurement", measure.name
             measure.setup_figure()
         self.setup_figures()
+
+        print "figures:"
+        for fig in self.figs:
+            print "\t",fig
+        print "measurement_components:"
+        for m in self.measurement_components:
+            print "\t", m
 
 
         # events
@@ -155,6 +168,7 @@ class MicroscopeGUI(object):
             """creates a matplotlib figure attaches it to the qwidget specified
             (widget needs to have a layout set (preferably verticalLayout) 
             adds a figure to self.figs"""
+            print "---adding figure", name, widget
             if name in self.figs:
                 return self.figs[name]
             else:
@@ -162,8 +176,8 @@ class MicroscopeGUI(object):
                 fig.patch.set_facecolor('w')
                 canvas = FigureCanvas(fig)
                 nav    = NavigationToolbar2(canvas, self.ui)
-                for pwidget in [canvas, nav]:
-                    widget.layout().addWidget(pwidget)
+                widget.layout().addWidget(canvas)
+                widget.layout().addWidget(nav)
                 canvas.setFocusPolicy( QtCore.Qt.ClickFocus )
                 canvas.setFocus()
                 self.figs[name] = fig
@@ -179,6 +193,7 @@ class MicroscopeGUI(object):
         return hc
     
     def add_measurement_component(self, measure):
+        assert not measure.name in self.measurement_components.keys()
         self.measurement_components[measure.name] = measure
         return measure
 
@@ -259,35 +274,35 @@ class MicroscopeGUI(object):
     
         ### AOTF #####################################
         print "Initializing AOTF functionality"
-        self.dds = CrystalTechDDS(comm="serial", port="COM1", debug=self.HARDWARE_DEBUG)
+ #       self.dds = CrystalTechDDS(comm="serial", port="COM1", debug=self.HARDWARE_DEBUG)
         
         # Modulation property
-        self.aotf_modulation = self.add_logged_quantity(name="aotf_modulation", dtype=bool, hardware_set_func=self.dds.set_modulation)
-        self.aotf_modulation.updated_value[bool].connect(self.ui.aotf_mod_enable_checkBox.setChecked)
-        self.ui.aotf_mod_enable_checkBox.stateChanged.connect(self.aotf_modulation.update_value)
-        self.aotf_modulation.update_value(True)
+#        self.aotf_modulation = self.add_logged_quantity(name="aotf_modulation", dtype=bool, hardware_set_func=self.dds.set_modulation)
+#        self.aotf_modulation.updated_value[bool].connect(self.ui.aotf_mod_enable_checkBox.setChecked)
+#        self.ui.aotf_mod_enable_checkBox.stateChanged.connect(self.aotf_modulation.update_value)
+#        self.aotf_modulation.update_value(True)
         
         # Frequency property
         # TODO:  only works on channel 0!
-        self.aotf_freq = self.add_logged_quantity(name="aotf_freq", 
-                                        dtype=np.float, 
-                                        hardware_read_func=self.dds.get_frequency,
-                                        hardware_set_func=self.dds.set_frequency,
-                                        fmt = '%f')
-        self.aotf_freq.updated_value[float].connect(self.ui.atof_freq_doubleSpinBox.setValue)
-        self.ui.atof_freq_doubleSpinBox.valueChanged[float].connect(self.aotf_freq.update_value)
-        self.ui.aotf_freq_set_lineEdit.returnPressed.connect(self.aotf_freq.update_value)
-        self.aotf_freq.read_from_hardware()
+#        self.aotf_freq = self.add_logged_quantity(name="aotf_freq", 
+#                                        dtype=np.float, 
+ #                                       hardware_read_func=self.dds.get_frequency,
+#                                        hardware_set_func=self.dds.set_frequency,
+#                                        fmt = '%f')
+#        self.aotf_freq.updated_value[float].connect(self.ui.atof_freq_doubleSpinBox.setValue)
+#        self.ui.atof_freq_doubleSpinBox.valueChanged[float].connect(self.aotf_freq.update_value)
+#        self.ui.aotf_freq_set_lineEdit.returnPressed.connect(self.aotf_freq.update_value)
+#        self.aotf_freq.read_from_hardware()
         
         # Power property
         # TODO:  only works on channel 0!
-        self.aotf_power = self.add_logged_quantity(name="aotf_power", 
-                                         dtype=np.int, 
-                                         hardware_read_func=self.dds.get_amplitude,
-                                         hardware_set_func=self.dds.set_amplitude)
-        self.aotf_power.updated_value[float].connect(self.ui.aotf_power_doubleSpinBox.setValue)
-        self.ui.aotf_power_doubleSpinBox.valueChanged.connect(self.aotf_power.update_value)
-        self.aotf_power.read_from_hardware()
+#        self.aotf_power = self.add_logged_quantity(name="aotf_power", 
+#                                         dtype=np.int, 
+#                                         hardware_read_func=self.dds.get_amplitude,
+#                                        hardware_set_func=self.dds.set_amplitude)
+#        self.aotf_power.updated_value[float].connect(self.ui.aotf_power_doubleSpinBox.setValue)
+#        self.ui.aotf_power_doubleSpinBox.valueChanged.connect(self.aotf_power.update_value)
+#        self.aotf_power.read_from_hardware()
         
         
         ### OO Spec ####################################

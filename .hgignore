@@ -6,3 +6,5 @@ syntax: glob
 .project
 .pydevproject
 data/
+\.ipynb_checkpoints
+\.settings

@@ -185,7 +185,7 @@ class AndorCCDReadBackground(Measurement):
         else:
             self.gui.andor_ccd_hc.background = buffer_.copy()
         
-        print "Background succesfully acquired"
+        print "Background successfully acquired"
         
         #is this right place to put this?
         # Signal emission from other threads ok?

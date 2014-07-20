@@ -1288,10 +1288,23 @@ Continuously</string>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="slow_display_timer_checkBox">
-         <property name="text">
-          <string>Slow Display Timer</string>
-         </property>
+        <widget class="QWidget" name="widget" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QCheckBox" name="slow_display_timer_checkBox">
+            <property name="text">
+             <string>Slow Display Timer</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="flip_mirror_checkBox">
+            <property name="text">
+             <string>APD / Spec</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
@@ -1303,7 +1316,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>5</number>
+       <number>9</number>
       </property>
       <widget class="QWidget" name="plot2d_widget">
        <attribute name="title">
@@ -1523,11 +1536,114 @@ Continuously</string>
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="trpl_map_plot_groupBox">
+         <widget class="QGroupBox" name="trpl_map_plot_widget">
           <property name="title">
            <string>Plot</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_11"/>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="spec_map_tab">
+       <attribute name="title">
+        <string>HyperSpec</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_16" stretch="0,1">
+        <item>
+         <widget class="QGroupBox" name="spec_map_controls_groupBox">
+          <property name="title">
+           <string>Hyper Spectral Mapping Controls</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_12">
+           <item row="0" column="1">
+            <widget class="QPushButton" name="spec_map_interrupt_pushButton">
+             <property name="text">
+              <string>Interrupt</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QPushButton" name="spec_map_start_pushButton">
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QCheckBox" name="spec_map_bg_subtract_checkBox">
+             <property name="text">
+              <string>BG Subtract</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="spec_map_plot_groupBox">
+          <property name="title">
+           <string>Hyper Spectral Plot</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_17"/>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="power_scan_tab">
+       <attribute name="title">
+        <string>Page</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_18" stretch="0,1">
+        <item>
+         <widget class="QGroupBox" name="groupBox_6">
+          <property name="title">
+           <string>Power Scan Controls</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_13">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="power_scan_cont_start_pushButton">
+             <property name="text">
+              <string>Start Continuous</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="power_scan_interrupt_pushButton">
+             <property name="text">
+              <string>Interrupt</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButton_3">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Start Manual</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QPushButton" name="pushButton_4">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Acquire</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="power_scan_plot_widget">
+          <property name="title">
+           <string>Plot</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_19"/>
          </widget>
         </item>
        </layout>
@@ -1556,8 +1672,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>872</width>
-             <height>926</height>
+             <width>63</width>
+             <height>18</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -1587,8 +1703,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>872</width>
-             <height>926</height>
+             <width>63</width>
+             <height>18</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>
@@ -1652,7 +1768,6 @@ Continuously</string>
   <tabstop>apd_scan_int_doubleSpinBox</tabstop>
   <tabstop>power_meter_wl_doubleSpinBox</tabstop>
   <tabstop>power_meter_acquire_cont_checkBox</tabstop>
-  <tabstop>slow_display_timer_checkBox</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>ple_point_scan_detector_comboBox</tabstop>
   <tabstop>ple_point_scan_start_pushButton</tabstop>
