@@ -39,6 +39,7 @@ class Measurement(QtCore.QObject):
 
 
     def setup_figure(self):
+        print "Empy setup_figure called"
         pass
     
     def _run(self):
@@ -78,12 +79,20 @@ class Measurement(QtCore.QObject):
         return self.acq_thread.is_alive()
         
     
+    def update_display(self):
+        "Override this function to provide figure updates when the display timer runs"
+        pass
+    
     @QtCore.Slot()
     def on_display_update_timer(self):
         #update figure
-                
-        if not self.is_measuring():
-            self.display_update_timer.stop()
+        try:
+            self.update_display()
+        except Exception, err:
+            print self.name, "Failed to update figure:", err            
+        finally:
+            if not self.is_measuring():
+                self.display_update_timer.stop()
 
     def add_logged_quantity(self, name, **kwargs):
         lq = LoggedQuantity(name=name, **kwargs)
