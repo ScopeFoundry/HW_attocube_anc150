@@ -37,7 +37,8 @@ class PicoHarpMeasurement(Measurement):
         #: type: ph: PicoHarp300
         
         self.plotline.set_xdata(ph.time_array*1e-3)
-        sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
+        sleep_time = np.min((np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100)) # check every 1/10 of Tacq with limits of 10ms and 100ms
+        print "sleep_time", sleep_time, np.max(0.1*ph.Tacq*1e-3, 0.010)
         
         ph.start_histogram()
         while not ph.check_done_scanning():
@@ -49,6 +50,25 @@ class PicoHarpMeasurement(Measurement):
         ph.stop_histogram()
         ph.read_histogram_data()
         
+        save_dict = {
+                     'time_histogram': ph.histogram_data,
+                     'time_array': ph.time_array
+                    }               
+
+                    
+        for lqname,lq in self.gui.logged_quantities.items():
+            save_dict[lqname] = lq.val
+            
+        for lqname,lq in self.gui.picoharp_hc.logged_quantities.items():
+            save_dict[self.gui.picoharp_hc.name + "_" + lqname] = lq.val
+            
+        for lqname,lq in self.logged_quantities.items():
+            save_dict[self.name +"_"+ lqname] = lq.val
+
+        self.fname = "%i_picoharp.npz" % time.time()
+        np.savez_compressed(self.fname, **save_dict)
+        print "TRPL Picoharp Saved", self.fname
+                
         #is this right place to put this?
         self.measurement_state_changed.emit(False)
         if not self.interrupt_measurement_called:
@@ -59,10 +79,12 @@ class PicoHarpMeasurement(Measurement):
                
     @QtCore.Slot()
     def on_display_update_timer(self):
-        ph = self.picoharp
-        self.plotline.set_ydata(ph.histogram_data)
-        self.fig.canvas.draw()
-        Measurement.on_display_update_timer(self)
+        try:
+            ph = self.picoharp
+            self.plotline.set_ydata(ph.histogram_data)
+            self.fig.canvas.draw()
+        finally:
+            Measurement.on_display_update_timer(self)
         
         
 
@@ -70,7 +92,9 @@ class TRPLScanMeasurement(Measurement):
     
     def __init__(self, gui):
         Measurement.__init__(self, gui, "trpl_scan")
-        
+
+        print "init TRPLScanMeasurement"
+                
         self.display_update_period = 0.1 #seconds
         
         #connect events
@@ -84,15 +108,20 @@ class TRPLScanMeasurement(Measurement):
         self.stored_histogram_channels.update_value(1000)
     
     def setup_figure(self):
-        self.fig = self.gui.add_figure("trpl_map", self.gui.ui.trpl_map_plot_groupBox)
+        print "TRPLSCan figure"
+        self.fig = self.gui.add_figure("trpl_map", self.gui.ui.trpl_map_plot_widget)
         self.ax_time = self.fig.add_subplot(211)
         self.ax_time.set_xlabel("Time (ns)")
         self.time_trace_plotline, = self.ax_time.semilogy([0,20], [0,65535])
         self.ax_time.set_ylim(1e-1,1e5)
         
+        #self.fig.canvas.draw()
+
         self.aximg = self.fig.add_subplot(212)
         self.aximg.set_xlim(0, self.gui.hmax)
         self.aximg.set_ylim(0, self.gui.vmax)
+
+        #self.fig.canvas.draw()
 
     
     def _run(self):
