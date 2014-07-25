@@ -53,7 +53,10 @@ class Measurement(QtCore.QObject):
             raise RuntimeError("Cannot start a new measurement while still measuring")
         self.acq_thread = threading.Thread(target=self._run)
         # TODO Stop Display Timers
-        self.gui.stop_display_timers()
+        try:
+            self.gui.stop_display_timers()
+        except Exception as err:
+            print "failed to stop_display_timers", err
         self.measurement_state_changed.emit(True)
         self.acq_thread.start()
         self.t_start = time.time()
