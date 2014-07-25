@@ -40,9 +40,10 @@ class AndorCCD(object):
 
         self.debug = debug
         
-
-        if andorlib.Initialize("") != consts.DRV_SUCCESS :
-            raise IOError( "Andor CCD: Initialization failed")
+        retval = andorlib.Initialize("") 
+        
+        if retval != consts.DRV_SUCCESS:
+            raise IOError( "Andor CCD: Initialization failed %i" % retval)
         else :
             if self.debug: print "Andor CCD Initialization Successful"
         
@@ -368,6 +369,7 @@ class AndorCCD(object):
         pass;
 
     def set_hs_speed_em(self,speed_index=0):
+        print "set_hs_speed_em"
         assert 0 <= speed_index < self.numHSSpeeds_EM[self.ad_chan]
         retval = andorlib.SetHSSpeed(0, speed_index) # 0 = default speed (fastest), #arg0 -> EM mode = 0
         assert retval == consts.DRV_SUCCESS, "Andor DRV Failure %i" % retval
