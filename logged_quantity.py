@@ -6,7 +6,7 @@ class LoggedQuantity(QtCore.QObject):
     updated_text_value = QtCore.Signal(str)
     updated_choice_index_value = QtCore.Signal(int) # emits the index of the value in self.choices
     
-    def __init__(self, name=None, dtype=float, 
+    def __init__(self, name, dtype=float, 
                  hardware_read_func=None, hardware_set_func=None, 
                  initial=0, fmt="%g",
                  ro = False,
