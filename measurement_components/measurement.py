@@ -5,7 +5,7 @@ Created on Tue Apr  1 09:25:48 2014
 @author: esbarnard
 """
 
-from PySide import QtCore
+from PySide import QtCore, QtGui
 import threading
 import time
 from logged_quantity import LoggedQuantity
@@ -17,14 +17,13 @@ class Measurement(QtCore.QObject):
     measurement_interrupted = QtCore.Signal(()) # signal sent when  measurement is complete due to an interruption
     measurement_state_changed = QtCore.Signal(bool) # signal sent when measurement started or stopped
     
-    def __init__(self, gui, name):
+    def __init__(self, gui):
         """type gui: MicroscopeGUI
         """
         
         QtCore.QObject.__init__(self)
 
         self.gui = gui
-        self.name = name
         
         self.display_update_period = 0.1 # seconds
         self.display_update_timer = QtCore.QTimer(self.gui.ui)
@@ -32,14 +31,23 @@ class Measurement(QtCore.QObject):
         self.acq_thread = None
         
         self.logged_quantities = OrderedDict()
-        
-        #self.setup()
-        
-        #self._add_control_widgets_to_measurements_tab()
+        self.operations = OrderedDict()
 
+        self.add_operation("start", self.start)
+        self.add_operation("interrupt", self.interrupt)
+        
+        self.setup()
+        
+        self._add_control_widgets_to_measurements_tab()
 
+    def setup(self):
+        "Override this to set up logged quantites and gui connections"
+        """Runs during __init__, before the hardware connection is established
+        Should generate desired LoggedQuantities"""
+        raise NotImplementedError()
+        
     def setup_figure(self):
-        print "Empy setup_figure called"
+        print "Empty setup_figure called"
         pass
     
     def _run(self):
@@ -101,6 +109,49 @@ class Measurement(QtCore.QObject):
         lq = LoggedQuantity(name=name, **kwargs)
         self.logged_quantities[name] = lq
         return lq
+    
+    def add_operation(self, name, op_func):
+        """type name: str
+           type op_func: QtCore.Slot
+        """
+        self.operations[name] = op_func   
+    
 
-    #def _add_control_widgets_to_measurements_tab(self):
+    def _add_control_widgets_to_measurements_tab(self):
+        cwidget = self.gui.ui.measurements_tab_scrollArea_content_widget
+        
+        self.controls_groupBox = QtGui.QGroupBox(self.name)
+        self.controls_formLayout = QtGui.QFormLayout()
+        self.controls_groupBox.setLayout(self.controls_formLayout)
+        
+        cwidget.layout().addWidget(self.controls_groupBox)
+        
+        #self.start_measurement_checkBox = QtGui.QCheckBox("Connect to Hardware")
+        #self.controls_formLayout.addRow("Connect", self.connect_hardware_checkBox)
+        
+        
+                
+        self.control_widgets = OrderedDict()
+        for lqname, lq in self.logged_quantities.items():
+            #: :type lq: LoggedQuantity
+            if lq.choices is not None:
+                widget = QtGui.QComboBox()
+            elif lq.dtype in [int, float]:
+                widget = QtGui.QDoubleSpinBox()
+            elif lq.dtype in [bool]:
+                widget = QtGui.QCheckBox()  
+            elif lq.dtype in [str]:
+                widget = QtGui.QLineEdit()
+            lq.connect_bidir_to_widget(widget)
 
+            # Add to formlayout
+            self.controls_formLayout.addRow(lqname, widget)
+            self.control_widgets[lqname] = widget
+            
+            
+        self.op_buttons = OrderedDict()
+        for op_name, op_func in self.operations.items(): 
+            op_button = QtGui.QPushButton(op_name)
+            op_button.clicked.connect(op_func)
+            self.controls_formLayout.addRow(op_name, op_button)
+            

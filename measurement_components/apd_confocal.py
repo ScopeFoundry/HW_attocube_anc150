@@ -1,6 +1,5 @@
 import numpy as np
 import time
-import threading
 from PySide import QtCore
 
 from .measurement import Measurement 
@@ -8,9 +7,9 @@ from .measurement import Measurement
 
 class APDOptimizerMeasurement(Measurement):
 
-    def __init__(self, gui):
-        Measurement.__init__(self, gui = gui, name = "apd_optimizer")
-        
+    name = "apd_optimizer"
+
+    def setup(self):        
         self.display_update_period = 0.1 #seconds
 
         self.OPTIMIZE_HISTORY_LEN = 500
@@ -69,8 +68,9 @@ class APDOptimizerMeasurement(Measurement):
         
 class APDConfocalScanMeasurement(Measurement):
     
-    def __init__(self, gui):
-        Measurement.__init__(self, gui, name = "apd_confocal")
+    name = "apd_confocal"
+    
+    def setup(self):
         
         self.display_update_period = 0.1 #seconds
 
@@ -81,11 +81,28 @@ class APDConfocalScanMeasurement(Measurement):
         self.int_time = self.gui.apd_counter_hc.int_time
         
         # local logged quantities
-        # none right now
+        lq_params = dict(dtype=float, vmin=-1,vmax=100, ro=False, unit='um' )
+        self.h0 = self.add_logged_quantity('h0',  initial=25, **lq_params  )
+        self.h1 = self.add_logged_quantity('h1',  initial=45, **lq_params  )
+        self.v0 = self.add_logged_quantity('v0',  initial=25, **lq_params  )
+        self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
+
+        self.dh = self.add_logged_quantity('dh', **lq_params)
+        self.dv = self.add_logged_quantity('dv', **lq_params)
         
         # connect to gui
         self.gui.ui.scan_apd_start_pushButton.clicked.connect(self.start)
         self.gui.ui.scan_apd_stop_pushButton.clicked.connect(self.interrupt)
+        
+        self.h0.connect_bidir_to_widget(self.gui.ui.h0_doubleSpinBox)
+        self.h1.connect_bidir_to_widget(self.gui.ui.h1_doubleSpinBox)
+        self.v0.connect_bidir_to_widget(self.gui.ui.v0_doubleSpinBox)
+        self.v1.connect_bidir_to_widget(self.gui.ui.v1_doubleSpinBox)
+        
+        self.dh.connect_bidir_to_widget(self.gui.ui.dh_doubleSpinBox)
+        self.dv.connect_bidir_to_widget(self.gui.ui.dv_doubleSpinBox)
+        
+        
         
     def setup_figure(self):
         #2D scan area
@@ -94,13 +111,15 @@ class APDConfocalScanMeasurement(Measurement):
         self.ax2d = self.fig2d.add_subplot(111)
         self.ax2d.plot([0,1])
 
-        self.ax2d.set_xlim(0, self.gui.hmax)
-        self.ax2d.set_ylim(0, self.gui.vmax)
+        self.ax2d.set_xlim(0, 100)
+        self.ax2d.set_ylim(0, 100)
                     
         self.fig2d.canvas.mpl_connect('button_press_event', self.on_fig2d_click)
         
         
     def on_fig2d_click(self, evt):
+        
+        stage = self.gui.mcl_xyz_stage_hc
         #print evt.xdata, evt.ydata, evt.button, evt.key
         if not self.is_measuring():
             if evt.key == "shift":
@@ -109,36 +128,35 @@ class APDConfocalScanMeasurement(Measurement):
                 #self.nanodrive.set_pos_ax(evt.ydata, VAXIS_ID)
                 
                 new_pos = [None,None,None]                
-                new_pos[self.gui.HAXIS_ID-1] = evt.xdata
-                new_pos[self.gui.VAXIS_ID-1] = evt.ydata
+                new_pos[stage.h_axis_id-1] = evt.xdata
+                new_pos[stage.v_axis_id-1] = evt.ydata
                 
-                # FIXME when nanodrive is a hardwareComponent
-                self.gui.nanodrive.set_pos_slow(*new_pos)
-                self.gui.read_stage_position()
-                
+                stage.nanodrive.set_pos_slow(*new_pos)
+                stage.read_from_hardware()
     
     def _run(self):
         #hardware 
-        self.nanodrive = self.gui.nanodrive
+        self.stage = self.gui.mcl_xyz_stage_hc
+        self.nanodrive = self.stage.nanodrive
         self.apd_counter_hc = self.gui.apd_counter_hc
         self.apd_count_rate = self.gui.apd_counter_hc.apd_count_rate
 
-        #get scan parameters:
-        self.h0 = self.gui.ui.h0_doubleSpinBox.value()
-        self.h1 = self.gui.ui.h1_doubleSpinBox.value()
-        self.v0 = self.gui.ui.v0_doubleSpinBox.value()
-        self.v1 = self.gui.ui.v1_doubleSpinBox.value()
+        #get scan parameters: #FIXME should be loggedquantities
+#         self.h0 = self.gui.ui.h0_doubleSpinBox.value()
+#         self.h1 = self.gui.ui.h1_doubleSpinBox.value()
+#         self.v0 = self.gui.ui.v0_doubleSpinBox.value()
+#         self.v1 = self.gui.ui.v1_doubleSpinBox.value()
     
-        self.dh = 1e-3*self.gui.ui.dh_spinBox.value()
-        self.dv = 1e-3*self.gui.ui.dv_spinBox.value()
+#         self.dh = 1e-3*self.gui.ui.dh_spinBox.value()
+#         self.dv = 1e-3*self.gui.ui.dv_spinBox.value()
 
-        self.h_array = np.arange(self.h0, self.h1, self.dh, dtype=float)
-        self.v_array = np.arange(self.v0, self.v1, self.dv, dtype=float)
+        self.h_array = np.arange(self.h0.val, self.h1.val, self.dh.val, dtype=float)
+        self.v_array = np.arange(self.v0.val, self.v1.val, self.dv.val, dtype=float)
         
         self.Nh = len(self.h_array)
         self.Nv = len(self.v_array)
         
-        self.extent = [self.h0, self.h1, self.v0, self.v1]
+        self.extent = [self.h0.val, self.h1.val, self.v0.val, self.v1.val]
 
         #scan specific setup
         
@@ -158,10 +176,13 @@ class APDConfocalScanMeasurement(Measurement):
 
         print "scanning"
         try:
-            start_pos = [None, None,None]
-            start_pos[self.gui.VAXIS_ID-1] = self.v_array[0]
-            start_pos[self.gui.HAXIS_ID-1] = self.h_array[0]
+            v_axis_id = self.stage.v_axis_id
+            h_axis_id = self.stage.h_axis_id
             
+            # move slowly to start position
+            start_pos = [None, None,None]
+            start_pos[v_axis_id-1] = self.v_array[0]
+            start_pos[h_axis_id-1] = self.h_array[0]
             self.nanodrive.set_pos_slow(*start_pos)
             
             # Scan!            
@@ -169,7 +190,7 @@ class APDConfocalScanMeasurement(Measurement):
             
             for i_v in range(self.Nv):
                 self.v_pos = self.v_array[i_v]
-                self.nanodrive.set_pos_ax(self.v_pos, self.gui.VAXIS_ID)
+                self.nanodrive.set_pos_ax(self.v_pos, v_axis_id)
                 #self.read_stage_position()       
     
                 if i_v % 2: #odd lines
@@ -184,7 +205,7 @@ class APDConfocalScanMeasurement(Measurement):
                     print i_h, i_v
     
                     self.h_pos = self.h_array[i_h]
-                    self.nanodrive.set_pos_ax(self.h_pos, self.gui.HAXIS_ID)    
+                    self.nanodrive.set_pos_ax(self.h_pos, h_axis_id)    
                     
                     # collect data
                     self.apd_count_rate.read_from_hardware()
@@ -196,6 +217,9 @@ class APDConfocalScanMeasurement(Measurement):
                 print "pixel time:", float(time.time() - line_time0)/self.Nh
                 line_time0 = time.time()
                 
+                # read stage position every line
+                self.stage.read_from_hardware()
+                
         #scanning done
         #except Exception as err:
         #    self.interrupt()
@@ -206,8 +230,6 @@ class APDConfocalScanMeasurement(Measurement):
                      'count_rate_map': self.count_rate_map,
                      'h_array': self.h_array,
                      'v_array': self.v_array,
-                     'dh': self.dh,
-                     'dv': self.dv,
                      'Nv': self.Nv,
                      'Nh': self.Nh,
                      'extent': self.extent,
@@ -234,20 +256,16 @@ class APDConfocalScanMeasurement(Measurement):
             else:
                 pass
 
-    @QtCore.Slot()
-    def on_display_update_timer(self):
+
+    def update_display(self):
+        #print "updating figure"
+        self.imgplot.set_data(self.count_rate_map)
         try:
-            #print "updating figure"
-            self.imgplot.set_data(self.count_rate_map)
-            try:
-                count_min =  np.min(self.count_rate_map[np.nonzero(self.count_rate_map)])
-            except Exception as err:
-                count_min = 0
-            count_max = np.percentile(self.count_rate_map,99.)
-            assert count_max > count_min
-            self.imgplot.set_clim(count_min, count_max + 1)
-            self.fig2d.canvas.draw()
-        except Exception, err:
-            print "Failed to update figure:", err            
-        finally:       
-            Measurement.on_display_update_timer(self)
+            count_min =  np.min(self.count_rate_map[np.nonzero(self.count_rate_map)])
+        except Exception as err:
+            count_min = 0
+        count_max = np.percentile(self.count_rate_map,99.)
+        assert count_max > count_min
+        self.imgplot.set_clim(count_min, count_max + 1)
+        self.fig2d.canvas.draw()
+
