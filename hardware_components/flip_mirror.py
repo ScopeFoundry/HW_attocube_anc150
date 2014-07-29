@@ -4,7 +4,11 @@ Created on Jun 27, 2014
 @author: Edward Barnard
 '''
 from . import HardwareComponent
-from equipment.flip_mirror_arduino import FlipMirrorArduino
+
+try:
+    from equipment.flip_mirror_arduino import FlipMirrorArduino
+except Exception as err:
+    print "Cannot load required modules for FlipMirrorArduino:", err
 
 
 FLIP_MIRROR_PORT = "COM3"

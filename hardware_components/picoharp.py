@@ -5,8 +5,11 @@ Created on Apr 1, 2014
 '''
 
 from . import HardwareComponent
-from equipment.pypicoharp import PicoHarp300
-
+try:
+    from equipment.pypicoharp import PicoHarp300
+except Exception as err:
+    print "could not load modules for PicoHarp:", err
+    
 class PicoHarpHardwareComponent(HardwareComponent):
 
     def setup(self):

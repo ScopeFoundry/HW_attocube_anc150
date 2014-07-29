@@ -4,7 +4,10 @@ Created on May 28, 2014
 @author: Edward Barnard
 '''
 from . import HardwareComponent
-from equipment.acton_spec import ActonSpectrometer
+try:
+    from equipment.acton_spec import ActonSpectrometer
+except Exception as err:
+    print "Cannot load required modules for ActonSpectrometer:", err
 import time
 from PySide import QtCore
 

@@ -1,5 +1,9 @@
 from . import HardwareComponent
-from equipment.ni_freq_counter import NI_FreqCounter
+try:
+    from equipment.ni_freq_counter import NI_FreqCounter
+except Exception as err:
+    print "Cannot load required modules for APDCounter:", err
+    
 import time
 
 class APDCounterHardwareComponent(HardwareComponent):

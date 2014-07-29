@@ -4,7 +4,10 @@ Created on May 6, 2014
 @author: lab
 '''
 from . import HardwareComponent
-from equipment.andor_ccd import AndorCCD, AndorReadMode, DEFAULT_TEMPERATURE
+try:
+    from equipment.andor_ccd import AndorCCD, AndorReadMode, DEFAULT_TEMPERATURE
+except Exception as err:
+    print "Could not load modules needed for AndorCCD:", err
 import time
 from PySide import QtCore
 
@@ -63,12 +66,9 @@ class AndorCCDHardwareComponent(HardwareComponent):
         
         # Readout mode
         self.readout_mode = self.add_logged_quantity(name="readout_mode", dtype=int, ro=False,
-                                                     initial = AndorReadMode.Image.value,
-                                                     choices=[
-                                                              ("FullVerticalBinning", AndorReadMode.FullVerticalBinning.value),
-                                                              ("SingleTrack", AndorReadMode.SingleTrack.value),
-                                                              ("Image", AndorReadMode.Image.value)
-                                                            ])
+                                                     initial = 0,
+                                                     choices=[('',0)],
+                                                              )
         
         # ROI Parameters for image readout mode.
         self.roi_img_hstart = self.add_logged_quantity("roi_img_hstart", dtype=int, unit='px', 
@@ -155,6 +155,14 @@ class AndorCCDHardwareComponent(HardwareComponent):
         self.roi_st_center.change_min_max(1, height)
         self.roi_st_hbin.change_min_max(1, width)
         self.roi_st_width.change_min_max(1, height)
+        
+        #Choics for Readout mode
+        choices = [("FullVerticalBinning", AndorReadMode.FullVerticalBinning.value),
+                      ("SingleTrack", AndorReadMode.SingleTrack.value),
+                      ("Image", AndorReadMode.Image.value)
+                    ]
+        self.readout_mode.change_choice_list(choices)
+        
         
         # Choices for the horizontal shift speeds in EMCCD mode
         choices = []
