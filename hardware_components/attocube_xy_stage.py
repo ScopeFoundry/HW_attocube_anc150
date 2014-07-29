@@ -4,8 +4,11 @@ Created on Jul 24, 2014
 @author: Edward Barnard
 '''
 from . import HardwareComponent
-from equipment.attocube_ecc100 import AttoCubeECC100
-
+try:
+    from equipment.attocube_ecc100 import AttoCubeECC100
+except Exception as err:
+    print "could not load modules needed for AttoCubeECC100:", err
+    
 
 X_AXIS = 0
 Y_AXIS = 1
@@ -54,12 +57,12 @@ class AttoCubeXYStage(HardwareComponent):
                                                     dtype=float,
                                                     ro=False)
         
-        self.x_actor_info = self.add_logged_quantity(name='x_actor_info', dtype=str, fmt="%s",ro=True)
+        #self.x_actor_info = self.add_logged_quantity(name='x_actor_info', dtype=str, fmt="%s",ro=True)
         
-        self.y_actor_info = self.add_logged_quantity(name='y_actor_info', dtype=str, fmt="%s",ro=True)
+        #self.y_actor_info = self.add_logged_quantity(name='y_actor_info', dtype=str, fmt="%s",ro=True)
         
         self.electrically_connected = self.add_logged_quantity("electrically_connected", dtype=bool, 
-                                                     ro=False, initial=False)
+                                                     ro=True)
         
         # need enable boolean lq's
         
@@ -74,10 +77,10 @@ class AttoCubeXYStage(HardwareComponent):
         
         # connect logged quantities
         self.x_position.hardware_read_func = lambda:  self.ecc100.read_position_axis(X_AXIS)
-        self.x_position.hardware_set_func  = lambda x: self.ecc100.set_position_axis(X_AXIS, x)
+        #self.x_position.hardware_set_func  = lambda x: self.ecc100.set_position_axis(X_AXIS, x)
         
         self.y_position.hardware_read_func = lambda:  self.ecc100.read_position_axis(Y_AXIS)
-        self.y_position.hardware_set_func  = lambda y: self.ecc100.set_position_axis(Y_AXIS, y)
+        #self.y_position.hardware_set_func  = lambda y: self.ecc100.set_position_axis(Y_AXIS, y)
 
         self.x_step_voltage.hardware_read_func = lambda:  self.ecc100.read_step_voltage(X_AXIS)
         
@@ -95,9 +98,7 @@ class AttoCubeXYStage(HardwareComponent):
         self.y_frequency.hardware_read_func = lambda:  self.ecc100.read_frequency(Y_AXIS)
         self.y_frequency.hardware_set_func  = lambda y: self.ecc100.write_frequency(Y_AXIS, y)        
         
-        self.x_actor_info.hardware_read_func = lambda: self.ecc100.read_actor_info(X_AXIS)
-        self.y_actor_info.hardware_read_func = lambda: self.ecc100.read_actor_info(Y_AXIS)
-        
+
         
         
         
