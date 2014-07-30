@@ -103,7 +103,8 @@ class LoggedQuantity(QtCore.QObject):
             self.updated_value[bool].connect(widget.setChecked)
             widget.toggled[bool].connect(self.update_value)
             if self.ro:
-                widget.setReadOnly(True)
+                #widget.setReadOnly(True)
+                widget.setEnabled(False)
         elif type(widget) == QtGui.QLineEdit:
             self.updated_text_value[str].connect(widget.setText)
             widget.setReadOnly(True)  # FIXME           
