@@ -13,8 +13,9 @@ ROW1 = 271
 
 class AndorCCDReadout(Measurement):
 
-    def __init__(self, gui):
-        Measurement.__init__(self, gui = gui, name = "andor_ccd_readout")
+    name = "andor_ccd_readout"
+    
+    def setup(self):
         
         self.display_update_period = 0.050 #seconds
 
@@ -111,9 +112,9 @@ class AndorCCDReadout(Measurement):
 
 class AndorCCDReadBackground(Measurement):
 
-    def __init__(self, gui):
-        Measurement.__init__(self, gui = gui, name = "andor_ccd_background")
-        
+    name = "andor_ccd_background"
+    
+    def setup(self):        
         self.display_update_period = 0.050 #seconds
 
         #connect events
