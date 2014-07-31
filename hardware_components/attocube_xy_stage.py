@@ -26,16 +26,16 @@ class AttoCubeXYStage(HardwareComponent):
         self.x_position = self.add_logged_quantity("x_position", 
                                                    dtype=float,
                                                    ro=True,
-                                                   vmin=-100e6,
-                                                   vmax=100e6,
+                                                   vmin=-1e6,
+                                                   vmax=1e6,
                                                    unit='nm'
                                                    )
         
-        self.x_target_postion = self.add_logged_quantity("x_target_position",
+        self.x_target_position = self.add_logged_quantity("x_target_position",
                                                          dtype=float,
                                                          ro=False,
-                                                         vmin=-100e6,
-                                                         vmax=100e6,
+                                                         vmin=-1e6,
+                                                         vmax=1e6,
                                                          unit='nm')
         
         self.y_position = self.add_logged_quantity("y_position", 
@@ -46,7 +46,7 @@ class AttoCubeXYStage(HardwareComponent):
                                                    unit='nm'
                                                    )
         
-        self.y_target_postion = self.add_logged_quantity("y_target_position",
+        self.y_target_position = self.add_logged_quantity("y_target_position",
                                                          dtype=float,
                                                          ro=False,
                                                          vmin=-100e6,
@@ -110,14 +110,14 @@ class AttoCubeXYStage(HardwareComponent):
         self.x_position.hardware_read_func = lambda:  self.ecc100.read_position_axis(X_AXIS)
         #self.x_position.hardware_set_func  = lambda x: self.ecc100.set_position_axis(X_AXIS, x)
         
-        self.x_target_postion.hardware_read_func = lambda: self.ecc100.read_target_position_axis(X_AXIS)
-        self.x_target_postion.hardware_set_func = lambda x: self.ecc100.write_target_position_axis(X_AXIS, x)
+        self.x_target_position.hardware_read_func = lambda: self.ecc100.read_target_position_axis(X_AXIS)
+        self.x_target_position.hardware_set_func = lambda x: self.ecc100.write_target_position_axis(X_AXIS, x)
         
         self.y_position.hardware_read_func = lambda:  self.ecc100.read_position_axis(Y_AXIS)
         #self.y_position.hardware_set_func  = lambda y: self.ecc100.set_position_axis(Y_AXIS, y)
         
-        self.y_target_postion.hardware_read_func = lambda: self.ecc100.read_target_position_axis(Y_AXIS)
-        self.y_target_postion.hardware_set_func = lambda y: self.ecc100.write_target_position_axis(Y_AXIS, y)
+        self.y_target_position.hardware_read_func = lambda: self.ecc100.read_target_position_axis(Y_AXIS)
+        self.y_target_position.hardware_set_func = lambda y: self.ecc100.write_target_position_axis(Y_AXIS, y)
         
         self.x_step_voltage.hardware_read_func = lambda: self.ecc100.read_step_voltage(X_AXIS)
         
