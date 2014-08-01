@@ -1,4 +1,5 @@
 from PySide import  QtCore, QtGui
+import pyqtgraph
 
 class LoggedQuantity(QtCore.QObject):
 
@@ -74,6 +75,7 @@ class LoggedQuantity(QtCore.QObject):
         
 
     def connect_bidir_to_widget(self, widget):
+        print type(widget)
         if type(widget) == QtGui.QDoubleSpinBox:
             #self.updated_value[float].connect(widget.setValue )
             #widget.valueChanged[float].connect(self.update_value)
@@ -116,6 +118,14 @@ class LoggedQuantity(QtCore.QObject):
                 widget.addItem(choice_name, choice_value)
             self.updated_choice_index_value[int].connect(widget.setCurrentIndex)
             widget.currentIndexChanged.connect(self.update_choice_index_value)
+        elif type(widget) == pyqtgraph.widgets.SpinBox.SpinBox:
+            if self.ro:
+                widget.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+                widget.setReadOnly(True)
+            self.updated_value[float].connect(widget.setValue)
+            if not self.ro:
+                #widget.valueChanged[float].connect(self.update_value)
+                widget.valueChanged.connect(self.update_value)
         else:
             raise ValueError("Unknown widget type")
         
