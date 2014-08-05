@@ -87,8 +87,8 @@ class APDConfocalScanMeasurement(Measurement):
         self.v0 = self.add_logged_quantity('v0',  initial=25, **lq_params  )
         self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
 
-        self.dh = self.add_logged_quantity('dh', **lq_params)
-        self.dv = self.add_logged_quantity('dv', **lq_params)
+        self.dh = self.add_logged_quantity('dh', initial=1, **lq_params)
+        self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
         
         # connect to gui
         self.gui.ui.scan_apd_start_pushButton.clicked.connect(self.start)
