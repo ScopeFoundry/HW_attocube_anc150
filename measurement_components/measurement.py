@@ -10,6 +10,7 @@ import threading
 import time
 from logged_quantity import LoggedQuantity
 from collections import OrderedDict
+import pyqtgraph as pg
 
 class Measurement(QtCore.QObject):
     
@@ -130,14 +131,14 @@ class Measurement(QtCore.QObject):
         #self.controls_formLayout.addRow("Connect", self.connect_hardware_checkBox)
         
         
-                
         self.control_widgets = OrderedDict()
         for lqname, lq in self.logged_quantities.items():
             #: :type lq: LoggedQuantity
             if lq.choices is not None:
                 widget = QtGui.QComboBox()
             elif lq.dtype in [int, float]:
-                widget = QtGui.QDoubleSpinBox()
+                #widget = QtGui.QDoubleSpinBox()
+                widget = pg.SpinBox()
             elif lq.dtype in [bool]:
                 widget = QtGui.QCheckBox()  
             elif lq.dtype in [str]:

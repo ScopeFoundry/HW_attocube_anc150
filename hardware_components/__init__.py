@@ -63,7 +63,7 @@ class HardwareComponent(QtCore.QObject):
             if lq.choices is not None:
                 widget = QtGui.QComboBox()
             elif lq.dtype in [int, float]:
-                widget = self.set_spinbox(lq)
+                widget = pg.SpinBox()
             elif lq.dtype in [bool]:
                 widget = QtGui.QCheckBox()  
             elif lq.dtype in [str]:
@@ -85,24 +85,6 @@ class HardwareComponent(QtCore.QObject):
         self.read_from_hardware_button.clicked.connect(self.read_from_hardware)
         self.controls_formLayout.addRow("Logged Quantities:", self.read_from_hardware_button)
         
-    def set_spinbox(self, lq):
-        if lq.dtype == int:
-                    integer = True
-                    minStep=1
-                    step=1
-        else:
-            integer = False
-            minStep=.1
-            step=.1
-        widget = pg.SpinBox(value=1.0,
-                            suffix=lq.unit,
-                            siPrefix=True,
-                            dec=True,
-                            step=step,
-                            minStep=minStep,
-                            bounds=[lq.vmin, lq.vmax],
-                            int=integer)
-        return widget
 
     @QtCore.Slot()    
     def read_from_hardware(self):

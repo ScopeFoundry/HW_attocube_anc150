@@ -12,7 +12,7 @@ class LoggedQuantity(QtCore.QObject):
                  initial=0, fmt="%g",
                  ro = False,
                  unit = None,
-                 vmin=0, vmax=99.99, choices=None):
+                 vmin=-1e12, vmax=+1e12, choices=None):
         QtCore.QObject.__init__(self)
         
         self.name = name
@@ -67,7 +67,9 @@ class LoggedQuantity(QtCore.QObject):
             self.updated_value[()].emit()
             
             if self.choices is not None:
-                self.updated_choice_index_value.emit( [c[1] for c in self.choices].index(self.val) )
+                choice_vals = [c[1] for c in self.choices]
+                if self.val in choice_vals:
+                    self.updated_choice_index_value.emit(choice_vals.index(self.val) )
             self.oldval = self.val
             
     def update_choice_index_value(self, new_choice_index, **kwargs):
@@ -91,6 +93,7 @@ class LoggedQuantity(QtCore.QObject):
             if self.ro:
                 widget.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
                 widget.setReadOnly(True)
+            widget.setValue(self.val)
             #events
             self.updated_value[float].connect(widget.setValue)
             if not self.ro:
@@ -118,8 +121,30 @@ class LoggedQuantity(QtCore.QObject):
                 widget.addItem(choice_name, choice_value)
             self.updated_choice_index_value[int].connect(widget.setCurrentIndex)
             widget.currentIndexChanged.connect(self.update_choice_index_value)
+            
         elif type(widget) == pyqtgraph.widgets.SpinBox.SpinBox:
+            #widget.setFocusPolicy(QtCore.Qt.StrongFocus)
+            suffix = self.unit
+            if self.unit is None:
+                suffix = ""
+            if self.dtype == int:
+                        integer = True
+                        minStep=1
+                        step=1
+            else:
+                integer = False
+                minStep=.1
+                step=.1
+            widget.setOpts(
+                        suffix=suffix,
+                        siPrefix=True,
+                        dec=True,
+                        step=step,
+                        minStep=minStep,
+                        bounds=[self.vmin, self.vmax],
+                        int=integer)            
             if self.ro:
+                widget.setEnabled(False)
                 widget.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
                 widget.setReadOnly(True)
             self.updated_value[float].connect(widget.setValue)
@@ -129,6 +154,7 @@ class LoggedQuantity(QtCore.QObject):
         else:
             raise ValueError("Unknown widget type")
         
+        self.send_display_updates(force=True)
         self.widget = widget
     
     def change_choice_list(self, choices):
