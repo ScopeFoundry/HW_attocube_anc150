@@ -7,14 +7,14 @@ from __future__ import division
 import numpy as np
 import PyDAQmx as mx
 
-#override PyDAQmx definition, which does not support named tasks
-#no special chars in names, space OK
-def named_task(self, name = ''):
-    self.taskHandle = mx.TaskHandle(0)
-    mx.DAQmxCreateTask(name, mx.byref(self.taskHandle))
-    
-mx.Task.__init__ = named_task
-
+class NamedTask(mx.Task):
+    ''' replaces __init__ with one that accepts a name for the task, otherwise identical to PyDaqmx task
+        override PyDAQmx definition, which does not support named tasks
+        no special chars in names, space OK
+    '''
+    def __init__(self, name= ''):
+        self.taskHandle = mx.TaskHandle(0)
+        mx.DAQmxCreateTask(name, mx.byref(self.taskHandle))
 
 class NI(object):
     '''
@@ -33,7 +33,7 @@ class NI(object):
         ''' creates a [named] task, should not fail if DAQmx present'''
         self._task_name = name
         try:
-            self.task = mx.Task(name)        
+            self.task = NamedTask(name)        
         except mx.DAQError as err:
             self.error( err )
             self.task = None               
@@ -200,7 +200,7 @@ class Adc(NI):
         data = np.zeros(self._chan_count, dtype = np.float64 )
         if self._mode != 'single':
             self.set_single()
-        self.start()
+            self.start()
         read_size = mx.uInt32(self._chan_count)
         read_count = mx.int32(0)
         auto_start = mx.bool32(1)
