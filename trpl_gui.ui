@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ConfocalScanMainWindow</class>
- <widget class="QMainWindow" name="ConfocalScanMainWindow">
+ <class>TRPLMainWindow</class>
+ <widget class="QMainWindow" name="TRPLMainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1276</width>
-    <height>1031</height>
+    <width>1395</width>
+    <height>1028</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Confocal PLE Scan (MCL, NI, AOTF, PM,OO)</string>
+   <string>TRPL Microscope</string>
   </property>
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>false</bool>
@@ -123,14 +123,14 @@
           <item row="4" column="2">
            <widget class="QLabel" name="label_7">
             <property name="text">
-             <string>nm</string>
+             <string>um</string>
             </property>
            </widget>
           </item>
           <item row="5" column="2">
            <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>nm</string>
+             <string>um</string>
             </property>
            </widget>
           </item>
@@ -1297,7 +1297,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>11</number>
+       <number>10</number>
       </property>
       <widget class="QWidget" name="plot2d_widget">
        <attribute name="title">
@@ -1629,6 +1629,147 @@ Continuously</string>
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="photocurrent_tab">
+       <attribute name="title">
+        <string>Photocurrent</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_20" stretch="0,2,1">
+        <item>
+         <widget class="QGroupBox" name="groupBox_7">
+          <property name="title">
+           <string>Photocurrent Control</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_14">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="photocurrent2D_start_pushButton">
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="photocurrent2D_interrupt_pushButton">
+             <property name="text">
+              <string>Interrupt</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QDoubleSpinBox" name="photocurrent2D_source_voltage_doubleSpinBox">
+             <property name="prefix">
+              <string>Src A: </string>
+             </property>
+             <property name="suffix">
+              <string> V</string>
+             </property>
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="minimum">
+              <double>-10.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="photocurrent2D_plot_groupBox">
+          <property name="title">
+           <string>Plot</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_21"/>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="photocurrent_iv_groupBox">
+          <property name="title">
+           <string>IV</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_22" stretch="0,1">
+           <item>
+            <widget class="QGroupBox" name="groupBox_8">
+             <property name="title">
+              <string>IV Control</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_15">
+              <item row="0" column="0">
+               <widget class="QPushButton" name="photocurrent_iv_start_pushButton">
+                <property name="text">
+                 <string>Start</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QDoubleSpinBox" name="photocurrent_iv_vmin_doubleSpinBox">
+                <property name="prefix">
+                 <string>Vmin </string>
+                </property>
+                <property name="suffix">
+                 <string> V</string>
+                </property>
+                <property name="minimum">
+                 <double>-10.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QDoubleSpinBox" name="photocurrent_iv_vmax_doubleSpinBox">
+                <property name="prefix">
+                 <string>Vmax </string>
+                </property>
+                <property name="suffix">
+                 <string> V</string>
+                </property>
+                <property name="minimum">
+                 <double>-10.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="3">
+               <widget class="QDoubleSpinBox" name="photocurrent_iv_steps_doubleSpinBox">
+                <property name="prefix">
+                 <string>Steps </string>
+                </property>
+                <property name="suffix">
+                 <string/>
+                </property>
+                <property name="decimals">
+                 <number>0</number>
+                </property>
+                <property name="minimum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="photocurrent_iv_plot_groupBox">
+             <property name="title">
+              <string>IV Plot</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_23"/>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="hardware_tab">
        <attribute name="title">
         <string>Hardware</string>
@@ -1653,8 +1794,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>82</width>
-             <height>28</height>
+             <width>991</width>
+             <height>923</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -1684,8 +1825,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>883</width>
-             <height>907</height>
+             <width>991</width>
+             <height>923</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>
@@ -1705,8 +1846,8 @@ Continuously</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1276</width>
-     <height>22</height>
+     <width>1395</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
