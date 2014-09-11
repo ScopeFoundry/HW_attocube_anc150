@@ -41,19 +41,36 @@ class Photocurrent2DMeasurement(Base2DScan):
         self.keithley_hc = self.gui.keithley_sourcemeter_hc
         K1 = self.keithley = self.keithley_hc.keithley
         
+        self.srs_hc = self.gui.srs_lockin_hc
+        S1 = self.srs = self.srs_hc.srs
+        
+        
         K1.resetA()
         K1.setAutoranges_A()
         K1.setV_A( self.source_voltage.val )
         K1.switchV_A_on()
-
+        
         #create data arrays
         self.photocurrent_map = np.zeros((self.Nv, self.Nh), dtype=float)
+        self.photocurrent_chopped_map = np.zeros((self.Nv, self.Nh), dtype=float)
         
-        #update figure
+        
+        
+        '''#update figure
         self.imgplot = self.ax2d.imshow(self.photocurrent_map, 
                                     origin='lower',
                                     interpolation='nearest', 
                                     extent=self.imshow_extent)
+        
+        '''
+
+        #update chopped figure figure
+        self.imgplot = self.ax2d.imshow(self.photocurrent_chopped_map, 
+                                    origin='lower',
+                                    interpolation='nearest', 
+                                    extent=self.imshow_extent)
+        
+        
         
         
     def collect_pixel(self,i_h,i_v):
@@ -62,19 +79,30 @@ class Photocurrent2DMeasurement(Base2DScan):
         i_array = self.keithley.measureI_A(N=10,KeithleyADCIntTime=1,delay=0)     
         avg_i = np.average(i_array)
         
+        avg_i_chopped = self.srs.get_signal()
+        
         # store in arrays
         self.photocurrent_map[i_v, i_h] = avg_i
         print i_h, i_v, avg_i
         
+        self.photocurrent_chopped_map[i_v, i_h] = avg_i_chopped
+        print i_h, i_v, avg_i_chopped, "Chopped"
+                
+        
+        
     def scan_specific_savedict(self):
         save_dict = {
                      'photocurrent_map': self.photocurrent_map,
-                     }
+                     'photocurrent_chopped_map': self.photocurrent_chopped_map,
+                    }
         return save_dict
+    
+    
     
     def update_display(self):    
                 
-        C = self.photocurrent_map
+        #C = self.photocurrent_map
+        C = self.photocurrent_chopped_map
         self.imgplot.set_data(C)
         
         try:

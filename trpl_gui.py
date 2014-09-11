@@ -11,6 +11,7 @@ from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
 from hardware_components.oceanoptics_spec import OceanOpticsSpectrometerHC
 from hardware_components.mcl_xyz_stage import MclXYZStage
 from hardware_components.keithley_sourcemeter import KeithleySourceMeterComponent
+from hardware_components.srs_lockin import SRSLockinComponent
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
 from measurement_components.trpl import PicoHarpMeasurement, TRPLScanMeasurement, TRPLScan3DMeasurement
@@ -37,7 +38,9 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.thorlabs_powermeter_hc = self.add_hardware_component(ThorlabsPowerMeter(self))
         self.mcl_xyz_stage_hc = self.add_hardware_component(MclXYZStage(self))
         self.keithley_sourcemeter_hc = self.add_hardware_component(KeithleySourceMeterComponent(self))
+        self.srs_lockin_hc = self.add_hardware_component(SRSLockinComponent(self))  
         
+              
         #Add measurement components
         print "Create Measurement objects"
         self.apd_optimizer_measure = self.add_measurement_component(APDOptimizerMeasurement(self))

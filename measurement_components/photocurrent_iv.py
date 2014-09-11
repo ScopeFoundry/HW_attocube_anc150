@@ -5,6 +5,8 @@ Created on Sep 8, 2014
 '''
 
 from .measurement import Measurement 
+import time
+import numpy as np
 
 class PhotocurrentIVMeasurement(Measurement):
     
@@ -54,6 +56,16 @@ class PhotocurrentIVMeasurement(Measurement):
         self.Varray = V
         
         self.update_display()
+        
+        #save some data
+        save_dict = {
+                     'I': self.Iarray,
+                     'V': self.Varray
+                     }
+        self.fname = "%i_photocurrent_iv.npz" % time.time()
+        np.savez_compressed(self.fname, **save_dict)
+        print "photocurrent_iv Saved", self.fname
+        
         
     def update_display(self):
         self.plotline.set_data(self.Varray,self.Iarray)
