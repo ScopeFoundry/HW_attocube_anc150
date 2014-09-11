@@ -14,11 +14,14 @@ class NI_FreqCounter(object):
         Tested on an X-series PCIe DAQ card
     """
     
-    def __init__(self, counter_chan="Dev1/ctr0", input_terminal = "/Dev1/PFI0", debug=False):
+    def __init__(self, counter_chan="Dev1/ctr0", input_terminal = "/Dev1/PFI0", mode = "large_range", debug=False):
     
         self.counter_chan = counter_chan
         self.input_terminal = input_terminal
         self.debug = debug
+        self.mode = mode
+    
+        assert mode in ['large_range', 'high_freq']
         
         self.create_task()
     
@@ -28,18 +31,33 @@ class NI_FreqCounter(object):
     
         self.task = PyDAQmx.Task()
         
-        self.task.CreateCIFreqChan(
-            counter = self.counter_chan ,
-            nameToAssignToChannel="",
-            minVal = 1e2, # applies measMethod is DAQmx_Val_LargeRng2Ctr
-            maxVal = 1e8, # applies measMethod is DAQmx_Val_LargeRng2Ctr
-            units = DAQmx_Val_Hz,
-            edge = DAQmx_Val_Rising,
-            measMethod = DAQmx_Val_LargeRng2Ctr,
-            measTime = 0.01, # applies measMethod is DAQmx_Val_HighFreq2Ctr
-            divisor = 100, # applies measMethod is DAQmx_Val_LargeRng2Ctr
-            customScaleName = None,
-            )
+        if self.mode == 'large_range':
+            self.task.CreateCIFreqChan(
+                counter = self.counter_chan ,
+                nameToAssignToChannel="",
+                minVal = 1e2, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                maxVal = 1e8, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                units = DAQmx_Val_Hz,
+                edge = DAQmx_Val_Rising,
+                measMethod = DAQmx_Val_LargeRng2Ctr,
+                measTime = 0.01, # applies measMethod is DAQmx_Val_HighFreq2Ctr
+                divisor = 100, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                customScaleName = None,
+                )
+        elif self.mode == 'high_freq':
+            self.task.CreateCIFreqChan(
+                counter = self.counter_chan ,
+                nameToAssignToChannel="",
+                minVal = 1e1, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                maxVal = 1e7, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                units = DAQmx_Val_Hz,
+                edge = DAQmx_Val_Rising,
+                measMethod = DAQmx_Val_HighFreq2Ctr,
+                measTime = 0.01, # applies measMethod is DAQmx_Val_HighFreq2Ctr
+                divisor = 100, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                customScaleName = None,
+                )
+            
         
         data = c_int32(0)
         self.task.GetCIDataXferMech(channel=self.counter_chan, data=data )
