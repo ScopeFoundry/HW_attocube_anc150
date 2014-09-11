@@ -12,10 +12,12 @@ from .measurement import Measurement
 PM_SAMPLE_NUMBER = 1
 
 class PowerScanContinuous(Measurement):
-    def __init__(self, gui):
-        Measurement.__init__(self, gui = gui, name = "power_scan")
-
-        self.display_update_period = 0.500 #seconds
+    
+    name = "power_scan"
+    
+    def setup(self):
+        
+        self.display_update_period = 0.050 #seconds
         
         self.gui.ui.power_scan_cont_start_pushButton.clicked.connect(self.start)
         self.gui.ui.power_scan_interrupt_pushButton.clicked.connect(self.interrupt)
@@ -43,7 +45,7 @@ class PowerScanContinuous(Measurement):
         
     def _run(self):
 
-        self.detector = 'CCD'
+        self.detector = 'APD'
         #Setup hardware
         if self.detector == 'CCD':
             ccd = self.andor_ccd = self.gui.andor_ccd_hc.andor_ccd
@@ -78,12 +80,13 @@ class PowerScanContinuous(Measurement):
                     try_count = 0
                     while True:
                         try:
-                            pm_power = pm_power + self.gui.laser_power.read_from_hardware(send_signal=True)
+                            pm_power = pm_power + self.gui.thorlabs_powermeter_hc.power.read_from_hardware(send_signal=True)
                             samp_count = samp_count + 1
                             break 
-                        except:
+                        except Exception as err:
                             try_count = try_count + 1
                             if try_count > 9:
+                                print "failed to collect power meter sample:", err
                                 break
                             time.sleep(0.010)
                  
@@ -136,7 +139,8 @@ class PowerScanContinuous(Measurement):
                     self.apd_count_rate.read_from_hardware()
                     self.out_powers.append( self.apd_count_rate.val )
                 
-                print self.ii, self.pm_powers[-1], self.out_powers[-1]
+                if self.ii % 10 == 0:
+                    print self.ii, self.pm_powers[-1], self.out_powers[-1]
                 
                 self.ii += 1
         finally:
