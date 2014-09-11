@@ -3,6 +3,7 @@ import time
 from PySide import QtCore
 
 from .measurement import Measurement 
+from measurement_components.base_3d_scan import Base3DScan
  
 
 class APDOptimizerMeasurement(Measurement):
@@ -58,7 +59,7 @@ class APDOptimizerMeasurement(Measurement):
 
         self.optimize_line.set_ydata(self.optimize_history)
         self.optimize_current_pos.set_xdata((ii,ii))
-        if (ii % 10) == 0:
+        if (ii % 2) == 0:
             self.ax_opt.relim()
             self.ax_opt.autoscale_view(scalex=False, scaley=True)
 
@@ -218,8 +219,10 @@ class APDConfocalScanMeasurement(Measurement):
                 line_time0 = time.time()
                 
                 # read stage position every line
-                self.stage.read_from_hardware()
-                
+                self.stage.x_position.read_from_hardware()
+                self.stage.y_position.read_from_hardware()
+                self.stage.z_position.read_from_hardware()
+                                
         #scanning done
         #except Exception as err:
         #    self.interrupt()
@@ -269,3 +272,38 @@ class APDConfocalScanMeasurement(Measurement):
         self.imgplot.set_clim(count_min, count_max + 1)
         self.fig2d.canvas.draw()
 
+
+class APDConfocalScan3DMeasurement(Base3DScan):
+
+    name = "apd_confocal_scan3d"
+    
+    def scan_specific_setup(self):
+        
+        self.int_time = self.gui.apd_counter_hc.int_time
+
+    def setup_figure(self):
+        pass
+    
+    def pre_scan_setup(self):
+        #hardware 
+        self.apd_counter_hc = self.gui.apd_counter_hc
+        self.apd_count_rate = self.gui.apd_counter_hc.apd_count_rate
+
+        #scan specific setup
+        
+        # create data arrays
+        self.count_rate_map = np.zeros((self.Nz, self.Ny, self.Nx), dtype=float)
+        #update figure
+    
+    def collect_pixel(self, i, j, k):
+        # collect data
+        self.apd_count_rate.read_from_hardware()
+                          
+        # store in arrays
+        self.count_rate_map[k,j,i] = self.apd_count_rate.val
+    
+    def scan_specific_savedict(self):
+        return {'count_rate_map': self.count_rate_map}
+        
+    def update_display(self):
+        pass

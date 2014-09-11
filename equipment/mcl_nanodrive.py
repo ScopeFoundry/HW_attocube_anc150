@@ -202,8 +202,10 @@ class MCLNanoDrive(object):
         
     
     def get_pos_ax(self, axis):
-        return madlib.MCL_SingleReadN(axis, self._handle)
-        
+        pos = float(madlib.MCL_SingleReadN(axis, self._handle))
+        if self.debug: print "get_pos_ax", axis, pos
+        return pos
+    
     def get_pos(self):
         self.x_pos = madlib.MCL_SingleReadN(1, self._handle)
         self.y_pos = madlib.MCL_SingleReadN(2, self._handle)

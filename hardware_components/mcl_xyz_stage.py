@@ -9,17 +9,19 @@ try:
 except Exception as err:
     print "Cannot load required modules for MclXYZStage:", err
 
-MCL_AXIS_ID = dict(X = 2, Y = 1, Z = 3)
 
 
 class MclXYZStage(HardwareComponent):
+    
+    MCL_AXIS_ID = dict(X = 2, Y = 1, Z = 3)
+
     
     def setup(self):
         self.name = 'mcl_xyz_stage'
         self.debug = True
         
         # Created logged quantities
-        lq_params = dict(  dtype=float, ro=False,
+        lq_params = dict(  dtype=float, ro=True,
                            initial = -1,
                            vmin=-1,
                            vmax=100,
@@ -27,6 +29,16 @@ class MclXYZStage(HardwareComponent):
         self.x_position = self.add_logged_quantity("x_position", **lq_params)
         self.y_position = self.add_logged_quantity("y_position", **lq_params)       
         self.z_position = self.add_logged_quantity("z_position", **lq_params)
+        
+        lq_params = dict(  dtype=float, ro=False,
+                           initial = -1,
+                           vmin=-1,
+                           vmax=100,
+                           unit='um')
+        self.x_target = self.add_logged_quantity("x_target", **lq_params)
+        self.y_target = self.add_logged_quantity("y_target", **lq_params)       
+        self.z_target = self.add_logged_quantity("z_target", **lq_params)        
+        
         
         lq_params = dict(unit="um", dtype=float, ro=True, initial=100)
         self.x_max = self.add_logged_quantity("x_max", **lq_params)
@@ -64,19 +76,24 @@ class MclXYZStage(HardwareComponent):
         self.nanodrive = MCLNanoDrive(debug=self.debug)
         
         # connect logged quantities
-        self.x_position.hardware_set_func  = \
-            lambda x: self.nanodrive.set_pos_ax_slow(x, MCL_AXIS_ID["X"])
-        self.y_position.hardware_set_func  = \
-            lambda y: self.nanodrive.set_pos_ax_slow(y, MCL_AXIS_ID["Y"])
-        self.z_position.hardware_set_func  = \
-            lambda z: self.nanodrive.set_pos_ax_slow(z, MCL_AXIS_ID["Z"])
+        self.x_target.hardware_set_func  = \
+            lambda x: self.nanodrive.set_pos_ax_slow(x, self.MCL_AXIS_ID["X"])
+        self.y_target.hardware_set_func  = \
+            lambda y: self.nanodrive.set_pos_ax_slow(y, self.MCL_AXIS_ID["Y"])
+        self.z_target.hardware_set_func  = \
+            lambda z: self.nanodrive.set_pos_ax_slow(z, self.MCL_AXIS_ID["Z"])
 
         self.x_position.hardware_read_func = \
-            lambda: self.nanodrive.get_pos_ax(MCL_AXIS_ID["X"])
+            lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["X"])
         self.y_position.hardware_read_func = \
-            lambda: self.nanodrive.get_pos_ax(MCL_AXIS_ID["Y"])
+            lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["Y"])
         self.z_position.hardware_read_func = \
-            lambda: self.nanodrive.get_pos_ax(MCL_AXIS_ID["Z"])
+            lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["Z"])
+            
+            
+        self.x_max.hardware_read_func = lambda: self.nanodrive.cal[self.MCL_AXIS_ID["X"]]
+        self.y_max.hardware_read_func = lambda: self.nanodrive.cal[self.MCL_AXIS_ID["Y"]]
+        self.z_max.hardware_read_func = lambda: self.nanodrive.cal[self.MCL_AXIS_ID["Z"]]
         
         self.move_speed.hardware_read_func = self.nanodrive.get_max_speed
         self.move_speed.hardware_set_func =  self.nanodrive.set_max_speed
@@ -95,8 +112,21 @@ class MclXYZStage(HardwareComponent):
         
     @property
     def v_axis_id(self):
-        return MCL_AXIS_ID[self.v_axis.val]
+        return self.MCL_AXIS_ID[self.v_axis.val]
     
     @property
     def h_axis_id(self):
-        return MCL_AXIS_ID[self.h_axis.val]
+        return self.MCL_AXIS_ID[self.h_axis.val]
+    
+    @property
+    def x_axis_id(self):
+        return self.MCL_AXIS_ID["X"]
+    
+    @property
+    def y_axis_id(self):
+        return self.MCL_AXIS_ID["Y"]
+    
+    @property
+    def z_axis_id(self):
+        return self.MCL_AXIS_ID["Z"]
+    

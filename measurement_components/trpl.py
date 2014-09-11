@@ -6,17 +6,16 @@ Created on Tue Apr  1 09:21:07 2014
 """
 import numpy as np
 import time
-import threading
 from PySide import QtCore
 
 from .measurement import Measurement 
- 
+from .base_3d_scan import Base3DScan
  
 class PicoHarpMeasurement(Measurement):
     
-    def __init__(self, gui):
-        Measurement.__init__(self, gui, "picoharp_live")
-
+    name = "picoharp_live"
+    
+    def setup(self):
         self.display_update_period = 0.1 #seconds
         
         #connect events
@@ -90,18 +89,38 @@ class PicoHarpMeasurement(Measurement):
 
 class TRPLScanMeasurement(Measurement):
     
-    def __init__(self, gui):
-        Measurement.__init__(self, gui, "trpl_scan")
+    name = "trpl_scan"
 
-        print "init TRPLScanMeasurement"
+    def setup(self):
+        print "setup TRPLScanMeasurement"
                 
         self.display_update_period = 0.1 #seconds
+        
+        # local logged quantities
+        lq_params = dict(dtype=float, vmin=-1,vmax=100, ro=False, unit='um' )
+        self.h0 = self.add_logged_quantity('h0',  initial=25, **lq_params  )
+        self.h1 = self.add_logged_quantity('h1',  initial=45, **lq_params  )
+        self.v0 = self.add_logged_quantity('v0',  initial=25, **lq_params  )
+        self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
+
+        self.dh = self.add_logged_quantity('dh', initial=1, **lq_params)
+        self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
+
+        self.stored_histogram_channels = self.add_logged_quantity("stored_histogram_channels", dtype=int, vmin=1, vmax=2**16)
+
+        # connect to gui        
+        self.h0.connect_bidir_to_widget(self.gui.ui.h0_doubleSpinBox)
+        self.h1.connect_bidir_to_widget(self.gui.ui.h1_doubleSpinBox)
+        self.v0.connect_bidir_to_widget(self.gui.ui.v0_doubleSpinBox)
+        self.v1.connect_bidir_to_widget(self.gui.ui.v1_doubleSpinBox)
+        
+        self.dh.connect_bidir_to_widget(self.gui.ui.dh_doubleSpinBox)
+        self.dv.connect_bidir_to_widget(self.gui.ui.dv_doubleSpinBox)
         
         #connect events
         self.gui.ui.trpl_map_start_pushButton.clicked.connect(self.start)
         self.gui.ui.trpl_map_interrupt_pushButton.clicked.connect(self.interrupt)
         
-        self.stored_histogram_channels = self.add_logged_quantity("stored_histogram_channels", dtype=int, vmin=1, vmax=2**16)
         self.stored_histogram_channels.connect_bidir_to_widget(
                                            self.gui.ui.trpl_map_stored_channels_doubleSpinBox)
         
@@ -118,8 +137,8 @@ class TRPLScanMeasurement(Measurement):
         #self.fig.canvas.draw()
 
         self.aximg = self.fig.add_subplot(212)
-        self.aximg.set_xlim(0, self.gui.hmax)
-        self.aximg.set_ylim(0, self.gui.vmax)
+        self.aximg.set_xlim(0, 100)
+        self.aximg.set_ylim(0, 100)
 
         #self.fig.canvas.draw()
 
@@ -127,25 +146,20 @@ class TRPLScanMeasurement(Measurement):
     def _run(self):
         # Setup try-block
         #hardware
-        self.nanodrive = self.gui.nanodrive
+        self.stage = self.gui.mcl_xyz_stage_hc
+        self.nanodrive = self.stage.nanodrive
         ph = self.picoharp = self.gui.picoharp_hc.picoharp
 
         #get scan parameters:
-        self.h0 = self.gui.ui.h0_doubleSpinBox.value()
-        self.h1 = self.gui.ui.h1_doubleSpinBox.value()
-        self.v0 = self.gui.ui.v0_doubleSpinBox.value()
-        self.v1 = self.gui.ui.v1_doubleSpinBox.value()
-    
-        self.dh = 1e-3*self.gui.ui.dh_spinBox.value()
-        self.dv = 1e-3*self.gui.ui.dv_spinBox.value()
 
-        self.h_array = np.arange(self.h0, self.h1, self.dh, dtype=float)
-        self.v_array = np.arange(self.v0, self.v1, self.dv, dtype=float)
+        self.h_array = np.arange(self.h0.val, self.h1.val, self.dh.val, dtype=float)
+        self.v_array = np.arange(self.v0.val, self.v1.val, self.dv.val, dtype=float)
         
         self.Nh = len(self.h_array)
         self.Nv = len(self.v_array)
         
-        self.extent = [self.h0, self.h1, self.v0, self.v1]
+        self.extent = [self.h0.val, self.h1.val, self.v0.val, self.v1.val]
+
 
         # TRPL scan specific setup
         sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
@@ -171,18 +185,21 @@ class TRPLScanMeasurement(Measurement):
 
         print "scanning"
         try:
+            v_axis_id = self.stage.v_axis_id
+            h_axis_id = self.stage.h_axis_id
+
+            # move slowly to start position
             start_pos = [None, None,None]
-            start_pos[self.gui.VAXIS_ID-1] = self.v_array[0]
-            start_pos[self.gui.HAXIS_ID-1] = self.h_array[0]
-            
-            self.nanodrive.set_pos_slow(*start_pos)
+            start_pos[v_axis_id-1] = self.v_array[0]
+            start_pos[h_axis_id-1] = self.h_array[0]
+            self.nanodrive.set_pos_slow(*start_pos)            
             
             # Scan!            
             line_time0 = time.time()
             
             for i_v in range(self.Nv):
                 self.v_pos = self.v_array[i_v]
-                self.nanodrive.set_pos_ax(self.v_pos, self.gui.VAXIS_ID)
+                self.nanodrive.set_pos_ax(self.v_pos, v_axis_id)
                 #self.read_stage_position()       
     
                 if i_v % 2: #odd lines
@@ -197,7 +214,7 @@ class TRPLScanMeasurement(Measurement):
                     print i_h, i_v
     
                     self.h_pos = self.h_array[i_h]
-                    self.nanodrive.set_pos_ax(self.h_pos, self.gui.HAXIS_ID)    
+                    self.nanodrive.set_pos_ax(self.h_pos, h_axis_id)    
                     
                     # collect data
                     ph.start_histogram()
@@ -216,6 +233,12 @@ class TRPLScanMeasurement(Measurement):
                 print "pixel time:", float(time.time() - line_time0)/self.Nh
                 line_time0 = time.time()
                 
+                # read stage position every line
+                self.stage.x_position.read_from_hardware()
+                self.stage.y_position.read_from_hardware()
+                self.stage.z_position.read_from_hardware()
+
+                
             #scanning done
         #except Exception as err:
         #    self.interrupt()
@@ -227,8 +250,6 @@ class TRPLScanMeasurement(Measurement):
                      'integrated_count_map': self.integrated_count_map,
                      'h_array': self.h_array,
                      'v_array': self.v_array,
-                     'dh': self.dh,
-                     'dv': self.dv,
                      'Nv': self.Nv,
                      'Nh': self.Nh,
                      'extent': self.extent,
@@ -255,22 +276,70 @@ class TRPLScanMeasurement(Measurement):
                 pass
 
     
-    @QtCore.Slot()
-    def on_display_update_timer(self):
-        # update figure
+    def update_display(self):
+        self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val])
+        
+        C = self.integrated_count_map
+        self.imgplot.set_data(C)
+        
         try:
-            self.time_trace_plotline.set_ydata(self.picoharp.histogram_data[0:self.stored_histogram_channels.val])
-            
-            C = self.integrated_count_map
-            self.imgplot.set_data(C)
-            
-            try:
-                count_min =  np.min(C[np.nonzero(C)])
-            except Exception:
-                count_min = 0
-            count_max = np.max(self.integrated_count_map)
-            self.imgplot.set_clim(count_min, count_max + 1)
-            
-            self.fig.canvas.draw()
-        finally:
-            Measurement.on_display_update_timer(self)
+            count_min =  np.min(C[np.nonzero(C)])
+        except Exception:
+            count_min = 0
+        count_max = np.max(self.integrated_count_map)
+        self.imgplot.set_clim(count_min, count_max + 1)
+        
+        self.fig.canvas.draw()
+        
+        
+class TRPLScan3DMeasurement(Base3DScan):
+    
+    name = "trpl_scan3d"
+    
+    def scan_specific_setup(self):
+        self.stored_histogram_channels = self.add_logged_quantity("stored_histogram_channels", dtype=int, vmin=1, vmax=2**16, initial=4000)
+        
+    def setup_figure(self):
+        pass
+    
+    def pre_scan_setup(self):
+        #hardware
+        ph = self.picoharp = self.gui.picoharp_hc.picoharp
+        
+        # TRPL scan specific setup
+        self.sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
+
+        #create data arrays
+        self.integrated_count_map = np.zeros((self.Nz, self.Ny, self.Nx), dtype=int)
+        print "size of time_trace_map %e" %  (self.Nx* self.Ny * self.Nz * self.stored_histogram_channels.val)
+
+        self.time_trace_map = np.zeros( (self.Nz, self.Ny, self.Nx, self.stored_histogram_channels.val),dtype=np.uint16)
+        
+        self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3
+        #update figure
+        #self.time_trace_plotline.set_xdata(self.time_array)    
+        
+        
+    def collect_pixel(self, i, j, k):
+        ph = self.picoharp
+        # collect data
+        ph.start_histogram()
+        while not ph.check_done_scanning():
+            ph.read_histogram_data()
+            time.sleep(self.sleep_time)  
+        ph.stop_histogram()
+        ph.read_histogram_data()
+                          
+        # store in arrays
+        N = self.stored_histogram_channels.val
+        self.time_trace_map[k,j,i,:] = ph.histogram_data[0:N]
+        self.integrated_count_map[k,j,i] = np.sum(self.time_trace_map[k,j,i])
+
+    def scan_specific_savedict(self):
+        return dict( integrated_count_map=self.integrated_count_map,
+                     time_trace_map = self.time_trace_map,
+                     time_array = self.time_array,
+                     )
+        
+    def update_display(self):
+        pass
