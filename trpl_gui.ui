@@ -331,20 +331,6 @@
           <string>AOTF Wavelength</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>Freq</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_6">
-            <property name="text">
-             <string>Power</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="1">
            <widget class="QDoubleSpinBox" name="atof_freq_doubleSpinBox">
             <property name="keyboardTracking">
@@ -368,17 +354,17 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="4">
-           <widget class="QLabel" name="label_3">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_6">
             <property name="text">
-             <string>nm</string>
+             <string>Power</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="2" colspan="3">
-           <widget class="QCheckBox" name="aotf_mod_enable_checkBox">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_5">
             <property name="text">
-             <string>Modulation Enable</string>
+             <string>Freq</string>
             </property>
            </widget>
           </item>
@@ -389,13 +375,6 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="2">
-           <widget class="QLabel" name="label_20">
-            <property name="text">
-             <string>Stop</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="1">
            <widget class="QLabel" name="label_18">
             <property name="text">
@@ -403,16 +382,50 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="3" colspan="2">
-           <widget class="QDoubleSpinBox" name="aotf_freq_step_doubleSpinBox">
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <item row="2" column="2">
+           <widget class="QLabel" name="label_20">
+            <property name="text">
+             <string>Stop</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2" colspan="3">
+           <widget class="QCheckBox" name="aotf_mod_enable_checkBox">
+            <property name="text">
+             <string>Modulation Enable</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>nm</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_17">
+            <property name="text">
+             <string>Freq Sweep</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="aotf_power_doubleSpinBox">
+            <property name="keyboardTracking">
+             <bool>false</bool>
+            </property>
+            <property name="decimals">
+             <number>0</number>
             </property>
             <property name="maximum">
-             <double>999.000000000000000</double>
+             <double>16384.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>100.000000000000000</double>
             </property>
             <property name="value">
-             <double>1.000000000000000</double>
+             <double>8000.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -448,29 +461,16 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_17">
-            <property name="text">
-             <string>Freq Sweep</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="aotf_power_doubleSpinBox">
-            <property name="keyboardTracking">
-             <bool>false</bool>
-            </property>
-            <property name="decimals">
-             <number>0</number>
+          <item row="3" column="3" colspan="2">
+           <widget class="QDoubleSpinBox" name="aotf_freq_step_doubleSpinBox">
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
             <property name="maximum">
-             <double>16384.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>100.000000000000000</double>
+             <double>999.000000000000000</double>
             </property>
             <property name="value">
-             <double>8000.000000000000000</double>
+             <double>1.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -1639,22 +1639,8 @@ Continuously</string>
           <property name="title">
            <string>Photocurrent Control</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_14">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="photocurrent2D_start_pushButton">
-             <property name="text">
-              <string>Start</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="photocurrent2D_interrupt_pushButton">
-             <property name="text">
-              <string>Interrupt</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
             <widget class="QDoubleSpinBox" name="photocurrent2D_source_voltage_doubleSpinBox">
              <property name="prefix">
               <string>Src A: </string>
@@ -1670,6 +1656,49 @@ Continuously</string>
              </property>
              <property name="maximum">
               <double>10.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="photocurrent2D_chopp_frequency_doubleSpinBox">
+             <property name="prefix">
+              <string>Chopp: </string>
+             </property>
+             <property name="suffix">
+              <string> Hz</string>
+             </property>
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="minimum">
+              <double>17.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>1010.000000000000000</double>
+             </property>
+             <property name="value">
+              <double>1000.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="photocurrent2D_spinning_checkBox">
+             <property name="text">
+              <string>spinning</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="photocurrent2D_start_pushButton">
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="photocurrent2D_interrupt_pushButton">
+             <property name="text">
+              <string>Interrupt</string>
              </property>
             </widget>
            </item>
@@ -1794,8 +1823,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>991</width>
-             <height>923</height>
+             <width>81</width>
+             <height>28</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -1825,8 +1854,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>991</width>
-             <height>923</height>
+             <width>81</width>
+             <height>28</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>

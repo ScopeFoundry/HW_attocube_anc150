@@ -16,9 +16,12 @@ class Photocurrent2DMeasurement(Base2DScan):
         
         # logged quantities
         self.source_voltage = self.add_logged_quantity("source_voltage", dtype=float, unit='V', vmin=-5, vmax=5, ro=False)
-        
         self.source_voltage.connect_bidir_to_widget(self.gui.ui.photocurrent2D_source_voltage_doubleSpinBox)
         
+        self.chopp_frequency = self.add_logged_quantity("chopp_frequency", dtype=float, unit='Hz', vmin=0, vmax=1000, ro=False)
+        self.chopp_frequency.connect_bidir_to_widget(self.gui.ui.photocurrent2D_chopp_frequency_doubleSpinBox)
+        
+                
         #connect events
         self.gui.ui.photocurrent2D_start_pushButton.clicked.connect(self.start)
         self.gui.ui.photocurrent2D_interrupt_pushButton.clicked.connect(self.interrupt)
@@ -43,12 +46,18 @@ class Photocurrent2DMeasurement(Base2DScan):
         
         self.srs_hc = self.gui.srs_lockin_hc
         S1 = self.srs = self.srs_hc.srs
+      
         
-        
+        #pre scan setup  
         K1.resetA()
         K1.setAutoranges_A()
         K1.setV_A( self.source_voltage.val )
         K1.switchV_A_on()
+        
+        self.thorlabs_OC_hc = self.gui.thorlabs_powermeter_hc
+        self.thorlabs_OC = self.thorlabs_OC_hc.thorlabs_optical_chopper         
+        self.thorlabs_OC.write_freq( self.chopp_frequency.val )
+        
         
         #create data arrays
         self.photocurrent_map = np.zeros((self.Nv, self.Nh), dtype=float)

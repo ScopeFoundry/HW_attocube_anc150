@@ -12,6 +12,8 @@ from hardware_components.oceanoptics_spec import OceanOpticsSpectrometerHC
 from hardware_components.mcl_xyz_stage import MclXYZStage
 from hardware_components.keithley_sourcemeter import KeithleySourceMeterComponent
 from hardware_components.srs_lockin import SRSLockinComponent
+from hardware_components.thorlabs_optical_chopper import ThorlabsOpticalChopperComponent
+
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
 from measurement_components.trpl import PicoHarpMeasurement, TRPLScanMeasurement, TRPLScan3DMeasurement
@@ -21,6 +23,7 @@ from measurement_components.hyperspectral import SpectrumScan2DMeasurement
 from measurement_components.power_scan import PowerScanContinuous
 from measurement_components.photocurrent_scan import Photocurrent2DMeasurement
 from measurement_components.photocurrent_iv import PhotocurrentIVMeasurement
+
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -39,7 +42,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.mcl_xyz_stage_hc = self.add_hardware_component(MclXYZStage(self))
         self.keithley_sourcemeter_hc = self.add_hardware_component(KeithleySourceMeterComponent(self))
         self.srs_lockin_hc = self.add_hardware_component(SRSLockinComponent(self))  
-        
+        self.thorlabs_optical_chopper_hc = self.add_hardware_component(ThorlabsOpticalChopperComponent(self))        
               
         #Add measurement components
         print "Create Measurement objects"
