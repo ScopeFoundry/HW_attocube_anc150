@@ -1297,7 +1297,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>10</number>
+       <number>6</number>
       </property>
       <widget class="QWidget" name="plot2d_widget">
        <attribute name="title">
@@ -1438,22 +1438,91 @@ Continuously</string>
        <attribute name="title">
         <string>PicoHarp</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,1">
+       <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,1">
         <item>
-         <widget class="QGroupBox" name="picoharp_live_controls_groupBox">
+         <widget class="QGroupBox" name="groupBox_9">
           <property name="title">
-           <string>PicoHarp Controls</string>
+           <string>PicoHarp Control</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_7">
-           <item row="0" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
             <widget class="QPushButton" name="picoharp_acquire_one_pushButton">
              <property name="text">
               <string>Acquire One</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
+           <item>
             <widget class="QPushButton" name="picoharp_interrupt_pushButton">
+             <property name="text">
+              <string>Interrupt</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+          <zorder>power_wheel_interrupt_pushButton</zorder>
+          <zorder>power_wheel_start_pushButton</zorder>
+          <zorder>picoharp_acquire_one_pushButton</zorder>
+          <zorder>picoharp_interrupt_pushButton</zorder>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="picoharp_live_controls_groupBox">
+          <property name="title">
+           <string>PowerWheel Control</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_7">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="power_wheel_start_pushButton">
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QDoubleSpinBox" name="power_wheel_steps_doubleSpinBox">
+             <property name="prefix">
+              <string>steps: </string>
+             </property>
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="minimum">
+              <double>-800.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>800.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="power_wheel_delta_doubleSpinBox">
+             <property name="prefix">
+              <string>delta: </string>
+             </property>
+             <property name="suffix">
+              <string> *0.45</string>
+             </property>
+             <property name="decimals">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QDoubleSpinBox" name="power_wheel_channels_doubleSpinBox">
+             <property name="prefix">
+              <string>Channels: </string>
+             </property>
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <double>65536.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="QPushButton" name="power_wheel_interrupt_pushButton">
              <property name="text">
               <string>Interrupt</string>
              </property>
@@ -1823,8 +1892,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>81</width>
-             <height>28</height>
+             <width>991</width>
+             <height>923</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -1854,8 +1923,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>81</width>
-             <height>28</height>
+             <width>991</width>
+             <height>923</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>
@@ -1924,8 +1993,8 @@ Continuously</string>
   <tabstop>ple_point_scan_start_pushButton</tabstop>
   <tabstop>ple_point_scan_stop_pushButton</tabstop>
   <tabstop>clearfig_pushButton</tabstop>
-  <tabstop>picoharp_acquire_one_pushButton</tabstop>
-  <tabstop>picoharp_interrupt_pushButton</tabstop>
+  <tabstop>power_wheel_start_pushButton</tabstop>
+  <tabstop>power_wheel_interrupt_pushButton</tabstop>
   <tabstop>trpl_map_interrupt_pushButton</tabstop>
   <tabstop>trpl_map_start_pushButton</tabstop>
   <tabstop>trpl_map_stored_channels_doubleSpinBox</tabstop>

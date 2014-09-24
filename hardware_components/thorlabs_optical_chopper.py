@@ -15,11 +15,11 @@ except Exception as err:
 ThorlabsOpticalChopperPort = 'COM4'
 
 
-
 class ThorlabsOpticalChopperComponent(HardwareComponent): #object-->HardwareComponent
     
     name = 'thorlabs_optical_chopper'
     debug = False
+    
     
     
     def setup(self):
@@ -32,13 +32,15 @@ class ThorlabsOpticalChopperComponent(HardwareComponent): #object-->HardwareComp
         self.spinning.connect_bidir_to_widget(self.gui.ui.photocurrent2D_spinning_checkBox)
         
         
+        
     def connect(self):
         if self.debug: print "connecting to thorlabs optical chopper"
+        
         
         # Open connection to hardware
         self.thorlabs_optical_chopper = ThorlabsOpticalChopper(port=ThorlabsOpticalChopperPort, debug=True)
         
-        
+    
         # connect logged quantities
         self.freq.hardware_set_func = \
             self.thorlabs_optical_chopper.write_freq
@@ -55,10 +57,11 @@ class ThorlabsOpticalChopperComponent(HardwareComponent): #object-->HardwareComp
         print 'connected to ',self.name
     
 
+
     def disconnect(self):
 
         # disconnect logged quantities from hardware
-        # ///\
+    
     
         #disconnect hardware
 

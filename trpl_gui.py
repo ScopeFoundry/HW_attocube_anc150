@@ -13,10 +13,11 @@ from hardware_components.mcl_xyz_stage import MclXYZStage
 from hardware_components.keithley_sourcemeter import KeithleySourceMeterComponent
 from hardware_components.srs_lockin import SRSLockinComponent
 from hardware_components.thorlabs_optical_chopper import ThorlabsOpticalChopperComponent
+from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
 
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
-from measurement_components.trpl import PicoHarpMeasurement, TRPLScanMeasurement, TRPLScan3DMeasurement
+from measurement_components.trpl import PicoHarpMeasurement, PicoHarpPowerWheelMeasurement, TRPLScanMeasurement, TRPLScan3DMeasurement
 from measurement_components.apd_confocal import APDOptimizerMeasurement, APDConfocalScanMeasurement, APDConfocalScan3DMeasurement
 from measurement_components.andor_ccd_readout import AndorCCDReadout, AndorCCDReadBackground
 from measurement_components.hyperspectral import SpectrumScan2DMeasurement
@@ -43,6 +44,9 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.keithley_sourcemeter_hc = self.add_hardware_component(KeithleySourceMeterComponent(self))
         self.srs_lockin_hc = self.add_hardware_component(SRSLockinComponent(self))  
         self.thorlabs_optical_chopper_hc = self.add_hardware_component(ThorlabsOpticalChopperComponent(self))        
+        self.power_wheel_arduino_hc = self.add_hardware_component(PowerWheelArduinoComponent)      
+        
+              
               
         #Add measurement components
         print "Create Measurement objects"

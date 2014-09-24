@@ -26,8 +26,7 @@ class ThorlabsOpticalChopper(object):
         
         #sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
         time.sleep(0.3)
-        
-        #set       
+
 
     def write_command(self, cmd, waittime=0.5):
         if self.debug: print "cmd: ", cmd
@@ -48,19 +47,16 @@ class ThorlabsOpticalChopper(object):
                 continue
             out.append(char)
 
-        
-
         if self.debug: print "complete message", repr(out), out.split()
         
         #assert out[-3:] == ";FF"
         #assert out[:7] == "@%03iACK" % self.address   
         
-        
         self.ser.flushInput()
         self.ser.flushOutput()
 
-        
         return out.split()[-2]
+
 
 
     def _write(self, cmd):
@@ -71,33 +67,42 @@ class ThorlabsOpticalChopper(object):
         if self.debug:
             print "-->", resp
 
+
         
     def close(self):
         self.ser.close()
         print 'closed thorlabs_optical_chopper'
 
+
+
     def enable(self, enable_=True):
         if enable_:
              self.write_command('enable=1')
-
         else:
             self.disable()
-    
-    def read_enable(self):
-        
-        return bool(int(self.write_command('enable?')))
-        
-
+ 
  
         
-        
-        
-         
     def disable(self):
         self.write_command('enable=0')
+  
+  
+    
+    def read_enable(self):
+        return bool(int(self.write_command('enable?')))
 
+
+
+    def read_freq(self):
+        fstr = self.write_command('freq?')
+        return float(fstr)
+    
 
     
+    def write_freq(self,f):
+        self.write_command('freq='+str(int(f)))
+        
+
 
     def setup(self):
         '''
@@ -109,18 +114,9 @@ class ThorlabsOpticalChopper(object):
         self.write_command('output=1')
 
 
-    def read_freq(self):
-        fstr = self.write_command('freq?')
-        return float(fstr)
-    
-    
-    def write_freq(self,f):
-        self.write_command('freq='+str(int(f)))
-        
 
 if __name__ == '__main__':
 
-    
 
     TOC1 = ThorlabsOpticalChopper()
 
