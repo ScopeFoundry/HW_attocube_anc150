@@ -151,6 +151,8 @@ class LoggedQuantity(QtCore.QObject):
             if not self.ro:
                 #widget.valueChanged[float].connect(self.update_value)
                 widget.valueChanged.connect(self.update_value)
+        elif type(widget) == QtGui.QLabel:
+            self.updated_text_value.connect(widget.setText)
         else:
             raise ValueError("Unknown widget type")
         

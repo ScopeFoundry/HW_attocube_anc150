@@ -21,6 +21,7 @@ class ThorlabsPowerMeter(HardwareComponent):
         self.power = self.add_logged_quantity(name = 'power', dtype=float, unit="W", vmin=0, vmax = 10, ro=True)
         # connect GUI
         self.wavelength.connect_bidir_to_widget(self.gui.ui.power_meter_wl_doubleSpinBox)
+        self.power.connect_bidir_to_widget(self.gui.ui.power_meter_power_label)
         
     def connect(self):
         if self.debug: print "connecting to thorlabs_powermeter"
