@@ -39,64 +39,20 @@
        <item>
         <widget class="QGroupBox" name="groupBox_scanarea">
          <property name="title">
-          <string>Scan Area</string>
+          <string>2D Scan Area</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="h_label">
+          <item row="4" column="2">
+           <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>H:</string>
+             <string>um</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="3">
-           <widget class="QLabel" name="label_4">
+          <item row="3" column="2">
+           <widget class="QLabel" name="label_7">
             <property name="text">
-             <string>µm</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1" colspan="2">
-           <widget class="QLabel" name="maxdim_label">
-            <property name="text">
-             <string>Max: ??? x ??? µm</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>µm</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="v_label">
-            <property name="text">
-             <string>V:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QDoubleSpinBox" name="h0_doubleSpinBox">
-            <property name="decimals">
-             <number>3</number>
-            </property>
-            <property name="value">
-             <double>25.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QDoubleSpinBox" name="v0_doubleSpinBox">
-            <property name="decimals">
-             <number>3</number>
-            </property>
-            <property name="value">
-             <double>25.000000000000000</double>
+             <string>um</string>
             </property>
            </widget>
           </item>
@@ -110,6 +66,54 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="1">
+           <widget class="QDoubleSpinBox" name="v0_doubleSpinBox">
+            <property name="decimals">
+             <number>3</number>
+            </property>
+            <property name="value">
+             <double>25.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QDoubleSpinBox" name="h0_doubleSpinBox">
+            <property name="decimals">
+             <number>3</number>
+            </property>
+            <property name="value">
+             <double>25.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="v_label">
+            <property name="text">
+             <string>V:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>µm</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="3">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>µm</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="h_label">
+            <property name="text">
+             <string>H:</string>
+            </property>
+           </widget>
+          </item>
           <item row="2" column="2">
            <widget class="QDoubleSpinBox" name="v1_doubleSpinBox">
             <property name="decimals">
@@ -120,43 +124,39 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="2">
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>um</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="2">
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>um</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="dh_label">
             <property name="text">
              <string>dH:</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="0">
+          <item row="4" column="0">
            <widget class="QLabel" name="dv_label">
             <property name="text">
              <string>dV:</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
+          <item row="3" column="1">
            <widget class="QDoubleSpinBox" name="dh_doubleSpinBox">
             <property name="decimals">
              <number>4</number>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
-           <widget class="QDoubleSpinBox" name="dv_doubleSpinBox"/>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="dv_doubleSpinBox">
+            <property name="decimals">
+             <number>4</number>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="3">
+           <widget class="QComboBox" name="v_axis_comboBox"/>
+          </item>
+          <item row="3" column="3">
+           <widget class="QComboBox" name="h_axis_comboBox"/>
           </item>
          </layout>
         </widget>
@@ -1273,6 +1273,9 @@ Continuously</string>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
            <widget class="QCheckBox" name="slow_display_timer_checkBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Slow Display Timer</string>
             </property>
@@ -1460,10 +1463,6 @@ Continuously</string>
             </widget>
            </item>
           </layout>
-          <zorder>power_wheel_interrupt_pushButton</zorder>
-          <zorder>power_wheel_start_pushButton</zorder>
-          <zorder>picoharp_acquire_one_pushButton</zorder>
-          <zorder>picoharp_interrupt_pushButton</zorder>
          </widget>
         </item>
         <item>

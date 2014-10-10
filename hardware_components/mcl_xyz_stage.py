@@ -8,7 +8,7 @@ try:
     from equipment.mcl_nanodrive import MCLNanoDrive
 except Exception as err:
     print "Cannot load required modules for MclXYZStage:", err
-
+from PySide import QtCore
 
 
 class MclXYZStage(HardwareComponent):
@@ -57,17 +57,36 @@ class MclXYZStage(HardwareComponent):
                                                              dtype=float)        
         
         # connect GUI
-        self.x_position.updated_value.connect(self.gui.ui.cx_doubleSpinBox.setValue)
-        self.gui.ui.x_set_lineEdit.returnPressed.connect(self.x_position.update_value)
+        self.x_position.connect_bidir_to_widget(self.gui.ui.cx_doubleSpinBox)
+        self.gui.ui.x_set_lineEdit.returnPressed.connect(self.x_target.update_value)
+        self.gui.ui.x_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.x_set_lineEdit.setText(""))
 
-        self.y_position.updated_value.connect(self.gui.ui.cy_doubleSpinBox.setValue)
-        self.gui.ui.y_set_lineEdit.returnPressed.connect(self.y_position.update_value)
+        self.y_position.connect_bidir_to_widget(self.gui.ui.cy_doubleSpinBox)
+        self.gui.ui.y_set_lineEdit.returnPressed.connect(self.y_target.update_value)
+        self.gui.ui.y_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.y_set_lineEdit.setText(""))
 
-        self.z_position.updated_value.connect(self.gui.ui.cz_doubleSpinBox.setValue)
-        self.gui.ui.z_set_lineEdit.returnPressed.connect(self.z_position.update_value)
-        
+        self.z_position.connect_bidir_to_widget(self.gui.ui.cz_doubleSpinBox)
+        self.gui.ui.z_set_lineEdit.returnPressed.connect(self.z_target.update_value)
+        self.gui.ui.z_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.z_set_lineEdit.setText(""))
+
         self.move_speed.connect_bidir_to_widget(
                                   self.gui.ui.nanodrive_move_slow_doubleSpinBox)
+        
+        self.h_axis.connect_bidir_to_widget(self.gui.ui.h_axis_comboBox)
+        self.v_axis.connect_bidir_to_widget(self.gui.ui.v_axis_comboBox)
+        
+        # connect logged quantities together
+        self.x_target.updated_value[()].connect(self.read_pos)
+        self.y_target.updated_value[()].connect(self.read_pos)
+        self.z_target.updated_value[()].connect(self.read_pos)
+    
+    
+    @QtCore.Slot()
+    def read_pos(self):
+        print "read_pos"
+        self.x_position.read_from_hardware()
+        self.y_position.read_from_hardware()
+        self.z_position.read_from_hardware()
         
     def connect(self):
         if self.debug: print "connecting to mcl_xyz_stage"
