@@ -10,7 +10,7 @@ import time
 class PowerWheelArduino(object):
     "Arduino controlled flip mirror"
     
-    def __init__(self, port="COM9", debug = False):
+    def __init__(self, port="COM14", debug = False):
         self.port = port
         self.debug = debug
         
@@ -37,6 +37,10 @@ class PowerWheelArduino(object):
 
 if __name__ == '__main__':
     W1 = PowerWheelArduino(debug=True);
-    W1.write_steps('-100')
+    time.sleep(4)
+    W1.write_steps('-400')
+    time.sleep(4)
+    W1.write_steps('500')    
+    
     W1.close()
     pass

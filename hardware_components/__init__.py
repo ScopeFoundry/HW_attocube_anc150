@@ -17,7 +17,7 @@ class HardwareComponent(QtCore.QObject):
         self.operations[name] = op_func   
             
     def __init__(self, gui, debug=False):
-        """type gui: MicroscopeGUI
+        """type gui: BaseGUI
         """        
         QtCore.QObject.__init__(self)
 

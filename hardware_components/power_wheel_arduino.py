@@ -21,7 +21,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
     def setup(self):
         self.debug = True
         
-        #self.voltage = self.add_logged_quantity('v', dtype=float, unit='V', ro=True)
+        self.phi = self.add_logged_quantity('phi', dtype=float, unit='', ro=True)
         
         
     def connect(self):
@@ -31,11 +31,10 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.power_wheel = PowerWheelArduino(port=PowerWheelArduinoPort, debug=True)
         
         # connect logged quantities
-        #self.voltage.hardware_read_func = \
-         #   self.keithley.getV_A
-        #self.current.hardware_read_func = \
-         #   self.keithley.getI_A
-        
+        self.phi.hardware_set_func = \
+             self.power_wheel.write_steps
+
+
         print 'connected to ',self.name
     
 

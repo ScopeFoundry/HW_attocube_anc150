@@ -35,6 +35,8 @@ class Photocurrent2DMeasurement(Base2DScan):
 
         self.ax2d.set_xlim(0, 100)
         self.ax2d.set_ylim(0, 100)
+        
+        self.min_max_text = self.fig.text(0,0, "min,max")
 
 
     def pre_scan_setup(self):
@@ -119,6 +121,8 @@ class Photocurrent2DMeasurement(Base2DScan):
         except Exception:
             count_min = 0
         count_max = np.max(C)
+        self.min_max_text.set_text("{:e}, {:e}".format(count_min, count_max))
+        
         self.imgplot.set_clim(count_min, count_max )
         
         self.fig.canvas.draw()

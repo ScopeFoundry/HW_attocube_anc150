@@ -89,7 +89,7 @@ class PicoHarpMeasurement(Measurement):
  
 class PicoHarpPowerWheelMeasurement(Measurement):
     
-    name = "picoharp_live"
+    name = "picoharp_power_wheel"
     
     def setup(self):
         self.display_update_period = 0.1 #seconds
@@ -136,28 +136,64 @@ class PicoHarpPowerWheelMeasurement(Measurement):
         print "sleep_time", sleep_time, np.max(0.1*ph.Tacq*1e-3, 0.010)
         
                   
-
+        # Allocated memory 
         N = self.stored_histogram_channels.val
         self.time_trace= np.zeros(pw_steps,N)
-        self.power = np.zeros(pw_steps)
-            
-            
+        self.time_array = ph.time_array[0:N]*1e-3
+        
+        self.powers = np.zeros(pw_steps)
+
+        
+        PM_SAMPLE_NUMBER = 1;
+        
         for ii in range(pw_steps+1):
                 
             # collect data
+            # collect timetrace
             ph.start_histogram()
             while not ph.check_done_scanning():
                 ph.read_histogram_data()
                 time.sleep(sleep_time)  
             ph.stop_histogram()
             ph.read_histogram_data()
+            
+            
+            # collect power
 
-
+            self.ii = 0
+            while not self.interrupt_measurement_called:
+    
+                # Sample the power at least one time from the power meter.
+                samp_count = 0
+                pm_power = 0.0
+                for samp in range(0, PM_SAMPLE_NUMBER):
+                    # Try at least 10 times before ultimately failing
+                    try_count = 0
+                    while True:
+                        try:
+                            pm_power = pm_power + self.gui.thorlabs_powermeter_hc.power.read_from_hardware(send_signal=True)
+                            samp_count = samp_count + 1
+                            break 
+                        except Exception as err:
+                            try_count = try_count + 1
+                            if try_count > 9:
+                                print "failed to collect power meter sample:", err
+                                break
+                            time.sleep(0.010)
+                 
+                if samp_count > 0:              
+                    pm_power = pm_power/samp_count
+                else:
+                    print "  Failed to read power"
+                    pm_power = 10000.  
+                        
             # make a step
             pw.write_steps(pw_motor_steps)                                      
         
             # store in arrays
             self.time_trace[ii,:] = ph.histogram_data[0:N]
+            self.pm_powers[ii]=pm_power
+            self.time_array
 
             
             
@@ -178,8 +214,9 @@ class PicoHarpPowerWheelMeasurement(Measurement):
         for lqname,lq in self.gui.logged_quantities.items():
             save_dict[lqname] = lq.val
             
-        for lqname,lq in self.gui.picoharp_hc.logged_quantities.items():
-            save_dict[self.gui.picoharp_hc.name + "_" + lqname] = lq.val
+        for hc in self.gui.hardware_components.values():
+            for lqname,lq in hc.logged_quantities.items():
+                save_dict[hc.name + "_" + lqname] = lq.val
             
         for lqname,lq in self.logged_quantities.items():
             save_dict[self.name +"_"+ lqname] = lq.val
@@ -380,8 +417,9 @@ class TRPLScanMeasurement(Measurement):
             for lqname,lq in self.gui.logged_quantities.items():
                 save_dict[lqname] = lq.val
                 
-            for lqname,lq in self.gui.picoharp_hc.logged_quantities.items():
-                save_dict[self.gui.picoharp_hc.name + "_" + lqname] = lq.val
+            for hc in self.gui.hardware_components.values():
+                for lqname,lq in hc.logged_quantities.items():
+                    save_dict[hc.name + "_" + lqname] = lq.val
                 
             for lqname,lq in self.logged_quantities.items():
                 save_dict[self.name +"_"+ lqname] = lq.val
@@ -443,13 +481,48 @@ class TRPLScan3DMeasurement(Base3DScan):
     def collect_pixel(self, i, j, k):
         ph = self.picoharp
         # collect data
+        #print "sleep_time", self.sleep_time
+        t0 = time.time()
         ph.start_histogram()
         while not ph.check_done_scanning():
-            ph.read_histogram_data()
-            time.sleep(self.sleep_time)  
+            #ph.read_histogram_data()
+            time.sleep(0.1) #self.sleep_time)  
         ph.stop_histogram()
         ph.read_histogram_data()
-                          
+        
+        t1 = time.time()
+        
+        print "time per pixel:", (t1-t0)
+        
+        """
+        try:
+            save_dict = {
+                         'x_array': self.x_array,
+                         'y_array': self.y_array,
+                         'z_array': self.z_array,
+                         'Nx': self.Nx,
+                         'Ny': self.Ny,
+                         'Nz': self.Nz,
+                         }               
+    
+            save_dict.update(self.scan_specific_savedict())
+
+            for lqname,lq in self.gui.logged_quantities.items():
+                save_dict[lqname] = lq.val
+            
+            for hc in self.gui.hardware_components.values():
+                for lqname,lq in hc.logged_quantities.items():
+                    save_dict[hc.name + "_" + lqname] = lq.val
+            
+            for lqname,lq in self.logged_quantities.items():
+                save_dict[self.name +"_"+ lqname] = lq.val
+            
+            
+            np.savez_compressed("incomplete_3dtrpl_scan.npz", **save_dict)
+            print "saved"
+        except:
+            pass
+        """
         # store in arrays
         N = self.stored_histogram_channels.val
         self.time_trace_map[k,j,i,:] = ph.histogram_data[0:N]

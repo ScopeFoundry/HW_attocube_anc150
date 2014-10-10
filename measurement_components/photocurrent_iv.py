@@ -39,6 +39,15 @@ class PhotocurrentIVMeasurement(Measurement):
 
 
     def _run(self):
+        
+        self.fig.clf()
+        self.ax = self.fig.add_subplot(111)
+        self.plotline, = self.ax.plot([0,1], [0,0])
+        self.ax.set_xlabel("Voltage (V)")
+        self.ax.set_ylabel("Current (Amps)")
+        self.ax.axvline(0, color='k')
+        self.ax.axhline(0, color='k')
+        
         self.keithley_hc = self.gui.keithley_sourcemeter_hc
         K1 = self.keithley = self.keithley_hc.keithley
         
