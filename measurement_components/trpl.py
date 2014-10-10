@@ -10,7 +10,7 @@ from PySide import QtCore
 
 from .measurement import Measurement 
 from .base_3d_scan import Base3DScan
-from numpy import histogram
+from .base_2d_scan import Base2DScan
 
 
 class PicoHarpMeasurement(Measurement):    
@@ -244,36 +244,18 @@ class PicoHarpPowerWheelMeasurement(Measurement):
         
         
 
-class TRPLScanMeasurement(Measurement):
+class TRPLScanMeasurement(Base2DScan):
     
     name = "trpl_scan"
 
-    def setup(self):
-        print "setup TRPLScanMeasurement"
-                
+    def scan_specific_setup(self):
+        
         self.display_update_period = 0.1 #seconds
         
-        # local logged quantities
-        lq_params = dict(dtype=float, vmin=-1,vmax=100, ro=False, unit='um' )
-        self.h0 = self.add_logged_quantity('h0',  initial=25, **lq_params  )
-        self.h1 = self.add_logged_quantity('h1',  initial=45, **lq_params  )
-        self.v0 = self.add_logged_quantity('v0',  initial=25, **lq_params  )
-        self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
+        self.stored_histogram_channels = self.add_logged_quantity(
+                                      "stored_histogram_channels", 
+                                     dtype=int, vmin=1, vmax=2**16, initial=4000)
 
-        self.dh = self.add_logged_quantity('dh', initial=1, **lq_params)
-        self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
-
-        self.stored_histogram_channels = self.add_logged_quantity("stored_histogram_channels", dtype=int, vmin=1, vmax=2**16)
-
-        # connect to gui        
-        self.h0.connect_bidir_to_widget(self.gui.ui.h0_doubleSpinBox)
-        self.h1.connect_bidir_to_widget(self.gui.ui.h1_doubleSpinBox)
-        self.v0.connect_bidir_to_widget(self.gui.ui.v0_doubleSpinBox)
-        self.v1.connect_bidir_to_widget(self.gui.ui.v1_doubleSpinBox)
-        
-        self.dh.connect_bidir_to_widget(self.gui.ui.dh_doubleSpinBox)
-        self.dv.connect_bidir_to_widget(self.gui.ui.dv_doubleSpinBox)
-        
         #connect events
         self.gui.ui.trpl_map_start_pushButton.clicked.connect(self.start)
         self.gui.ui.trpl_map_interrupt_pushButton.clicked.connect(self.interrupt)
@@ -282,6 +264,7 @@ class TRPLScanMeasurement(Measurement):
                                            self.gui.ui.trpl_map_stored_channels_doubleSpinBox)
         
         self.stored_histogram_channels.update_value(1000)
+
     
     def setup_figure(self):
         print "TRPLSCan figure"
@@ -300,31 +283,19 @@ class TRPLScanMeasurement(Measurement):
         #self.fig.canvas.draw()
 
     
-    def _run(self):
-        # Setup try-block
+    def pre_scan_setup(self):
         #hardware
-        self.stage = self.gui.mcl_xyz_stage_hc
-        self.nanodrive = self.stage.nanodrive
         ph = self.picoharp = self.gui.picoharp_hc.picoharp
-
-        #get scan parameters:
-
-        self.h_array = np.arange(self.h0.val, self.h1.val, self.dh.val, dtype=float)
-        self.v_array = np.arange(self.v0.val, self.v1.val, self.dv.val, dtype=float)
         
-        self.Nh = len(self.h_array)
-        self.Nv = len(self.v_array)
-        
-        self.extent = [self.h0.val, self.h1.val, self.v0.val, self.v1.val]
-
-
         # TRPL scan specific setup
-        sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
+        self.sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
 
-        
         #create data arrays
         self.integrated_count_map = np.zeros((self.Nv, self.Nh), dtype=int)
-        self.time_trace_map = np.zeros( (self.Nv, self.Nh, self.stored_histogram_channels.val), dtype=int)
+        self.time_trace_map = np.zeros( 
+                                       (self.Nv, self.Nh, 
+                                            self.stored_histogram_channels.val), 
+                                       dtype=int)
         
         self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3
         #update figure
@@ -335,103 +306,32 @@ class TRPLScanMeasurement(Measurement):
                                     vmin=1e4, vmax=1e5, interpolation='nearest', 
                                     extent=self.extent)
 
-        # set up experiment
-        # experimental parameters already connected via LoggedQuantities
+    def collect_pixel(self, i, j):
+        ph = self.picoharp
+        # collect data
+        #print "sleep_time", self.sleep_time
+        t0 = time.time()
+        ph.start_histogram()
+        while not ph.check_done_scanning():
+            #ph.read_histogram_data()
+            time.sleep(0.1) #self.sleep_time)  
+        ph.stop_histogram()
+        ph.read_histogram_data()
         
-        # TODO Stop other timers?!
+        t1 = time.time()
+        
+        #print "time per pixel:", (t1-t0)
+        
+        # store in arrays
+        N = self.stored_histogram_channels.val
+        self.time_trace_map[j,i,:] = ph.histogram_data[0:N]
+        self.integrated_count_map[j,i] = np.sum(self.time_trace_map[j,i])
 
-        print "scanning"
-        try:
-            v_axis_id = self.stage.v_axis_id
-            h_axis_id = self.stage.h_axis_id
-
-            # move slowly to start position
-            start_pos = [None, None,None]
-            start_pos[v_axis_id-1] = self.v_array[0]
-            start_pos[h_axis_id-1] = self.h_array[0]
-            self.nanodrive.set_pos_slow(*start_pos)            
-            
-            # Scan!            
-            line_time0 = time.time()
-            
-            for i_v in range(self.Nv):
-                self.v_pos = self.v_array[i_v]
-                self.nanodrive.set_pos_ax(self.v_pos, v_axis_id)
-                #self.read_stage_position()       
-    
-                if i_v % 2: #odd lines
-                    h_line_indicies = range(self.Nh)[::-1]
-                else:       #even lines -- traverse in opposite direction
-                    h_line_indicies = range(self.Nh)            
-    
-                for i_h in h_line_indicies:
-                    if self.interrupt_measurement_called:
-                        break
-    
-                    print i_h, i_v
-    
-                    self.h_pos = self.h_array[i_h]
-                    self.nanodrive.set_pos_ax(self.h_pos, h_axis_id)    
-                    
-                    # collect data
-                    ph.start_histogram()
-                    while not ph.check_done_scanning():
-                        ph.read_histogram_data()
-                        time.sleep(sleep_time)  
-                    ph.stop_histogram()
-                    ph.read_histogram_data()
-                                      
-                    # store in arrays
-                    N = self.stored_histogram_channels.val
-                    self.time_trace_map[i_v,i_h,:] = ph.histogram_data[0:N]
-                    self.integrated_count_map[i_v,i_h] = np.sum(self.time_trace_map[i_v,i_h])
-    
-                print "line time:", time.time() - line_time0
-                print "pixel time:", float(time.time() - line_time0)/self.Nh
-                line_time0 = time.time()
-                
-                # read stage position every line
-                self.stage.x_position.read_from_hardware()
-                self.stage.y_position.read_from_hardware()
-                self.stage.z_position.read_from_hardware()
-
-                
-            #scanning done
-        #except Exception as err:
-        #    self.interrupt()
-        #    raise err
-        finally:
-            #save  data file
-            save_dict = {
-                     'time_trace_map': self.time_trace_map,
-                     'integrated_count_map': self.integrated_count_map,
-                     'h_array': self.h_array,
-                     'v_array': self.v_array,
-                     'Nv': self.Nv,
-                     'Nh': self.Nh,
-                     'extent': self.extent,
-                     'time_array': self.time_array
-                    }               
-
-                    
-            for lqname,lq in self.gui.logged_quantities.items():
-                save_dict[lqname] = lq.val
-                
-            for hc in self.gui.hardware_components.values():
-                for lqname,lq in hc.logged_quantities.items():
-                    save_dict[hc.name + "_" + lqname] = lq.val
-                
-            for lqname,lq in self.logged_quantities.items():
-                save_dict[self.name +"_"+ lqname] = lq.val
-    
-            self.fname = "%i_trpl_map.npz" % time.time()
-            np.savez_compressed(self.fname, **save_dict)
-            print "TRPL Scan Saved", self.fname
-
-            if not self.interrupt_measurement_called:
-                self.measurement_sucessfully_completed.emit()
-            else:
-                pass
+    def scan_specific_savedict(self):
+        return dict( integrated_count_map=self.integrated_count_map,
+                     time_trace_map = self.time_trace_map,
+                     time_array = self.time_array,
+                     )        
 
     
     def update_display(self):
