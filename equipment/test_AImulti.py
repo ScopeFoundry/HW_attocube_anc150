@@ -79,7 +79,7 @@ try:
     elapsed = time.clock() - start
     print loopCount, ' samples of ', acqTime, 'sec at', clockRate, 'Hz in ', elapsed, 'sec, continuous overhead ', elapsed - acqTime * loopCount
     
-    time.sleep(2)
+#    time.sleep(2)
 #     print 'wait and read'
 #     taskAI.DAQmxSetReadRelativeTo( mx.DAQmx_Val_MostRecentSamp );
 # #     try:
