@@ -28,7 +28,7 @@ class OceanOpticsSpectrometerHC(HardwareComponent):
                                             vmin = 0.0001,
                                             vmax = 1000,
                                             unit = 'sec',
-                                            intial = 0.1,
+                                            initial = 0.1,
                                             )
 
 

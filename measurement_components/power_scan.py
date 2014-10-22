@@ -11,6 +11,134 @@ from .measurement import Measurement
 
 PM_SAMPLE_NUMBER = 1
 
+class PowerScanMotorized(Measurement):
+    name = "power_scan_motorized"
+    
+    def setup(self):
+
+        self.gui.ui.power_scan_motorized_start_pushButton.clicked.connect(self.start)
+        self.gui.ui.power_scan_motorized_interrupt_pushButton.clicked.connect(self.interrupt)
+        
+        
+        self.power_wheel_steps = self.add_logged_quantity("power_wheel_steps", 
+                                                          dtype=int, unit='', vmin=0, vmax=+8000, ro=False)
+        self.power_wheel_steps.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_steps_doubleSpinBox)
+
+        self.power_wheel_delta = self.add_logged_quantity("power_wheel_delta", 
+                                                          dtype=float, unit='deg', vmin=-360, vmax=+360, ro=False)
+        self.power_wheel_delta.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_delta_doubleSpinBox)
+
+        
+        
+  
+
+
+    def _run(self):
+
+
+        # 
+        lockin = self.lockin = self.gui.srs_lockin_hc.srs
+        pw = self.power_wheel = self.gui.power_wheel_arduino_hc.power_wheel
+        
+        # Data arrays
+        pw_stepps = self.power_wheel_steps.val
+        pw_delta = self.power_wheel_delta.val
+        
+        
+        
+        pw_effective_steps_per_delta = int((pw_delta*3200/360))
+        
+        print 'effective steps:', pw_effective_steps_per_delta 
+        
+        self.pw_phi = np.zeros(pw_stepps)      
+        self.chopped_current = np.zeros(pw_stepps)
+        
+        self.pm_powers = np.zeros(pw_stepps)
+        self.out_powers = np.zeros(pw_stepps)       
+        
+        
+        
+        for ii in range(pw_stepps):
+            if self.interrupt_measurement_called: break
+            pw.write_steps(pw_effective_steps_per_delta)
+            
+            time.sleep(0.5)   
+            
+            sens_changed = lockin.auto_sensitivity()
+            if sens_changed:
+                time.sleep(0.5)
+            self.chopped_current[ii] = lockin.get_signal()
+            
+            self.pw_phi[ii] = ii*pw_effective_steps_per_delta*360/3200
+            
+            
+
+            PM_SAMPLE_NUMBER = 10
+ 
+            # Sample the power at least one time from the power meter.
+            samp_count = 0
+            pm_power = 0.0
+            for samp in range(0, PM_SAMPLE_NUMBER):
+                # Try at least 10 times before ultimately failing
+                if self.interrupt_measurement_called: break
+                try_count = 0
+                #print "samp", ii, samp, try_count, samp_count, pm_power
+                while not self.interrupt_measurement_called:
+                    try:
+                        pm_power = pm_power + self.gui.thorlabs_powermeter_hc.power.read_from_hardware(send_signal=True)
+                        samp_count = samp_count + 1
+                        break 
+                    except Exception as err:
+                        try_count = try_count + 1
+                        if try_count > 9:
+                            print "failed to collect power meter sample:", err
+                            break
+                        time.sleep(0.010)
+             
+            if samp_count > 0:              
+                pm_power = pm_power/samp_count
+            else:
+                print "  Failed to read power"
+                pm_power = 10000.  
+  
+            
+            self.pm_powers[ii]=pm_power
+                
+
+            
+            print self.name, 'measured ',  self.chopped_current[ii], 'at phi=', self.pw_phi[ii]
+
+
+
+
+        #save data file
+        save_dict = {
+                     'pm_powers': self.pm_powers,
+                     'out_powers': self.out_powers,
+                     'pw_phi': self.pw_phi,
+                     'chopped_current': self.chopped_current
+                     }
+        for lqname,lq in self.gui.logged_quantities.items():
+            save_dict[lqname] = lq.val
+        
+        for hc in self.gui.hardware_components.values():
+            for lqname,lq in hc.logged_quantities.items():
+                save_dict[hc.name + "_" + lqname] = lq.val
+        
+        for lqname,lq in self.logged_quantities.items():
+            save_dict[self.name +"_"+ lqname] = lq.val
+
+        self.fname = "%i_motorized_power_scan.npz" % time.time()
+        np.savez_compressed(self.fname, **save_dict)
+        print "Motorized Power Scan Saved", self.fname
+
+        if not self.interrupt_measurement_called:
+            self.measurement_sucessfully_completed.emit()
+        else:
+            pass
+        
+
+
 class PowerScanContinuous(Measurement):
     
     name = "power_scan"

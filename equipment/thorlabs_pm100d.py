@@ -38,10 +38,9 @@ class ThorlabsPM100D(object):
         self.write("SENS:POW:UNIT W") # set to Watts
         self.power_unit = self.ask("SENS:POW:UNIT?")
 
-        self.write("SENS:POW:RANG:AUTO ON") # turn on auto range
 
-        self.auto_range = bool(self.ask("SENS:POW:RANG:AUTO?"))
-        
+        self.get_auto_range()
+                
         self.get_average_count()
         
         self.get_power_range()        
@@ -129,6 +128,21 @@ class ThorlabsPM100D(object):
         self.power_range = self.ask("SENS:POW:RANG?") # CHECK RANGE
         if self.debug: print "power_range", self.power_range
         return self.power_range
+    
+    def get_auto_range(self):
+        resp = self.ask("SENS:POW:RANG:AUTO?")
+        if True:
+            print repr(resp)
+        self.auto_range = bool(int(resp))
+        return self.auto_range
+    
+    def set_auto_range(self, auto = True):
+        print "set_auto_range", auto
+        if auto:
+            self.write("SENS:POW:RANG:AUTO ON") # turn on auto range
+        else:
+            self.write("SENS:POW:RANG:AUTO OFF") # turn off auto range
+    
     
     def measure_frequency(self):
         self.frequency = self.ask("MEAS:FREQ?")

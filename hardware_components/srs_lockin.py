@@ -20,6 +20,10 @@ class SRSLockinComponent(HardwareComponent):
         self.frequency = self.add_logged_quantity('f', dtype=float, unit='Hz', ro=True)
         self.current = self.add_logged_quantity('i', dtype=float, unit='A', ro=True)
         
+        self.sensitivity = self.add_logged_quantity('sensitivity', 
+                                                    dtype=str, choices = [('','')],
+                                                    ro=False)
+        
     def connect(self):
         if self.debug: print "connecting to SRS lockin"
         
@@ -31,6 +35,12 @@ class SRSLockinComponent(HardwareComponent):
             self.srs.get_frequency
         self.current.hardware_read_func = \
             self.srs.get_signal
+            
+        self.sensitivity.hardware_read_func = self.srs.get_sensitivity
+        
+        self.sensitivity.change_choice_list(zip(self.srs.sensitivities, self.srs.sensitivities))
+
+        self.sensitivity.hardware_set_func = self.srs.set_sensitivity
         
         print 'connected to ',self.name
 
@@ -46,4 +56,5 @@ class SRSLockinComponent(HardwareComponent):
         del self.srs
         
         print 'disconnected ',self.name
+          
             

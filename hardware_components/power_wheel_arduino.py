@@ -28,11 +28,14 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         if self.debug: print "connecting to arduino power wheel"
         
         # Open connection to hardware
-        self.power_wheel = PowerWheelArduino(port=PowerWheelArduinoPort, debug=True)
+        self.power_wheel = PowerWheelArduino(port='COM16', debug=True)
         
         # connect logged quantities
         self.phi.hardware_set_func = \
              self.power_wheel.write_steps
+             
+        self.phi.hardware_read_func= \
+             self.power_wheel.read_encoder
 
 
         print 'connected to ',self.name

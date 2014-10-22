@@ -61,6 +61,9 @@ class PhotocurrentIVMeasurement(Measurement):
         
         K1.switchV_A_off()
         
+        print I
+        print V
+        
         self.Iarray = I
         self.Varray = V
         

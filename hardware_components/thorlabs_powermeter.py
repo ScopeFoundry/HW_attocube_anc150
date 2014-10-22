@@ -19,6 +19,10 @@ class ThorlabsPowerMeter(HardwareComponent):
                                                      vmax=2000, )
         
         self.power = self.add_logged_quantity(name = 'power', dtype=float, unit="W", vmin=0, vmax = 10, ro=True)
+        
+        
+        self.auto_range = self.add_logged_quantity(name = 'auto_range', dtype=bool, ro=False)
+        
         # connect GUI
         self.wavelength.connect_bidir_to_widget(self.gui.ui.power_meter_wl_doubleSpinBox)
         self.power.connect_bidir_to_widget(self.gui.ui.power_meter_power_label)
@@ -34,6 +38,9 @@ class ThorlabsPowerMeter(HardwareComponent):
         self.wavelength.hardware_set_func  = self.power_meter.set_wavelength
         
         self.power.hardware_read_func = self.power_meter.measure_power
+
+        self.auto_range.hardware_read_func = self.power_meter.get_auto_range
+        self.auto_range.hardware_set_func = self.power_meter.set_auto_range
 
     def disconnect(self):
         #disconnect logged quantities from hardware

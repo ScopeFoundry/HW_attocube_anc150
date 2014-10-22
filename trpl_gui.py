@@ -17,14 +17,17 @@ from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
 
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
-from measurement_components.trpl import PicoHarpMeasurement, PicoHarpPowerWheelMeasurement, TRPLScanMeasurement, TRPLScan3DMeasurement
+from measurement_components.trpl import \
+    PicoHarpMeasurement, PicoHarpPowerWheelMeasurement, \
+    TRPLScanMeasurement, TRPLScan3DMeasurement
 from measurement_components.apd_confocal import APDOptimizerMeasurement, APDConfocalScanMeasurement, APDConfocalScan3DMeasurement
 from measurement_components.andor_ccd_readout import AndorCCDReadout, AndorCCDReadBackground, AndorCCDReadSingle
 from measurement_components.hyperspectral import SpectrumScan2DMeasurement
 from measurement_components.power_scan import PowerScanContinuous
-from measurement_components.photocurrent_scan import Photocurrent2DMeasurement
+from measurement_components.photocurrent_scan import \
+    Photocurrent2DMeasurement, Photocurrent3DMeasurement
 from measurement_components.photocurrent_iv import PhotocurrentIVMeasurement
-
+from measurement_components.power_scan import PowerScanMotorized
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -45,9 +48,9 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.srs_lockin_hc = self.add_hardware_component(SRSLockinComponent(self))  
         self.thorlabs_optical_chopper_hc = self.add_hardware_component(ThorlabsOpticalChopperComponent(self))        
         self.power_wheel_arduino_hc = self.add_hardware_component(PowerWheelArduinoComponent(self))    
+        self.oceanoptics_spec_hc = self.add_hardware_component(OceanOpticsSpectrometerHC(self))
         
-              
-              
+                      
         #Add measurement components
         print "Create Measurement objects"
         self.apd_optimizer_measure = self.add_measurement_component(APDOptimizerMeasurement(self))
@@ -64,9 +67,11 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.spec_map_measure = self.add_measurement_component(SpectrumScan2DMeasurement(self))
         self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self))
         self.photocurrent2D_measure = self.add_measurement_component(Photocurrent2DMeasurement(self))
+        self.photocurrent3D_measure = self.add_measurement_component(Photocurrent3DMeasurement(self))
         self.photocurrent_iv_measure = self.add_measurement_component(PhotocurrentIVMeasurement(self))        
         #Add additional logged quantities
         self.picoharp_power_wheel_measure = self.add_measurement_component(PicoHarpPowerWheelMeasurement(self))
+        self.motorized_power_wheel_measure = self.add_measurement_component(PowerScanMotorized(self))
         # Connect to custom gui
 
 

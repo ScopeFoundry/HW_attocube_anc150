@@ -171,11 +171,14 @@ class KeithleySourceMeter(object):#object -->KeithleySourceMeterComponent
         # read out measured currents
         self.ser.write('printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.readings)\r\n')
         StrI = self.ser.readline()
+        if self.debug: print "I:", repr(StrI)
+        
         I = np.array(StrI.replace(',', '').split(),dtype = np.float32)
         
         # read out sourced voltages        
         self.ser.write('printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.sourcevalues)\r\n')   
         StrV = self.ser.readline()
+        if self.debug: print "V:", repr(StrV)
         V = np.array(StrV.replace(',', '').split(),dtype = np.float32)  
         return I,V          
 
