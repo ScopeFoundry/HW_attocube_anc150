@@ -95,14 +95,14 @@ class PicoHarpPowerWheelMeasurement(Measurement):
         self.display_update_period = 0.1 #seconds
         
         #connect events
-        self.gui.ui.power_wheel_start_pushButton.clicked.connect(self.start)
-        self.gui.ui.power_wheel_interrupt_pushButton.clicked.connect(self.interrupt)
+        self.gui.ui.power_wheel_start_picoharp_pushButton.clicked.connect(self.start)
+        self.gui.ui.power_wheel_interrupt_picoharp_pushButton.clicked.connect(self.interrupt)
         
-        self.power_wheel_steps = self.add_logged_quantity("power_wheel_steps", dtype=int, unit='deg', vmin=0, vmax=+8000, ro=False)
-        self.power_wheel_steps.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_steps_doubleSpinBox)
+        self.power_wheel_steps = self.add_logged_quantity("power_wheel_steps", dtype=int, unit='', vmin=0, vmax=+8000, ro=False)
+        self.power_wheel_steps.connect_bidir_to_widget(self.gui.ui.power_wheel_steps_picoharp_doubleSpinBox)
 
-        self.power_wheel_delta = self.add_logged_quantity("power_wheel_delta", dtype=int, unit='', vmin=-8000, vmax=+8000, ro=False)
-        #self.power_wheel_delta.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_delta_doubleSpinBox)
+        self.power_wheel_delta = self.add_logged_quantity("power_wheel_delta", dtype=float, unit='deg', vmin=-360, vmax=+360, ro=False)
+        self.power_wheel_delta.connect_bidir_to_widget(self.gui.ui.power_wheel_delta_picoharp_doubleSpinBox)
 
         self.stored_histogram_channels = self.add_logged_quantity("stored_histogram_channels", dtype=int, vmin=1, vmax=2**16)
         self.stored_histogram_channels.connect_bidir_to_widget(

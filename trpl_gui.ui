@@ -716,6 +716,13 @@ Continuously</string>
             </property>
            </widget>
           </item>
+          <item row="7" column="0">
+           <widget class="QPushButton" name="andor_ccd_read_single_pushButton">
+            <property name="text">
+             <string>read single</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -1306,7 +1313,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>9</number>
+       <number>12</number>
       </property>
       <widget class="QWidget" name="plot2d_widget">
        <attribute name="title">
@@ -1478,14 +1485,14 @@ Continuously</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_7">
            <item row="0" column="0">
-            <widget class="QPushButton" name="power_wheel_start_pushButton">
+            <widget class="QPushButton" name="power_wheel_start_picoharp_pushButton">
              <property name="text">
               <string>Start</string>
              </property>
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QDoubleSpinBox" name="power_wheel_steps_doubleSpinBox">
+            <widget class="QDoubleSpinBox" name="power_wheel_steps_picoharp_doubleSpinBox">
              <property name="prefix">
               <string>steps: </string>
              </property>
@@ -1501,7 +1508,7 @@ Continuously</string>
             </widget>
            </item>
            <item row="0" column="3">
-            <widget class="QDoubleSpinBox" name="power_wheel_delta_doubleSpinBox">
+            <widget class="QDoubleSpinBox" name="power_wheel_delta_picoharp_doubleSpinBox">
              <property name="prefix">
               <string>delta: </string>
              </property>
@@ -1527,7 +1534,7 @@ Continuously</string>
             </widget>
            </item>
            <item row="0" column="4">
-            <widget class="QPushButton" name="power_wheel_interrupt_pushButton">
+            <widget class="QPushButton" name="power_wheel_interrupt_picoharp_pushButton">
              <property name="text">
               <string>Interrupt</string>
              </property>
@@ -2080,8 +2087,8 @@ Continuously</string>
   <tabstop>ple_point_scan_start_pushButton</tabstop>
   <tabstop>ple_point_scan_stop_pushButton</tabstop>
   <tabstop>clearfig_pushButton</tabstop>
-  <tabstop>power_wheel_start_pushButton</tabstop>
-  <tabstop>power_wheel_interrupt_pushButton</tabstop>
+  <tabstop>power_wheel_start_picoharp_pushButton</tabstop>
+  <tabstop>power_wheel_interrupt_picoharp_pushButton</tabstop>
   <tabstop>trpl_map_interrupt_pushButton</tabstop>
   <tabstop>trpl_map_start_pushButton</tabstop>
   <tabstop>trpl_map_stored_channels_doubleSpinBox</tabstop>

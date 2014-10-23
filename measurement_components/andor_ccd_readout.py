@@ -208,7 +208,7 @@ class AndorCCDReadSingle(Measurement):
         self.display_update_period = 0.050 #seconds
 
         #connect events
-        #self.gui.ui.andor_ccd_acq_bg_pushButton.clicked.connect(self.start)
+        self.gui.ui.andor_ccd_read_single_pushButton.clicked.connect(self.start)
         #self.gui.ui.andor_ccd_abort_bg_pushButton.clicked.connect(self.interrupt)
 
         
