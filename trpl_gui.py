@@ -28,6 +28,7 @@ from measurement_components.photocurrent_scan import \
     Photocurrent2DMeasurement, Photocurrent3DMeasurement
 from measurement_components.photocurrent_iv import PhotocurrentIVMeasurement
 from measurement_components.power_scan import PowerScanMotorized
+from measurement_components.oo_spec import OOSpecLive
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -69,9 +70,12 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.photocurrent2D_measure = self.add_measurement_component(Photocurrent2DMeasurement(self))
         self.photocurrent3D_measure = self.add_measurement_component(Photocurrent3DMeasurement(self))
         self.photocurrent_iv_measure = self.add_measurement_component(PhotocurrentIVMeasurement(self))        
-        #Add additional logged quantities
         self.picoharp_power_wheel_measure = self.add_measurement_component(PicoHarpPowerWheelMeasurement(self))
         self.motorized_power_wheel_measure = self.add_measurement_component(PowerScanMotorized(self))
+        self.oo_spec_live_measure = self.add_measurement_component(OOSpecLive(self))
+ 
+        #Add additional logged quantities
+
         # Connect to custom gui
 
 

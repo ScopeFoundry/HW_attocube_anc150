@@ -18,7 +18,7 @@ class OceanOpticsSpectrometerHC(HardwareComponent):
     
     def setup(self):
         self.name = 'ocean_optics_spectrometer'
-        self.debug = False
+        self.debug = True
         
         # Create logged quantities
         self.oo_spec_int_time = self.add_logged_quantity(
