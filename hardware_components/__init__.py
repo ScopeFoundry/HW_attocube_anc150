@@ -22,10 +22,14 @@ class HardwareComponent(QtCore.QObject):
         QtCore.QObject.__init__(self)
 
         self.gui = gui
-        self.debug = debug
 
         self.logged_quantities = OrderedDict()
         self.operations = OrderedDict()
+
+        self.connected = self.add_logged_quantity("connected", dtype=bool)
+        self.connected.updated_value.connect(self.enable_connection)
+        
+        self.debug_mode = self.add_logged_quantity("debug_mode", dtype=bool, initial=debug)
         
         self.setup()
         
@@ -38,7 +42,7 @@ class HardwareComponent(QtCore.QObject):
     def setup(self):
         """
         Runs during __init__, before the hardware connection is established
-        Should generate desired LoggedQuantities
+        Should generate desired LoggedQuantities, operations
         """
         raise NotImplementedError()
 
@@ -51,10 +55,9 @@ class HardwareComponent(QtCore.QObject):
         
         cwidget.layout().addWidget(self.controls_groupBox)
         
-        self.connect_hardware_checkBox = QtGui.QCheckBox("Connect to Hardware")
-        self.controls_formLayout.addRow("Connect", self.connect_hardware_checkBox)
-        
-        self.connect_hardware_checkBox.stateChanged.connect(self.enable_connection)
+        #self.connect_hardware_checkBox = QtGui.QCheckBox("Connect to Hardware")
+        #self.controls_formLayout.addRow("Connect", self.connect_hardware_checkBox)
+        #self.connect_hardware_checkBox.stateChanged.connect(self.enable_connection)
 
         
         self.control_widgets = OrderedDict()
@@ -89,7 +92,7 @@ class HardwareComponent(QtCore.QObject):
     @QtCore.Slot()    
     def read_from_hardware(self):
         for name, lq in self.logged_quantities.items():
-            print "read_from_hardware", name
+            if self.debug.val: print "read_from_hardware", name
             lq.read_from_hardware()
         
     
