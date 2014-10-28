@@ -30,6 +30,7 @@ from measurement_components.photocurrent_scan import \
 from measurement_components.photocurrent_iv import PhotocurrentIVMeasurement
 from measurement_components.power_scan import PowerScanMotorized
 from measurement_components.oo_spec import OOSpecLive
+from measurement_components.kinetic_spectra import KineticSpectra
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -75,7 +76,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.picoharp_power_wheel_measure = self.add_measurement_component(PicoHarpPowerWheelMeasurement(self))
         self.motorized_power_wheel_measure = self.add_measurement_component(PowerScanMotorized(self))
         self.oo_spec_live_measure = self.add_measurement_component(OOSpecLive(self))
- 
+        self.kinetic_spectra_measure = self.add_measurement_component(KineticSpectra(self))
         #Add additional logged quantities
 
         # Connect to custom gui
