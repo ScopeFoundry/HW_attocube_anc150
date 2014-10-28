@@ -14,7 +14,7 @@ from hardware_components.keithley_sourcemeter import KeithleySourceMeterComponen
 from hardware_components.srs_lockin import SRSLockinComponent
 from hardware_components.thorlabs_optical_chopper import ThorlabsOpticalChopperComponent
 from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
-
+from hardware_components.crystaltech_aotf import CrystalTechAOTF
 from hardware_components.shutter_servo_arduino import ShutterServoHardwareComponent
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
@@ -51,7 +51,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.thorlabs_optical_chopper_hc = self.add_hardware_component(ThorlabsOpticalChopperComponent(self))        
         self.power_wheel_arduino_hc = self.add_hardware_component(PowerWheelArduinoComponent(self))    
         self.oceanoptics_spec_hc = self.add_hardware_component(OceanOpticsSpectrometerHC(self))
-        
+        self.crystaltech_aotf_hc = self.add_hardware_component(CrystalTechAOTF(self))
         self.shutter_servo_hc = self.add_hardware_component(ShutterServoHardwareComponent(self))
                       
         #Add measurement components
