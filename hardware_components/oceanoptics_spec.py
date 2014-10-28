@@ -35,8 +35,8 @@ class OceanOpticsSpectrometerHC(HardwareComponent):
         #connect GUI
        #self.oo_spec_int_time.connect_
        
-       
-       #ui.oo_spec_int_time_doubleSpinBox.valueChanged[float].connect(self.oo_spec_int_time.update_value)
+        self.oo_spec_int_time.connect_bidir_to_widget(
+                                  self.gui.ui.oo_spec_int_time_doubleSpinBox)
 
     def connect(self):
 

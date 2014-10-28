@@ -59,7 +59,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.apd_optimizer_measure = self.add_measurement_component(APDOptimizerMeasurement(self))
         self.apd_scan_measure = self.add_measurement_component(APDConfocalScanMeasurement(self))
         self.apd_scan3d_measure = self.add_measurement_component(APDConfocalScan3DMeasurement(self))
-        #self.ple_point_measure = self.add_measurement_component(PLEPointMeasurement(self))
+        self.ple_point_measure = self.add_measurement_component(PLEPointMeasurement(self))
         #self.ple2d_measure = self.add_measurement_component(PLE2DScanMeasurement(self))
         self.picoharp_measure = self.add_measurement_component(PicoHarpMeasurement(self))
         self.trpl_scan_measure = self.add_measurement_component(TRPLScanMeasurement(self))

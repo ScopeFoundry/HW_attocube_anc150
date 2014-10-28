@@ -20,8 +20,13 @@ class PLEPointMeasurement(Measurement):
     
     #TODO store information about the acton_spectrometer position and grating
     
-    def __init__(self, gui):
-        Measurement.__init__(self, gui = gui, name = "ple_point")
+    name = "PLE Point Measurement"
+    
+    #def __init__(self, gui):
+    #    Measurement.__init__(self, gui = gui)
+    
+    def setup(self):
+        print "nothing todo?"
         
         self.display_update_period = 0.500 #seconds
         
@@ -48,33 +53,34 @@ class PLEPointMeasurement(Measurement):
         for ax in [self.ax_excite_power, self.ax_emission_intensity]:
             ax.set_xlabel("frequency (MHz)")
         
-    
     def _run(self):    
         
         # check the type of detector selected in GUI
         use_ccd = self.gui.ui.ple_point_scan_detector_comboBox.currentText() == "Andor CCD"
        
         # Local objects used for measurement
-        oospectrometer = self.gui.oo_spectrometer
+        oospectrometer = self.gui.oceanoptics_spec_hc.oo_spectrometer
         if use_ccd:
+            ccd_hc = self.gui.andor_ccd_hc
             ccd = self.gui.andor_ccd_hc.andor_ccd
         else:
             apd_hc = self.gui.apd_counter_hc
        
+        aotf = self.gui.crystaltech_aotf_hc
+        power_meter = self.gui.thorlabs_powermeter_hc
         
-        
-       
         # Turn the AOTF modulation on.
-        self.gui.aotf_modulation.update_value(True)        
+        aotf.modulation_enable.update_value(True)        
 
-        # CCD setup/initialization               
-        self.gui.andor_ccd_hc.shutter_open.update_value(True)
+        # CCD setup/initialization
+        if use_ccd:               
+            ccd_hc.shutter_open.update_value(True)
         
         # Wavelengths from the OceanOptics
         self.oo_wavelengths = oospectrometer.wavelengths
 
         # read current stage position        
-        self.gui.read_stage_position()
+        # self.gui.read_stage_position()
   
         # List of frequency steps to take based on min, max and step size specified 
         # in the GUI
@@ -140,16 +146,16 @@ class PLEPointMeasurement(Measurement):
                 break
             
             # Tune the AOTF
-            self.gui.aotf_freq.update_value(freq)
+            aotf.freq0.update_value(freq)
             time.sleep(0.020)
             
             try_count = 0
             while True:
                 try:
                     if freq > 150:
-                        self.gui.aotf_power.update_value(4500)
+                        aotf.pwr0.update_value(2000)
                     else:
-                        self.gui.aotf_power.update_value(2000)
+                        aotf.pwr0.update_value(2000)
                     time.sleep(0.02)
                     break
                 except:
@@ -171,7 +177,7 @@ class PLEPointMeasurement(Measurement):
             
             # Set the wavelength correction for the power meter.  Try 10 times before 
             # finally failing.
-            self.gui.power_meter_wavelength.update_value(wl)
+            power_meter.wavelength.update_value(wl)
             
             # Sleep for 10 ms to let power meter finish processing
             time.sleep(0.010)
@@ -184,7 +190,7 @@ class PLEPointMeasurement(Measurement):
                 try_count = 0
                 while True:
                     try:
-                        pm_power = pm_power + self.gui.laser_power.read_from_hardware(send_signal=True)
+                        pm_power = pm_power + power_meter.power.read_from_hardware(send_signal=True)
                         samp_count = samp_count + 1
                         break 
                     except:
@@ -221,7 +227,7 @@ class PLEPointMeasurement(Measurement):
                 self.apd_intensities[ii] = apd_hc.read_count_rate()
                 self.total_emission_intensity[ii] = self.apd_intensities[ii]
             
-            self.aotf_modulations[ii] = self.gui.aotf_modulation.val
+            self.aotf_modulations[ii] = aotf.modulation_enable.val
             
             self.ii = ii
                             
