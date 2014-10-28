@@ -1289,6 +1289,13 @@ Continuously</string>
            </widget>
           </item>
           <item>
+           <widget class="QCheckBox" name="shutter_open_checkBox">
+            <property name="text">
+             <string>Shutter Open</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QCheckBox" name="flip_mirror_checkBox">
             <property name="text">
              <string>APD / Spec</string>
