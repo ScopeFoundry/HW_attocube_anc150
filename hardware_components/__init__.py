@@ -92,7 +92,7 @@ class HardwareComponent(QtCore.QObject):
     @QtCore.Slot()    
     def read_from_hardware(self):
         for name, lq in self.logged_quantities.items():
-            if self.debug.val: print "read_from_hardware", name
+            if self.debug_mode.val: print "read_from_hardware", name
             lq.read_from_hardware()
         
     
