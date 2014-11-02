@@ -1320,7 +1320,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>12</number>
+       <number>9</number>
       </property>
       <widget class="QWidget" name="plot2d_widget">
        <attribute name="title">
@@ -1734,6 +1734,30 @@ Continuously</string>
              </property>
              <property name="value">
               <double>0.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QCheckBox" name="power_scan_motorized_collect_lockin_checkBox">
+             <property name="text">
+              <string>Lock-in Photocurrent</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QCheckBox" name="power_scan_motorized_collect_apd_checkBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>APD</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QCheckBox" name="power_scan_motorized_collect_spectrum_checkBox">
+             <property name="text">
+              <string>Spectrum</string>
              </property>
             </widget>
            </item>
