@@ -31,7 +31,7 @@ class ShutterServoHardwareComponent(HardwareComponent):
         
         
     def connect(self):
-        if self.debug: print "connecting to shutter servo arduino"
+        if self.debug_mode.val: print "connecting to shutter servo arduino"
         
         # Open connection to hardware
         self.shutter_servo = ShutterServoArduino(port=SHUTTER_SERVO_ARDUINO_PORT, debug=self.debug_mode.val)

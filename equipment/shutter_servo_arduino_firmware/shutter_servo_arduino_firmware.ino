@@ -28,7 +28,7 @@ void loop() {
     serialEvent();
 
     if (stringComplete) {
-      if (inputString[0] = '?') {
+      if (inputString[0] == '?') {
         Serial.println(pos);
       }
       else {
