@@ -62,7 +62,7 @@ class KineticSpectra(Measurement):
         t0 = time.time()
         
         #Record ocean optics spectrum if the spectrometer is connected
-        if hasattr(self.gui.oceanoptics_spec_hc, 'oo_spectrometer'):
+        if self.gui.oceanoptics_spec_hc.connected.val:
             # Record laser spectrum from OO 
             oospectrometer = self.gui.oceanoptics_spec_hc.oo_spectrometer
             oospectrometer.acquire_spectrum()
@@ -129,9 +129,11 @@ class KineticSpectra(Measurement):
                  'kinetic_spectra': self.kinetic_spectra,
                  'start_times': self.start_times,
                  't0': t0,
-                 'pm_powers': self.pm_powers,
-                 'oo_spec': self.oo_spec 
+                 'pm_powers': self.pm_powers
                     }               
+        
+        if self.gui.oceanoptics_spec_hc.connected.val:
+            save_dict['oo_spec'] = self.oo_spec
                 
         for lqname,lq in self.gui.logged_quantities.items():
             save_dict[lqname] = lq.val
