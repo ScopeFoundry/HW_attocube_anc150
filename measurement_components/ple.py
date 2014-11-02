@@ -16,6 +16,11 @@ from .measurement import Measurement
 PM_SAMPLE_NUMBER = 1
 UP_AND_DOWN_SWEEP = True
 
+# Optional amount of time to wait between measurement steps to let sample relax to
+# ground state from one excitation energy to the next.  This only works if a shutter
+# is installed.  Set to 0 to disable.  Value is in seconds.
+WAIT_TIME_BETWEEN_STEPS = 1
+
 class PLEPointMeasurement(Measurement):
     
     #TODO store information about the acton_spectrometer position and grating
@@ -68,6 +73,15 @@ class PLEPointMeasurement(Measurement):
        
         aotf = self.gui.crystaltech_aotf_hc
         power_meter = self.gui.thorlabs_powermeter_hc
+        
+        # Use a shutter if it is installed; NOTE:  shutter is assumed to be after the OO
+        # and PM and only opens for data acquisition.
+        if self.gui.shutter_servo_hc.connected.val:
+            use_shutter = True
+            shutter = self.gui.shutter_servo_hc
+            # Start with shutter closed.
+            shutter.shutter_open.update_value(False)
+            
         
         # Turn the AOTF modulation on.
         aotf.modulation_enable.update_value(True)        
@@ -206,6 +220,11 @@ class PLEPointMeasurement(Measurement):
                 pm_power = 10000.    
             self.pm_powers[ii] = pm_power
             
+            # Open the shutter
+            if use_shutter:
+                shutter.shutter_open.update_value(True)
+                time.sleep(0.5)
+                
             if use_ccd:
                 ccd.start_acquisition()
                 stat = "ACQUIRING"
@@ -227,6 +246,13 @@ class PLEPointMeasurement(Measurement):
                 self.apd_intensities[ii] = apd_hc.read_count_rate()
                 self.total_emission_intensity[ii] = self.apd_intensities[ii]
             
+            # Close the shutter shutter
+            if use_shutter:
+                shutter.shutter_open.update_value(False)
+            
+            if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
+                time.sleep(WAIT_TIME_BETWEEN_STEPS)
+            
             self.aotf_modulations[ii] = aotf.modulation_enable.val
             
             self.ii = ii
@@ -246,7 +272,9 @@ class PLEPointMeasurement(Measurement):
                      'oo_wl_max': self.oo_wl_maxs,
                      'pm_powers': self.pm_powers,
                      'use_ccd': use_ccd,
-                     'aotf_modulations': self.aotf_modulations
+                     'aotf_modulations': self.aotf_modulations,
+                     'use_shutter': use_shutter,
+                     'WAIT_TIME_BETWEEN_STEPS': WAIT_TIME_BETWEEN_STEPS
                     }
 
         if use_ccd:
