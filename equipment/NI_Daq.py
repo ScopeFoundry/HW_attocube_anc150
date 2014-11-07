@@ -174,6 +174,7 @@ class Adc(NI):
             #exact rate depends on hardware timer properties, may be slightly different from requested rate
             self.task.GetSampClkRate(mx.byref(adc_rate));
             self._rate = adc_rate.value
+            self._count = count
             self._mode = 'buffered'
         except mx.DAQError as err:
             self.error(err)
@@ -203,7 +204,6 @@ class Adc(NI):
             self.start()
         read_size = mx.uInt32(self._chan_count)
         read_count = mx.int32(0)
-        auto_start = mx.bool32(1)
         timeout = mx.float64( 1.0 )
         try:
             # ReadAnalogF64( int32 numSampsPerChan, float64 timeout, bool32 fillMode, 
@@ -215,6 +215,37 @@ class Adc(NI):
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
         assert read_count.value == 1, \
             "sample count {} transfer count {}".format( 1, read_count.value )
+        return data
+              
+    def read_buffer(self, count = 0, timeout = 1.0):
+        ''' reads block of input data, defaults to block size from set_rate()
+            for now allocates data buffer, possible performace hit
+            in continuous mode, reads all samples available up to block_size
+            in finite mode, waits for samples to be available, up to smaller of block_size or
+                _chan_cout * _count
+                
+            for now return interspersed array, latter may reshape into 
+        '''
+        if count == 0:
+            count = self._count
+        block_size = count * self._chan_count
+        data = np.zeros(block_size, dtype = np.float64)
+        read_size = mx.uInt32(block_size)
+        read_count = mx.int32(0)    #returns samples per chan read
+        adc_timeout = mx.float64( timeout )
+        try:
+            # ReadAnalogF64( int32 numSampsPerChan, float64 timeout, bool32 fillMode, 
+            #    float64 readArray[], uInt32 arraySizeInSamps, int32 *sampsPerChanRead, bool32 *reserved);
+            self.task.ReadAnalogF64(-1, adc_timeout, mx.DAQmx_Val_GroupByScanNumber, 
+                                  data, read_size, mx.byref(read_count), None)
+        except mx.DAQError as err:
+            self.error(err)
+            #not sure how to handle actual samples read, resize array??
+        if read_count.value < count:
+            print 'requested {} values for {} channels, only {} read'.format( count, self._chan_count, read_count.value)
+#        print "samples {} written {}".format( self._sample_count, writeCount.value)
+#        assert read_count.value == 1, \
+#           "sample count {} transfer count {}".format( 1, read_count.value )
         return data
               
             
@@ -295,6 +326,8 @@ class Dac(NI):
                 (implicit transition back to COMMIT instead of staying in RUNNING)
             if task stopped, autostart takes ~ 5 ms per write
                 (implicit start stop)
+                
+        No clean way to change from buffered to single point output without creating new task
          '''
         if self._mode != 'single':
             self.clear()    #delete old task
@@ -348,16 +381,70 @@ class Dac(NI):
         assert writeCount.value == 1, \
             "sample count {} transfer count {}".format( 1, writeCount.value )
 
-  
+ #  various test code 
 if __name__ == '__main__':
     import time
+    import matplotlib.pyplot as plt
     
     dac = Dac('X-6368/ao0:1', 'SEM ext scan')
     data = np.arange(0, 10, 0.001, dtype = np.float64)
     
-    adc = Adc('X-6368/ai2:3', 2.5, name = 'chan 2-3')
-    test = 'read single'
+    adc = Adc('X-6368/ai2:3', 5, name = 'chan 2-3')
+    test = 'dual'
     
+    if test == 'dual':
+        block = 1000
+        rate = 1.0e5
+        adc.set_rate(rate, block)   #finite read
+        dac.set_rate(rate, len(data)/2, finite=True)
+        out1 = np.sin( np.linspace( 0, 3*np.pi, block) )
+        out2 = np.sin( np.linspace( 0 + np.pi/2, 3*np.pi+ np.pi/2, block) )
+        buff_out = np.zeros( len(out1) + len(out2) )
+        buff_out[::2] = out1
+        buff_out[1::2] = out2
+        
+        plt.plot( out1 )
+        plt.plot( out2 )
+        plt.show()
+        
+        buffSize = 512
+        buff = mx.create_string_buffer( buffSize )
+        adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
+        trig_name = '/' + buff.value + '/ai/StartTrigger'
+        print 'trigger name' , trig_name 
+        dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
+        dac.load_buffer(buff_out)
+        dac.start() #start dac first, waits for trigger from ADC to output data
+        adc.start()
+
+        x = adc.read_buffer()
+        plt.subplot(211)
+        plt.plot(x[::2])
+        plt.plot(out1)
+        plt.subplot(212)
+        plt.plot(x[1::2])
+        plt.plot(out2)
+        plt.show()
+        
+    if test == 'read block':
+        adc.set_rate( 1e5, 1000 )   #finite read
+        x = adc.read_buffer()
+        #plt.ion()
+        plt.subplot(211)
+        plt.plot(x[::2])
+        plt.subplot(212)
+        plt.plot(x[1::2])
+        plt.show()
+        #raw_input("press enter")
+        for i in range(5):
+            x = adc.read_buffer()
+            plt.subplot(211)
+            plt.plot(x[::2])
+            plt.subplot(212)
+            plt.plot(x[1::2])
+            plt.show()      
+            #raw_input("press enter")
+            
     if test == 'read single':
         dac.set((0.5,-1))
         for i in range(16): 
@@ -372,9 +459,10 @@ if __name__ == '__main__':
         elapsed = time.clock() - elapsed
         print 'read {} single samples @ {} us per sample'.format( count, 1e6*elapsed/count )       
         
+                
     if test == 'start stop' or test == 'all':
         dac.set_rate(2e6, len(data)/2, finite=True)
-        dac.load_buffer(data)   
+        dac.load_buffer(data)
         dac.ready()
         elapsed = time.clock()
         for i in range(16):
