@@ -4,6 +4,7 @@ Created on Sep 23, 2014
 @author: Benedikt 
 '''
 from . import HardwareComponent
+import time
 
 try:
     from equipment.power_wheel_arduino import PowerWheelArduino
@@ -20,10 +21,21 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
     
     def setup(self):
         self.debug = True
-        
-        self.phi = self.add_logged_quantity('phi', dtype=float, unit='', ro=True)
-        
-        
+
+        # logged quantity        
+        self.encoder_pos = self.add_logged_quantity('encoder_pos', dtype=int, unit='steps', ro=True)
+        self.move_steps  = self.add_logged_quantity('move_steps',  dtype=int, unit='steps', vmin=1, vmax=3200, initial=10, ro=False)
+
+        #  operations
+        self.add_operation("move_fwd", self.move_fwd)
+        self.add_operation("move_bkwd", self.move_bkwd)
+
+
+        # connect to gui
+        self.move_steps.connect_bidir_to_widget(self.gui.ui.powerwheel_move_steps_doubleSpinBox)
+        self.gui.ui.powerwheel_move_fwd_pushButton.clicked.connect(self.move_fwd)
+        self.gui.ui.powerwheel_move_bkwd_pushButton.clicked.connect(self.move_bkwd)
+
     def connect(self):
         if self.debug: print "connecting to arduino power wheel"
         
@@ -31,10 +43,10 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.power_wheel = PowerWheelArduino(port='COM16', debug=True)
         
         # connect logged quantities
-        self.phi.hardware_set_func = \
+        self.encoder_pos.hardware_set_func = \
              self.power_wheel.write_steps
              
-        self.phi.hardware_read_func= \
+        self.encoder_pos.hardware_read_func= \
              self.power_wheel.read_encoder
 
 
@@ -54,8 +66,20 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         
         print 'disconnected ',self.name
         
+    #@QtCore.Slot()
+    def move_fwd(self):
+        self.power_wheel.write_steps(self.move_steps.val)
+        time.sleep(0.2)
+        #TODO really should wait until done
+        self.encoder_pos.read_from_hardware()
         
-        
+    #@QtCore.Slot()
+    def move_bkwd(self):
+        self.power_wheel.write_steps(-1 * self.move_steps.val)
+        time.sleep(0.2)
+        #TODO really should wait until done
+
+        self.encoder_pos.read_from_hardware()
         
 
         
