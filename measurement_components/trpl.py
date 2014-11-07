@@ -299,11 +299,11 @@ class TRPLScanMeasurement(Base2DScan):
         self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3
         #update figure
         self.time_trace_plotline.set_xdata(self.time_array)
-
+        
         self.imgplot = self.aximg.imshow(self.integrated_count_map, 
                                     origin='lower',
                                     vmin=1e4, vmax=1e5, interpolation='nearest', 
-                                    extent=self.extent)
+                                    extent=self.imshow_extent)
 
     def collect_pixel(self, i, j):
         ph = self.picoharp
@@ -325,6 +325,7 @@ class TRPLScanMeasurement(Base2DScan):
         N = self.stored_histogram_channels.val
         self.time_trace_map[j,i,:] = ph.histogram_data[0:N]
         self.integrated_count_map[j,i] = np.sum(self.time_trace_map[j,i])
+        
 
     def scan_specific_savedict(self):
         return dict( integrated_count_map=self.integrated_count_map,

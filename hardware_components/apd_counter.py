@@ -25,6 +25,11 @@ class APDCounterHardwareComponent(HardwareComponent):
                                 dtype=float, fmt="%e", ro=False,
                                 unit = "sec",
                                 vmin = 1e-6, vmax=100)
+        
+        
+        # connect to gui
+        
+        self.int_time.connect_bidir_to_widget(self.gui.ui.apd_counter_int_doubleSpinBox)
     def connect(self):
         if self.debug: print "Connecting to APD Counter"
         

@@ -264,7 +264,7 @@ class APDConfocalScanMeasurement(Measurement):
         #print "updating figure"
         self.imgplot.set_data(self.count_rate_map)
         try:
-            count_min =  np.min(self.count_rate_map[np.nonzero(self.count_rate_map)])
+            count_min =  np.percentile(self.count_rate_map[np.nonzero(self.count_rate_map)], 1)
         except Exception as err:
             count_min = 0
         count_max = np.percentile(self.count_rate_map,99.)
