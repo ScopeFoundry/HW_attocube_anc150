@@ -9,6 +9,30 @@ from .base_2d_scan import Base2DScan
 import numpy as np
 import time
 
+def pixel2wavelength(grating_position, pixel_index):
+    # Wavelength calibration based off of work on 4/30/2014
+    offset = -5.2646 #nm
+    focal_length = 293.50 #mm
+    delta = 0.0704  #radians
+    gamma = 0.6222  # radian
+    grating_spacing = 1/150.  #mm
+    pixel_size = 16e-3  #mm   #Binning!
+    m_order = 1 #diffraction order
+    binning = 1
+
+    wl_center = (grating_position + offset)*1e-6
+    px_from_center = pixel_index*binning +binning/2. - 256
+    
+    psi = np.arcsin(m_order* wl_center / (2*grating_spacing*np.cos(gamma/2)))
+    
+    eta = np.arctan(px_from_center*pixel_size*np.cos(delta) /
+    (focal_length+px_from_center*pixel_size*np.sin(delta)))
+    
+    return 1e6*((grating_spacing/m_order)
+                    *(np.sin(psi-0.5*gamma)
+                      + np.sin(psi+0.5*gamma+eta)))
+
+
 class SpectrumScan2DMeasurement(Base2DScan):
     
     name = "spec_scan"
@@ -37,6 +61,7 @@ class SpectrumScan2DMeasurement(Base2DScan):
 
     def pre_scan_setup(self):
         # hypserspectral scan specific setup
+        self.display_update_period = 0.10 #seconds
 
         #hardware
         self.andor_ccd_hc = self.gui.andor_ccd_hc
@@ -75,9 +100,10 @@ class SpectrumScan2DMeasurement(Base2DScan):
         ccd = self.andor_ccd
         ccd.start_acquisition()
         stat = ccd.get_status()
-        print "stat", stat
+        #print "stat", stat
         while stat == 'ACQUIRING':
-            time.sleep(self.wait_time)            
+            #time.sleep(self.wait_time)            
+            time.sleep(0.001)
             stat = ccd.get_status()
             if self.interrupt_measurement_called:
                 break
@@ -106,6 +132,7 @@ class SpectrumScan2DMeasurement(Base2DScan):
         # store in arrays
         self.spec_map[i_v,i_h,:] = self.spectra_data
         self.integrated_count_map[i_v,i_h] = np.sum(self.spectra_data)
+        print self.integrated_count_map[i_v,i_h]
 
         
     def scan_specific_savedict(self):
@@ -118,13 +145,19 @@ class SpectrumScan2DMeasurement(Base2DScan):
                      }
         return save_dict
 
-    def update_display(self):            
+    def update_display(self):     
+        wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, np.arange(512))
+
+        self.spec_plotline.set_xdata(wls)
         self.spec_plotline.set_ydata(self.spectra_data)
         
-        self.ax_spec.relim()
-        self.ax_spec.autoscale_view(scalex=False, scaley=True)
+        self.ax_spec.set_xlim(wls[0], wls[-1])
+        #self.ax_spec.relim()
+        #self.ax_spec.autoscale_view(scalex=False, scaley=True)
         
         C = self.integrated_count_map
+        #C = np.argmax(self.spec_map, axis=2)
+        #self.imgplot.set_data(np.ma.array(C, mask=C==0))
         self.imgplot.set_data(C)
         
         try:
@@ -132,6 +165,7 @@ class SpectrumScan2DMeasurement(Base2DScan):
         except Exception:
             count_min = 0
         count_max = np.max(C)
-        self.imgplot.set_clim(count_min, count_max + 1)
+        self.imgplot.set_clim(count_min, count_max )
+        #self.imgplot.set_clim(200,300)
         
         self.fig.canvas.draw()
