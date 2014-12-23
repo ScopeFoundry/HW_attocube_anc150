@@ -125,9 +125,17 @@ class ThorlabsPM100D(object):
         return self.power
         
     def get_power_range(self):
-        self.power_range = self.ask("SENS:POW:RANG?") # CHECK RANGE
+        #un tested
+        self.power_range = self.ask("SENS:POW:RANG:UPP?") # CHECK RANGE
         if self.debug: print "power_range", self.power_range
         return self.power_range
+
+
+    def set_power_range(self, range):
+        #un tested
+        self.write("SENS:POW:RANG:UPP {}".format(range))
+
+
     
     def get_auto_range(self):
         resp = self.ask("SENS:POW:RANG:AUTO?")
@@ -149,6 +157,51 @@ class ThorlabsPM100D(object):
         if self.debug: print "frequency", self.frequency
         return self.frequency
 
+
+    def get_zero_magnitude(self):
+        resp = self.ask("SENS:CORR:COLL:ZERO:MAGN?")
+        if self.debug:
+            print "zero_magnitude", repr(resp)
+        self.zero_magnitude = float(resp)
+        return self.zero_magnitude
+        
+    def get_zero_state(self): 
+        resp = self.ask("SENS:CORR:COLL:ZERO:STAT?")
+        if self.debug:
+            print "zero_state", repr(resp)
+        self.zero_state = bool(int(resp))
+        if self.debug:
+            print "zero_state", repr(resp), '-->', self.zero_state
+        return self.zero_state
+    
+    def run_zero(self):
+        resp = self.ask("SENS:CORR:COLL:ZERO:INIT")
+        return resp
+    
+    def get_photodiode_response(self):
+        resp = self.ask("SENS:CORR:POW:PDIOde:RESP?")
+        #resp = self.ask("SENS:CORR:VOLT:RANG?")
+        #resp = self.ask("SENS:CURR:RANG?")
+        if self.debug:
+            print "photodiode_response (A/W)", repr(resp)
+        
+        self.photodiode_response = float(resp) # A/W
+        return self.photodiode_response 
+    
+    def measure_current(self):
+        resp = self.ask("MEAS:CURR?")
+        if self.debug:
+            print "measure_current", repr(resp)
+        self.current = float(resp)
+        return self.current
+    
+    def get_current_range(self):
+        resp = self.ask("SENS:CURR:RANG:UPP?")
+        if self.debug:
+            print "current_range (A)", repr(resp)
+        self.current_range = float(resp)
+        return self.current_range
+        
     def close(self):
         return self.pm.close()
 
