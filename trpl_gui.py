@@ -7,7 +7,8 @@ from hardware_components.apd_counter import APDCounterHardwareComponent
 from hardware_components.andor_ccd import AndorCCDHardwareComponent
 from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
 from hardware_components.flip_mirror import FlipMirrorHardwareComponent
-from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter 
+from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
+from hardware_components.thorlabs_powermeter_analog_readout import ThorlabsPowerMeterAnalogReadOut
 from hardware_components.oceanoptics_spec import OceanOpticsSpectrometerHC
 from hardware_components.mcl_xyz_stage import MclXYZStage
 from hardware_components.keithley_sourcemeter import KeithleySourceMeterComponent
@@ -31,6 +32,7 @@ from measurement_components.photocurrent_iv import PhotocurrentIVMeasurement
 from measurement_components.power_scan import PowerScanMotorized
 from measurement_components.oo_spec import OOSpecLive
 from measurement_components.kinetic_spectra import KineticSpectra
+from measurement_components.powermeter_optimizer import PowerMeterOptimizerMeasurement
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -46,6 +48,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.acton_spec_hc = self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
         self.flip_mirror_hc = self.add_hardware_component(FlipMirrorHardwareComponent(self))
         self.thorlabs_powermeter_hc = self.add_hardware_component(ThorlabsPowerMeter(self))
+        self.thorlabs_powermeter_analog_readout_hc = self.add_hardware_component(ThorlabsPowerMeterAnalogReadOut(self))
         self.mcl_xyz_stage_hc = self.add_hardware_component(MclXYZStage(self))
         self.keithley_sourcemeter_hc = self.add_hardware_component(KeithleySourceMeterComponent(self))
         self.srs_lockin_hc = self.add_hardware_component(SRSLockinComponent(self))  
@@ -75,6 +78,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.photocurrent_iv_measure = self.add_measurement_component(PhotocurrentIVMeasurement(self))        
         self.picoharp_power_wheel_measure = self.add_measurement_component(PicoHarpPowerWheelMeasurement(self))
         self.motorized_power_wheel_measure = self.add_measurement_component(PowerScanMotorized(self))
+        self.powermeter_optimizer_measure = self.add_measurement_component(PowerMeterOptimizerMeasurement(self))
         self.oo_spec_live_measure = self.add_measurement_component(OOSpecLive(self))
         self.kinetic_spectra_measure = self.add_measurement_component(KineticSpectra(self))
         #Add additional logged quantities

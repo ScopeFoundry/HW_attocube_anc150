@@ -28,7 +28,7 @@ class ThorlabsPowerMeter(HardwareComponent):
         self.power.connect_bidir_to_widget(self.gui.ui.power_meter_power_label)
         
     def connect(self):
-        if self.debug: print "connecting to thorlabs_powermeter"
+        if self.debug: print "connecting to", self.name
         
         # Open connection to hardware                        
         self.power_meter = ThorlabsPM100D(debug=self.debug)

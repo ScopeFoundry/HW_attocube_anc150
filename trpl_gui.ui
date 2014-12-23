@@ -775,7 +775,7 @@ Continuously</string>
           <item row="1" column="3">
            <widget class="QDoubleSpinBox" name="apd_counter_int_doubleSpinBox">
             <property name="suffix">
-             <string> </string>
+             <string/>
             </property>
             <property name="decimals">
              <number>4</number>
@@ -1265,7 +1265,7 @@ Continuously</string>
           <item row="1" column="2">
            <widget class="QCheckBox" name="power_meter_acquire_cont_checkBox">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="text">
              <string>Acquire
