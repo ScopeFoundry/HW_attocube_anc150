@@ -95,15 +95,43 @@ class Base3DScan(Measurement):
         self.Ny = len(self.y_array)
         self.Nz = len(self.z_array)
         
-        #self.range_extent = [self.h0.val, self.h1.val, self.v0.val, self.v1.val]
 
-        #self.corners =  [self.h_array[0], self.h_array[-1], self.v_array[0], self.v_array[-1]]
+        #set up axis order
+        x_axis_id = self.stage.x_axis_id
+        y_axis_id = self.stage.y_axis_id
+        z_axis_id = self.stage.z_axis_id
         
-        #self.imshow_extent = [self.h_array[ 0] - 0.5*self.dh.val,
-        #                      self.h_array[-1] + 0.5*self.dh.val,
-        #                      self.v_array[ 0] - 0.5*self.dv.val,
-        #                      self.v_array[-1] + 0.5*self.dv.val]
+        ax_trans = dict(X=0, Y=1, Z=2)
+        self.axis_scan_order_ids = [ax_trans[ax] for ax in self.axis_scan_order.val]
         
+        print "axis_scan_order", self.axis_scan_order.val
+        print "axis_scan_order_ids", self.axis_scan_order_ids
+        
+        ijk_list = list(ijk_generator((self.Nx, self.Ny, self.Nz), self.axis_scan_order_ids[::-1]))
+
+        
+        # ranges 
+        self.range_extent3d = [self.x0.val, self.x1.val, self.y0.val, self.y1.val, self.z0.val, self.z1.val]
+
+        self.corners3d =  [self.x_array[0], self.x_array[-1], self.y_array[0], self.y_array[-1], self.z_array[0], self.z_array[-1]]
+        
+        self.imshow_extent3d = [self.x_array[ 0] - 0.5*self.dx.val,
+                                self.x_array[-1] + 0.5*self.dx.val,
+                                self.y_array[ 0] - 0.5*self.dy.val,
+                                self.y_array[-1] + 0.5*self.dy.val,
+                                self.z_array[ 0] - 0.5*self.dz.val,
+                                self.z_array[-1] + 0.5*self.dz.val]
+        
+        self.fast_imshow_extent = [
+                      self.imshow_extent3d[2*self.axis_scan_order_ids[0]],
+                      self.imshow_extent3d[2*self.axis_scan_order_ids[0]+1],
+                      self.imshow_extent3d[2*self.axis_scan_order_ids[1]],
+                      self.imshow_extent3d[2*self.axis_scan_order_ids[1]+1]
+                      ]   
+
+        self.slow_axis_id = self.axis_scan_order_ids[-1]
+
+
         #scan specific setup
         self.pre_scan_setup()
                 
@@ -114,17 +142,7 @@ class Base3DScan(Measurement):
         print "Acquiring %i pixels" % (self.Nx*self.Ny*self.Nz)
                 
         try:
-            x_axis_id = self.stage.x_axis_id
-            y_axis_id = self.stage.y_axis_id
-            z_axis_id = self.stage.z_axis_id
-            
-            ax_trans = dict(X=0, Y=1, Z=2)
-            axis_scan_order_ids = [ax_trans[ax] for ax in self.axis_scan_order.val]
-            
-            print "axis_scan_order", self.axis_scan_order.val
-            print "axis_scan_order_ids", axis_scan_order_ids
-            
-            ijk_list = list(ijk_generator((self.Nx, self.Ny, self.Nz), axis_scan_order_ids[::-1]))
+
             
             # move slowly to start position
             i,j,k = ijk_list[0]
@@ -140,6 +158,7 @@ class Base3DScan(Measurement):
             
             
             for iii, ijk in enumerate(ijk_list):
+                self.ijk = ijk
             
                 if self.interrupt_measurement_called:
                     break            
@@ -193,6 +212,10 @@ class Base3DScan(Measurement):
                      'Nx': self.Nx,
                      'Ny': self.Ny,
                      'Nz': self.Nz,
+                     'range_extent3d': self.range_extent3d,
+                     'corners3d': self.corners3d,
+                     'imshow_extent3d': self.imshow_extent3d,
+                     'fast_imshow_extent': self.fast_imshow_extent,
                      }               
 
             save_dict.update(self.scan_specific_savedict())
