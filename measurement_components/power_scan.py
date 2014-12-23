@@ -123,7 +123,8 @@ class PowerScanMotorized(Measurement):
         # Create Data Arrays    
         self.pw_phi = np.zeros(pw_steps)      
         
-        self.pm_powers = np.zeros(pw_steps)
+        self.pm_powers = np.zeros(pw_steps, dtype=float)
+        self.pm_powers_after = np.zeros(pw_steps, dtype=float)
 
         if self.collect_apd.val:
             self.apd_count_rates = np.zeros(pw_steps, dtype=float)
@@ -159,7 +160,8 @@ class PowerScanMotorized(Measurement):
                 self.pw_phi[ii] = ii*pw_steps_per_delta*360/3200
                 
                 # Sleep to give the powerwheel time to complete rotation
-                time.sleep(1.0)
+                time.sleep(2.0)
+                #TODO check to see if powerwheel is finished moving
                 
                 # collect power meter value
                 self.pm_powers[ii]=self.collect_pm_power_data()
@@ -178,10 +180,13 @@ class PowerScanMotorized(Measurement):
                     self.spectra[ii,:] = self.collect_spectrum_data()
                 if self.collect_lifetime.val:
                     self.time_traces[ii,:] = self.collect_lifetime_data()
-                
-                # Open shutter
+                    
+                # CLose shutter
                 if use_shutter:
                     shutter.shutter_open.update_value(False)
+                
+                self.pm_powers_after[ii]=self.collect_pm_power_data()
+                
                 
                 # Wait between steps if desired
                 if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
@@ -194,6 +199,7 @@ class PowerScanMotorized(Measurement):
             #save data file
             save_dict = {
                          'pm_powers': self.pm_powers,
+                         'pm_powers_after': self.pm_powers_after,
                          'pw_phi': self.pw_phi,
                          'pw_steps_per_delta': pw_steps_per_delta,
                          }
@@ -334,13 +340,10 @@ class PowerScanMotorized(Measurement):
         if self.collect_lockin.val:
             self.power_plotline.set_data(self.pm_powers[:,self.ii], self.chopped_current[:self.ii])
         if self.collect_lifetime.val:
-            self.power_plotline.set_data(self.pm_powers[:self.ii], np.sum(self.time_traces[:self.ii,:],axis=1))
+            self.power_plotline.set_data(self.pm_powers_after[:self.ii], np.sum(self.time_traces[:self.ii,:],axis=1))
+
         self.ax_power.relim()
         self.ax_power.autoscale_view(scalex=True, scaley=True)
-#         if self.detector == 'CCD':
-#             self.spec_plotline.set_ydata(self.specs[-1])
-#             self.ax_spec.relim()
-#             self.ax_spec.autoscale_view(scalex=False, scaley=True)
 
         self.fig.canvas.draw()
 
