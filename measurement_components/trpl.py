@@ -56,14 +56,18 @@ class PicoHarpMeasurement(Measurement):
                     }               
 
                     
+
         for lqname,lq in self.gui.logged_quantities.items():
             save_dict[lqname] = lq.val
-            
-        for lqname,lq in self.gui.picoharp_hc.logged_quantities.items():
-            save_dict[self.gui.picoharp_hc.name + "_" + lqname] = lq.val
-            
+        
+        for hc in self.gui.hardware_components.values():
+            for lqname,lq in hc.logged_quantities.items():
+                save_dict[hc.name + "_" + lqname] = lq.val
+        
         for lqname,lq in self.logged_quantities.items():
             save_dict[self.name +"_"+ lqname] = lq.val
+
+
 
         self.fname = "%i_picoharp.npz" % time.time()
         np.savez_compressed(self.fname, **save_dict)
@@ -286,10 +290,20 @@ class TRPLScanMeasurement(Base2DScan):
         #hardware
         ph = self.picoharp = self.gui.picoharp_hc.picoharp
         
+        self.record_power = False
+        if self.gui.thorlabs_powermeter_analog_readout_hc.connected.val and self.gui.thorlabs_powermeter_hc.connected.val:
+            self.record_power = True
+            self.pm_analog_readout = self.gui.thorlabs_powermeter_analog_readout_hc
+            self.gui.thorlabs_powermeter_hc.read_from_hardware()
+        else:
+            raise IOError("power meter not connected")
+        
         # TRPL scan specific setup
         self.sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
 
         #create data arrays
+        if self.record_power:
+            self.powermeter_analog_volt_map = np.zeros((self.Nv, self.Nh), dtype=float)
         self.integrated_count_map = np.zeros((self.Nv, self.Nh), dtype=int)
         self.time_trace_map = np.zeros( 
                                        (self.Nv, self.Nh, 
@@ -312,10 +326,13 @@ class TRPLScanMeasurement(Base2DScan):
         t0 = time.time()
         ph.start_histogram()
         while not ph.check_done_scanning():
-            #ph.read_histogram_data()
-            time.sleep(0.1) #self.sleep_time)  
+            ph.read_histogram_data()
+            time.sleep(0.01) #self.sleep_time)  
         ph.stop_histogram()
         ph.read_histogram_data()
+        
+        if self.record_power:
+            self.pm_power_v = self.pm_analog_readout.voltage.read_from_hardware()
         
         t1 = time.time()
         
@@ -325,19 +342,27 @@ class TRPLScanMeasurement(Base2DScan):
         N = self.stored_histogram_channels.val
         self.time_trace_map[j,i,:] = ph.histogram_data[0:N]
         self.integrated_count_map[j,i] = np.sum(self.time_trace_map[j,i])
-        
+        if self.record_power:
+            self.powermeter_analog_volt_map[j,i] = self.pm_power_v
 
     def scan_specific_savedict(self):
-        return dict( integrated_count_map=self.integrated_count_map,
+        savedict = dict( integrated_count_map=self.integrated_count_map,
                      time_trace_map = self.time_trace_map,
                      time_array = self.time_array,
-                     )        
-
+                     )
+        if self.record_power:
+            savedict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map         
+        return savedict
     
     def update_display(self):
+        #if self.record_power:
+        #    print "power_meter analog voltage", self.pm_power_v
+        
+        #self.ax_time.axhline(2**16)
+        
         self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val])
         
-        C = self.integrated_count_map
+        C = (self.integrated_count_map)
         self.imgplot.set_data(C)
         
         try:
@@ -375,7 +400,19 @@ class TRPLScan3DMeasurement(Base3DScan):
         
         self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3
         #update figure
-        #self.time_trace_plotline.set_xdata(self.time_array)    
+        #self.time_trace_plotline.set_xdata(self.time_array)
+        self.fig = self.gui.trpl_scan_measure.fig
+        self.time_trace_plotline = self.gui.trpl_scan_measure.time_trace_plotline
+        
+        visual_slice = [np.s_[:], np.s_[:], np.s_[:]]
+        visual_slice[self.slow_axis_id] = 0
+        print self.integrated_count_map.shape
+        print visual_slice
+        print self.integrated_count_map[visual_slice[::-1]].shape
+        self.imgplot = self.gui.trpl_scan_measure.aximg.imshow( self.integrated_count_map[visual_slice[::-1]],
+                                                                origin='lower',
+                                                                interpolation='none',
+                                                                extent = self.fast_imshow_extent)    
         
         
     def collect_pixel(self, i, j, k):
@@ -386,7 +423,7 @@ class TRPLScan3DMeasurement(Base3DScan):
         ph.start_histogram()
         while not ph.check_done_scanning():
             #ph.read_histogram_data()
-            time.sleep(0.1) #self.sleep_time)  
+            time.sleep(0.01) #self.sleep_time)  
         ph.stop_histogram()
         ph.read_histogram_data()
         
@@ -394,35 +431,7 @@ class TRPLScan3DMeasurement(Base3DScan):
         
         print "time per pixel:", (t1-t0)
         
-        """
-        try:
-            save_dict = {
-                         'x_array': self.x_array,
-                         'y_array': self.y_array,
-                         'z_array': self.z_array,
-                         'Nx': self.Nx,
-                         'Ny': self.Ny,
-                         'Nz': self.Nz,
-                         }               
-    
-            save_dict.update(self.scan_specific_savedict())
 
-            for lqname,lq in self.gui.logged_quantities.items():
-                save_dict[lqname] = lq.val
-            
-            for hc in self.gui.hardware_components.values():
-                for lqname,lq in hc.logged_quantities.items():
-                    save_dict[hc.name + "_" + lqname] = lq.val
-            
-            for lqname,lq in self.logged_quantities.items():
-                save_dict[self.name +"_"+ lqname] = lq.val
-            
-            
-            np.savez_compressed("incomplete_3dtrpl_scan.npz", **save_dict)
-            print "saved"
-        except:
-            pass
-        """
         # store in arrays
         N = self.stored_histogram_channels.val
         self.time_trace_map[k,j,i,:] = ph.histogram_data[0:N]
@@ -435,4 +444,26 @@ class TRPLScan3DMeasurement(Base3DScan):
                      )
         
     def update_display(self):
-        pass
+        self.fig = self.gui.trpl_scan_measure.fig
+        self.time_trace_plotline = self.gui.trpl_scan_measure.time_trace_plotline
+        
+        self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val])
+        
+        visual_slice = [np.s_[:], np.s_[:], np.s_[:]]
+        visual_slice[self.slow_axis_id] = self.ijk[self.slow_axis_id]
+
+        
+        C = np.log10(self.integrated_count_map[visual_slice[::-1]])
+        self.imgplot.set_data(C)
+        
+        #print self.fast_imshow_extent
+        
+        try:
+            count_min =  -1 #np.min(C[np.nonzero(C)])
+        except Exception:
+            count_min = 0
+        count_max = 10 #np.max(C)
+        self.imgplot.set_clim(count_min, count_max + 1)
+        
+        
+        self.fig.canvas.draw()
