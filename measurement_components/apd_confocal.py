@@ -165,6 +165,17 @@ class APDConfocalScanMeasurement(Measurement):
         # create data arrays
         self.count_rate_map = np.zeros((self.Nv, self.Nh), dtype=float)
         #update figure
+        
+        """self.fig2d.clf()
+        self.ax2d = self.fig2d.add_subplot(111)
+        self.ax2d.plot([0,1])
+
+        self.ax2d.set_xlim(0, 100)
+        self.ax2d.set_ylim(0, 100)
+                    
+        self.fig2d.canvas.mpl_connect('button_press_event', self.on_fig2d_click)
+
+        """
         self.imgplot = self.ax2d.imshow(self.count_rate_map, 
                                     origin='lower',
                                     vmin=1e4, vmax=1e5, interpolation='nearest', 
@@ -262,12 +273,15 @@ class APDConfocalScanMeasurement(Measurement):
 
     def update_display(self):
         #print "updating figure"
-        self.imgplot.set_data(self.count_rate_map)
+        im_data = self.count_rate_map #
+        #im_data = np.log10(self.count_rate_map)
+        
+        self.imgplot.set_data(im_data)
         try:
-            count_min =  np.percentile(self.count_rate_map[np.nonzero(self.count_rate_map)], 1)
+            count_min =  np.percentile(im_data[np.nonzero(self.count_rate_map)], 1)
         except Exception as err:
             count_min = 0
-        count_max = np.percentile(self.count_rate_map,99.)
+        count_max = np.percentile(im_data,99.)
         assert count_max > count_min
         self.imgplot.set_clim(count_min, count_max + 1)
         self.fig2d.canvas.draw()
