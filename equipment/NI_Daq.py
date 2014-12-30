@@ -61,6 +61,10 @@ class NI(object):
             self.error(err)
         finally:
             self.task = None
+            
+    def close(self):
+        return self.clear()
+    
     def unreserve(self):
         ''' releases resources for other tasks to use without destroying task'''
         try:
@@ -119,13 +123,26 @@ class Adc(NI):
     '''
     Analog to digital input task, inherits from abstract NI task
     '''
-    def __init__(self, channel, range = 10.0, name = '' ):
-        ''' creates ADC task'''
-        NI.__init__(self, name)       
+    def __init__(self, channel, range = 10.0, name = '', terminalConfig='default'  ):
+        ''' creates ADC task
+        Range [+/- 1, 2, 5, 10]
+        terminalConfig in ['default', 'rse', 'nrse', 'diff', 'pdiff']
+        '''
+        NI.__init__(self, name)
+        
+        self.terminalConfig = terminalConfig
+        self._terminalConfig_enum = dict(
+              default = mx.DAQmx_Val_Cfg_Default, 
+              rse = mx.DAQmx_Val_RSE,
+              nrse = mx.DAQmx_Val_NRSE,
+              diff = mx.DAQmx_Val_Diff,
+              pdiff = mx.DAQmx_Val_PseudoDiff,
+              )[self.terminalConfig]
+
         if self.task:
             self.set_channel(channel, range)
             
-    def set_channel(self, channel, adc_range = 10.0 ):
+    def set_channel(self, channel, adc_range = 10.0):
         ''' adds input channel[s] to existing task, tries voltage range +/- 1, 2, 5, 10'''
         #  could use GetTaskDevices followed by GetDevAIVoltageRngs to validate max volts
         #  also can check for simultaneous, max single, max multi rates
@@ -135,10 +152,11 @@ class Adc(NI):
         adc_max = mx.float64(  self._input_range )
         adc_min = mx.float64( -self._input_range )
 
+
         try:                
             #int32 CreateAIVoltageChan( const char physicalChannel[], const char nameToAssignToChannel[], 
             #    int32 terminalConfig, float64 minVal, float64 maxVal, int32 units, const char customScaleName[]);
-            self.task.CreateAIVoltageChan(self._channel, '', mx.DAQmx_Val_Cfg_Default,
+            self.task.CreateAIVoltageChan(self._channel, '', self._terminalConfig_enum,
                                           adc_min, adc_max, mx.DAQmx_Val_Volts, '')            
             chan_count = mx.uInt32(0) 
             self.task.GetTaskNumChans(mx.byref(chan_count))
@@ -219,7 +237,7 @@ class Adc(NI):
               
     def read_buffer(self, count = 0, timeout = 1.0):
         ''' reads block of input data, defaults to block size from set_rate()
-            for now allocates data buffer, possible performace hit
+            for now allocates data buffer, possible performance hit
             in continuous mode, reads all samples available up to block_size
             in finite mode, waits for samples to be available, up to smaller of block_size or
                 _chan_cout * _count
@@ -247,7 +265,7 @@ class Adc(NI):
 #        assert read_count.value == 1, \
 #           "sample count {} transfer count {}".format( 1, read_count.value )
         return data
-              
+    
             
 class Dac(NI):
     '''
