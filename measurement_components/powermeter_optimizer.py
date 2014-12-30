@@ -40,6 +40,7 @@ class PowerMeterOptimizerMeasurement(Measurement):
     def _run(self):
         #self.apd_counter_hc = self.gui.apd_counter_hc
         #self.apd_count_rate = self.apd_counter_hc.apd_count_rate
+        self.pm_hc = self.gui.thorlabs_powermeter_hc
         self.pm_analog_readout_hc = self.gui.thorlabs_powermeter_analog_readout_hc
 
 
@@ -48,6 +49,9 @@ class PowerMeterOptimizerMeasurement(Measurement):
             self.optimize_ii %= self.OPTIMIZE_HISTORY_LEN
             
             self.optimize_history[self.optimize_ii] = self.pm_analog_readout_hc.voltage.read_from_hardware()
+            
+            self.pm_hc.power.read_from_hardware()
+            
             time.sleep(0.05)
     
     def update_display(self):        
