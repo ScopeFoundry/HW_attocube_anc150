@@ -69,12 +69,14 @@ class KineticSpectra(Measurement):
             self.oo_spec = oospectrometer.spectrum.copy()
         
         use_pm = False
-        if hasattr(self.gui.thorlabs_powermeter_hc, 'power_meter'):
+        """if hasattr(self.gui.thorlabs_powermeter_hc, 'power_meter'):
             use_pm = True
             power_meter = self.gui.thorlabs_powermeter_hc
-            
+        """    
     
         for ii in range(self.frames.val):
+            if self.interrupt_measurement_called:
+                break
             print "starting acq of frame", ii
             self.start_times[ii] = time.time() - t0
             ccd.start_acquisition()
@@ -117,7 +119,7 @@ class KineticSpectra(Measurement):
                     #print buffer_.shape
                     break
                 else:
-                    time.sleep(wait_time)            
+                    time.sleep(0.001) #self.waittime        
             # while-loop is complete
             if self.interrupt_measurement_called:
                 self.gui.andor_ccd_hc.interrupt_acquisition()
