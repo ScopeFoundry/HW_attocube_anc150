@@ -27,6 +27,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.move_steps  = self.add_logged_quantity('move_steps',  dtype=int, unit='steps', vmin=1, vmax=3200, initial=10, ro=False)
 
         #  operations
+        self.add_operation("zero_encoder", self.zero_encoder)
         self.add_operation("move_fwd", self.move_fwd)
         self.add_operation("move_bkwd", self.move_bkwd)
 
@@ -84,5 +85,8 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.encoder_pos.read_from_hardware()
         
 
-        
+    def zero_encoder(self):
+        self.power_wheel.write_zero_encoder()
+        self.encoder_pos.read_from_hardware()
+
 

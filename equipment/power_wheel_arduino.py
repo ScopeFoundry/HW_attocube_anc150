@@ -87,7 +87,9 @@ class PowerWheelArduino(object):
 
         return self.encoder_pos
         
-        
+     def write_zero_encoder(self):
+         self.send_cmd("az")
+
     def close(self):
         self.ser.close()      
         
