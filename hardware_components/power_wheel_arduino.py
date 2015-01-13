@@ -40,7 +40,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         if self.debug: print "connecting to arduino power wheel"
         
         # Open connection to hardware
-        self.power_wheel = PowerWheelArduino(port='COM16', debug=True)
+        self.power_wheel = PowerWheelArduino(port='COM16', debug=self.debug_mode.val)
         
         # connect logged quantities
         self.encoder_pos.hardware_set_func = \
@@ -68,14 +68,16 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         
     #@QtCore.Slot()
     def move_fwd(self):
-        self.power_wheel.write_steps(self.move_steps.val)
+        #self.power_wheel.write_steps(self.move_steps.val)
+        self.power_wheel.write_steps_and_wait(self.move_steps.val)
         time.sleep(0.2)
         #TODO really should wait until done
+        self.power_wheel.read_status()
         self.encoder_pos.read_from_hardware()
         
     #@QtCore.Slot()
     def move_bkwd(self):
-        self.power_wheel.write_steps(-1 * self.move_steps.val)
+        self.power_wheel.write_steps_and_wait(-1 * self.move_steps.val)
         time.sleep(0.2)
         #TODO really should wait until done
 
