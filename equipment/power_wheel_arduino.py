@@ -57,13 +57,17 @@ class PowerWheelArduino(object):
         self.read_status()
         
         while(self.is_moving_to):
-            time.sleep(0.05)
+            time.sleep(0.050)
             self.read_status()
         
         
     
     def write_speed(self, speed):
         self.send_cmd('as%i'% speed)
+    
+    def read_speed(self):
+        self.read_status()
+        return self.stored_speed
         
     def read_status(self):
         status = self.ask_cmd("a?")
@@ -87,6 +91,12 @@ class PowerWheelArduino(object):
 
         return self.encoder_pos
         
+    def write_zero_encoder(self):
+        self.send_cmd("az")
+
+
+    def write_brake(self):
+        self.send_cmd("ab")
         
     def close(self):
         self.ser.close()      

@@ -33,6 +33,7 @@ from measurement_components.power_scan import PowerScanMotorized
 from measurement_components.oo_spec import OOSpecLive
 from measurement_components.kinetic_spectra import KineticSpectra
 from measurement_components.powermeter_optimizer import PowerMeterOptimizerMeasurement
+from measurement_components.laser_power_feedback_control import LaserPowerFeedbackControl
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -81,6 +82,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.powermeter_optimizer_measure = self.add_measurement_component(PowerMeterOptimizerMeasurement(self))
         self.oo_spec_live_measure = self.add_measurement_component(OOSpecLive(self))
         self.kinetic_spectra_measure = self.add_measurement_component(KineticSpectra(self))
+        self.laser_power_feedback_control = self.add_measurement_component(LaserPowerFeedbackControl(self))
         #Add additional logged quantities
 
         # Connect to custom gui
