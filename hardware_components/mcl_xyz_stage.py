@@ -25,6 +25,7 @@ class MclXYZStage(HardwareComponent):
                            initial = -1,
                            vmin=-1,
                            vmax=100,
+                           si = False,
                            unit='um')
         self.x_position = self.add_logged_quantity("x_position", **lq_params)
         self.y_position = self.add_logged_quantity("y_position", **lq_params)       
@@ -40,7 +41,7 @@ class MclXYZStage(HardwareComponent):
         self.z_target = self.add_logged_quantity("z_target", **lq_params)        
         
         
-        lq_params = dict(unit="um", dtype=float, ro=True, initial=100)
+        lq_params = dict(unit="um", dtype=float, ro=True, initial=100, si=False)
         self.x_max = self.add_logged_quantity("x_max", **lq_params)
         self.y_max = self.add_logged_quantity("y_max", **lq_params)
         self.z_max = self.add_logged_quantity("z_max", **lq_params)
@@ -54,6 +55,7 @@ class MclXYZStage(HardwareComponent):
                                                              unit = "um/s",
                                                              vmin = 1e-4,
                                                              vmax = 1000,
+                                                             si = False,
                                                              dtype=float)        
         
         # connect GUI

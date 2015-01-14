@@ -22,17 +22,18 @@ class AndorCCDHardwareComponent(HardwareComponent):
         self.status = self.add_logged_quantity(name='ccd_satus', dtype=str, fmt="%s",ro=True)
         
         self.temperature = self.add_logged_quantity(name="temperature", dtype=int,
-                                                    ro=True, unit = "C", vmin = -300, vmax = 300)
+                                                    ro=True, unit = "C", vmin = -300, vmax = 300, si=False)
         
         self.cooler_on = self.add_logged_quantity(name="cooler_on", dtype=bool, ro=False)
 
         self.exposure_time = self.add_logged_quantity(name="exposure_time", 
                                                       dtype=float,
                                                       fmt="%e", ro=False,
-                                                      unit = "sec",
+                                                      unit = "sec", si=True,
                                                       vmin = 1e-3, vmax=1000)     
         
         self.em_gain = self.add_logged_quantity("em_gain", dtype=int, ro=False,
+                                                si=False,
                                                 vmin=1, vmax=4096)
         
         # Ouput amplifer ( EMCCD or conventional)

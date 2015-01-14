@@ -20,15 +20,15 @@ class PicoHarpHardwareComponent(HardwareComponent):
         self.count_rate1 = self.add_logged_quantity("count_rate1", dtype=int, ro=True, vmin=0, vmax=100e6)
         self.add_logged_quantity("Tacq", dtype=int, unit="ms", vmin=1, vmax=100*60*60*1000)
         self.add_logged_quantity("Binning", dtype=int, choices=[(str(x), x) for x in range(0,8)])
-        self.add_logged_quantity("Resolution", dtype=int, unit="ps", ro=True)
+        self.add_logged_quantity("Resolution", dtype=int, unit="ps", ro=True, si=False)
 
         self.add_logged_quantity("SyncDivider", dtype=int, choices=[("1",1),("2",2),("4",4),("8",8)])
-        self.add_logged_quantity("SyncOffset", dtype=int, vmin=-99999, vmax=99999)
+        self.add_logged_quantity("SyncOffset", dtype=int, vmin=-99999, vmax=99999, si=False)
         
-        self.add_logged_quantity("CFDLevel0", dtype=int, unit="mV", vmin=0, vmax=800)
-        self.add_logged_quantity("CFDZeroCross0", dtype=int,  unit="mV", vmin=0, vmax=20)
-        self.add_logged_quantity("CFDLevel1", dtype=int, unit="mV", vmin=0, vmax=800)
-        self.add_logged_quantity("CFDZeroCross1", dtype=int, unit="mV", vmin=0, vmax=20)
+        self.add_logged_quantity("CFDLevel0", dtype=int, unit="mV", vmin=0, vmax=800, si=False)
+        self.add_logged_quantity("CFDZeroCross0", dtype=int,  unit="mV", vmin=0, vmax=20, si=False)
+        self.add_logged_quantity("CFDLevel1", dtype=int, unit="mV", vmin=0, vmax=800, si=False)
+        self.add_logged_quantity("CFDZeroCross1", dtype=int, unit="mV", vmin=0, vmax=20, si=False)
 
 
     def connect(self):

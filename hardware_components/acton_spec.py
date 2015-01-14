@@ -27,6 +27,7 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
                                 fmt="%1.3f",
                                 ro=False,
                                 unit = "nm",
+                                si=False,
                                 vmin=-100, vmax=2000,
                                 )
 

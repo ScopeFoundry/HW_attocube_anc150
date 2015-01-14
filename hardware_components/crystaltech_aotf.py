@@ -53,12 +53,14 @@ class CrystalTechAOTF(HardwareComponent):
                                         unit= "MHz",
                                         vmin= 0,
                                         vmax = 200,
+                                        si = False,
                                         fmt = '%f')
 
         self.pwr0 = self.add_logged_quantity(name="pwr0", 
                                          dtype=int, 
                                          vmin=0,
-                                         vmax=1<<16 # 2^16
+                                         vmax=1<<16, # 2^16
+                                         si=False
                                          )
 
 

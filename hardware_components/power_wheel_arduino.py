@@ -24,13 +24,16 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
 
         # logged quantity        
         self.encoder_pos = self.add_logged_quantity('encoder_pos', 
-                                                    dtype=int, unit='steps', ro=True)
+                                                    dtype=int, unit='steps', 
+                                                    si=False, ro=True)
         self.move_steps  = self.add_logged_quantity('move_steps',  
                                                     dtype=int, unit='steps',
-                                                    vmin=1, vmax=3200, initial=10, ro=False)
+                                                    vmin=1, vmax=3200, initial=10,  
+                                                    si=False, ro=False)
         self.speed       = self.add_logged_quantity("speed", 
                                                     dtype=int, unit='steps/sec', 
-                                                    vmin=1, vmax=1000, initial=100, ro=False)
+                                                    vmin=1, vmax=1000, initial=100, 
+                                                    si=True, ro=False)
 
 
         #  operations

@@ -10,17 +10,17 @@ class LaserPowerFeedbackControl(Measurement):
         self.display_update_period = 0.1 #seconds
 
 
-        self.update_interval = self.add_logged_quantity("update_interval",  dtype=float, unit="sec", initial=0.1)
-        self.p_gain = self.add_logged_quantity("p_gain", dtype=float, unit = "steps/V", initial = 1000)
+        self.update_interval = self.add_logged_quantity("update_interval",  dtype=float, unit="sec", initial=0.1, si=True)
+        self.p_gain = self.add_logged_quantity("p_gain", dtype=float, unit = "steps/V", initial = 1000, si=True)
 
 
-        self.max_position = self.add_logged_quantity("max_position", dtype=int, unit="step", initial=2400)
-        self.min_position = self.add_logged_quantity("min_position", dtype=int, unit="step", initial=0)
+        self.max_position = self.add_logged_quantity("max_position", dtype=int, unit="step", initial=2400, si=False)
+        self.min_position = self.add_logged_quantity("min_position", dtype=int, unit="step", initial=0, si=False)
 
-        self.set_voltage      = self.add_logged_quantity("set_voltage",    unit="V", dtype=float, ro=False, vmin=0, vmax=5)
-        self.present_voltage  = self.add_logged_quantity("present_voltage", unit="V", dtype=float, ro=True)
+        self.set_voltage      = self.add_logged_quantity("set_voltage",    unit="V", dtype=float, ro=False, vmin=0, vmax=2, si=True)
+        self.present_voltage  = self.add_logged_quantity("present_voltage", unit="V", dtype=float, ro=True, si=True)
 
-        self.encoder_position = self.add_logged_quantity("encoder_position", dtype=int, ro=True, unit="steps")
+        self.encoder_position = self.add_logged_quantity("encoder_position", dtype=int, ro=True, unit="steps", si=False)
 
     def setup_figure(self):
         pass

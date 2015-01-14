@@ -11,9 +11,11 @@ class ThorlabsPowerMeterAnalogReadOut(HardwareComponent):
     
     def setup(self):
         self.power   = self.add_logged_quantity(name = 'power', dtype=float,
+                                                si=True,
                                                 unit="W", vmin=0, vmax = 10,
                                                 ro=True)
         self.voltage = self.add_logged_quantity(name = 'voltage', dtype=float,
+                                                si=True,
                                                 unit="V", vmin=-10, vmax = 10,
                                                 ro=True)
 

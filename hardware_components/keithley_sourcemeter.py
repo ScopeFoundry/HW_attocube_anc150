@@ -21,8 +21,8 @@ class KeithleySourceMeterComponent(HardwareComponent): #object-->HardwareCompone
     def setup(self):
         self.debug = True
         
-        self.voltage = self.add_logged_quantity('v', dtype=float, unit='V', ro=True)
-        self.current = self.add_logged_quantity('i', dtype=float, unit='A', ro=True)
+        self.voltage = self.add_logged_quantity('v', dtype=float, unit='V', ro=True, si=True)
+        self.current = self.add_logged_quantity('i', dtype=float, unit='A', ro=True, si=True)
         
         
     def connect(self):
