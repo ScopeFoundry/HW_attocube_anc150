@@ -66,7 +66,10 @@ class HardwareComponent(QtCore.QObject):
             if lq.choices is not None:
                 widget = QtGui.QComboBox()
             elif lq.dtype in [int, float]:
-                widget = pg.SpinBox()
+                if lq.si:
+                    widget = pg.SpinBox()
+                else:
+                    widget = QtGui.QDoubleSpinBox()
             elif lq.dtype in [bool]:
                 widget = QtGui.QCheckBox()  
             elif lq.dtype in [str]:

@@ -9,7 +9,7 @@ class LoggedQuantity(QtCore.QObject):
     
     def __init__(self, name, dtype=float, 
                  hardware_read_func=None, hardware_set_func=None, 
-                 initial=0, fmt="%g",
+                 initial=0, fmt="%g", si=True,
                  ro = False,
                  unit = None,
                  vmin=-1e12, vmax=+1e12, choices=None):
@@ -21,6 +21,7 @@ class LoggedQuantity(QtCore.QObject):
         self.hardware_read_func = hardware_read_func
         self.hardware_set_func = hardware_set_func
         self.fmt = fmt # string formatting string. This is ignored if dtype==str
+        self.si   = si # will use pyqtgraph SI Spinbox if True
         self.unit = unit
         self.vmin = vmin
         self.vmax = vmax

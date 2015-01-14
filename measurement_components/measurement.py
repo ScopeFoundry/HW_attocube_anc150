@@ -33,6 +33,8 @@ class Measurement(QtCore.QObject):
         
         self.logged_quantities = OrderedDict()
         self.operations = OrderedDict()
+        
+        #TODO Add running logged quantity
 
         self.add_operation("start", self.start)
         self.add_operation("interrupt", self.interrupt)
@@ -137,8 +139,10 @@ class Measurement(QtCore.QObject):
             if lq.choices is not None:
                 widget = QtGui.QComboBox()
             elif lq.dtype in [int, float]:
-                #widget = QtGui.QDoubleSpinBox()
-                widget = pg.SpinBox()
+                if lq.si:
+                    widget = pg.SpinBox()
+                else:
+                    widget = QtGui.QDoubleSpinBox()
             elif lq.dtype in [bool]:
                 widget = QtGui.QCheckBox()  
             elif lq.dtype in [str]:
