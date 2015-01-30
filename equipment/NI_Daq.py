@@ -393,20 +393,22 @@ if __name__ == '__main__':
     test = 'dual'
     
     if test == 'dual':
-        block = 1000
-        rate = 1.0e5
+        block = 100000
+        rate = 1.0e6
+        amplitude = 0.05
+        period = 2
         adc.set_rate(rate, block)   #finite read
-        dac.set_rate(rate, len(data)/2, finite=True)
-        out1 = np.sin( np.linspace( 0, 3*np.pi, block) )
-        out2 = np.sin( np.linspace( 0 + np.pi/2, 3*np.pi+ np.pi/2, block) )
+        dac.set_rate(rate, block, finite=True)
+        out1 = amplitude * np.sin( np.linspace( 0, period*2*np.pi, block) )
+        out2 = amplitude * np.sin( np.linspace( 0 + np.pi/2, period*2*np.pi+ np.pi/2, block) )
         buff_out = np.zeros( len(out1) + len(out2) )
         buff_out[::2] = out1
         buff_out[1::2] = out2
         
-        plt.plot( out1 )
-        plt.plot( out2 )
-        plt.show()
-        
+#         plt.plot( out1 )
+#         plt.plot( out2 )
+#         plt.show()
+#          
         buffSize = 512
         buff = mx.create_string_buffer( buffSize )
         adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
@@ -418,11 +420,13 @@ if __name__ == '__main__':
         adc.start()
 
         x = adc.read_buffer()
+        in1 = x[::2]
+        in2 = x[1::2]
         plt.subplot(211)
-        plt.plot(x[::2])
+        plt.plot(in1)
         plt.plot(out1)
         plt.subplot(212)
-        plt.plot(x[1::2])
+        plt.plot(in2)
         plt.plot(out2)
         plt.show()
         
