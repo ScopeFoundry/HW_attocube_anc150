@@ -36,7 +36,7 @@ class PicoHarpHardwareComponent(HardwareComponent):
         
         # Open connection to hardware
                 
-        PH = self.picoharp = PicoHarp300(devnum=0, debug=True)
+        PH = self.picoharp = PicoHarp300(devnum=0, debug=False)
 
         # connect logged quantities
         

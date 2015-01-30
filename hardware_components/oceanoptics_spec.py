@@ -18,7 +18,7 @@ class OceanOpticsSpectrometerHC(HardwareComponent):
     
     def setup(self):
         self.name = 'ocean_optics_spectrometer'
-        self.debug = False
+        self.debug = True
         
         # Create logged quantities
         self.oo_spec_int_time = self.add_logged_quantity(
@@ -28,15 +28,15 @@ class OceanOpticsSpectrometerHC(HardwareComponent):
                                             vmin = 0.0001,
                                             vmax = 1000,
                                             unit = 'sec',
-                                            intial = 0.1,
+                                            initial = 0.1,
                                             )
 
 
         #connect GUI
        #self.oo_spec_int_time.connect_
        
-       
-       #ui.oo_spec_int_time_doubleSpinBox.valueChanged[float].connect(self.oo_spec_int_time.update_value)
+        self.oo_spec_int_time.connect_bidir_to_widget(
+                                  self.gui.ui.oo_spec_int_time_doubleSpinBox)
 
     def connect(self):
 

@@ -195,7 +195,7 @@ class SRSlockin(object):
                 self.set_sensitivity(self.sensitivities[isens+1])
             else:
                 changed = False
-        return
+        return changed
     
     def auto_sensitivity_quick(self):
         #Assume A (Voltage) input, uses self.sensitivity instead of get_sensitivity
@@ -326,7 +326,7 @@ class SRSlockin(object):
             self.gpibdev.ser.close()
 
 if __name__ == '__main__':
-    lockin = SRSlockin(debug=True)
+    lockin = SRSlockin(port="COM12", debug=True)
     lockin.start()
     print 'frequency = %gHz' % lockin.get_frequency()
     print 'time constant = %s' % lockin.get_time_constant()
@@ -335,6 +335,9 @@ if __name__ == '__main__':
     
     import time
     for i in range(100):
-        print i, lockin.set_aoutput(1, i % 2)
-        time.sleep(0.5)
+        #print i, lockin.set_aoutput(1, i % 2)
+        #time.sleep(0.5)
+        print i, lockin.get_signal()
+        #9time.sleep(0.5)
+        
     lockin.close()

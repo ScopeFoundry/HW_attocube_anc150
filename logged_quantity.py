@@ -30,8 +30,9 @@ class LoggedQuantity(QtCore.QObject):
         self.oldval = None
         
     def read_from_hardware(self, send_signal=True):
-        self.oldval = self.val
         if self.hardware_read_func:
+            self.oldval = self.val
+            #print "read_from_hardware", self.name
             self.val = self.dtype(self.hardware_read_func())
             if send_signal:
                 self.send_display_updates()
@@ -42,18 +43,24 @@ class LoggedQuantity(QtCore.QObject):
     @QtCore.Slot(int)
     @QtCore.Slot(bool)
     @QtCore.Slot()
-    def update_value(self, new_val=None, update_hardware=True, send_signal=True):
-        #print "called update_value", self.name, new_val
+    def update_value(self, new_val=None, update_hardware=True, send_signal=True, reread_hardware=False):
+        self.oldval = self.val
+        #print "called update_value", self.name, new_val, reread_hardware
         if new_val == None:
             new_val = self.sender().text()
         self.val = self.dtype(new_val)
         if update_hardware and self.hardware_set_func:
-            self.hardware_set_func(self.val)   
+            self.hardware_set_func(self.val)
+            if reread_hardware:
+                #print "rereading"
+                self.read_from_hardware(send_signal=send_signal)
         if send_signal:
             self.send_display_updates()
             
     def send_display_updates(self, force=False):
+        #print "send_display_updates: {} force={}".format(self.name, force)
         if (self.oldval != self.val) or (force):
+            
             #print "send display updates", self.name, self.val, self.oldval
             if self.dtype == str:
                 self.updated_value[str].emit(self.val)
@@ -71,6 +78,9 @@ class LoggedQuantity(QtCore.QObject):
                 if self.val in choice_vals:
                     self.updated_choice_index_value.emit(choice_vals.index(self.val) )
             self.oldval = self.val
+        else:
+            pass
+            #print "\t no updates sent", (self.oldval != self.val) , (force), self.oldval, self.val
             
     def update_choice_index_value(self, new_choice_index, **kwargs):
         self.update_value(self.choices[new_choice_index][1], **kwargs)
@@ -151,6 +161,8 @@ class LoggedQuantity(QtCore.QObject):
             if not self.ro:
                 #widget.valueChanged[float].connect(self.update_value)
                 widget.valueChanged.connect(self.update_value)
+        elif type(widget) == QtGui.QLabel:
+            self.updated_text_value.connect(widget.setText)
         else:
             raise ValueError("Unknown widget type")
         

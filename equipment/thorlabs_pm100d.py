@@ -38,10 +38,9 @@ class ThorlabsPM100D(object):
         self.write("SENS:POW:UNIT W") # set to Watts
         self.power_unit = self.ask("SENS:POW:UNIT?")
 
-        self.write("SENS:POW:RANG:AUTO ON") # turn on auto range
 
-        self.auto_range = bool(self.ask("SENS:POW:RANG:AUTO?"))
-        
+        self.get_auto_range()
+                
         self.get_average_count()
         
         self.get_power_range()        
@@ -126,15 +125,83 @@ class ThorlabsPM100D(object):
         return self.power
         
     def get_power_range(self):
-        self.power_range = self.ask("SENS:POW:RANG?") # CHECK RANGE
+        #un tested
+        self.power_range = self.ask("SENS:POW:RANG:UPP?") # CHECK RANGE
         if self.debug: print "power_range", self.power_range
         return self.power_range
+
+
+    def set_power_range(self, range):
+        #un tested
+        self.write("SENS:POW:RANG:UPP {}".format(range))
+
+
+    
+    def get_auto_range(self):
+        resp = self.ask("SENS:POW:RANG:AUTO?")
+        if True:
+            print repr(resp)
+        self.auto_range = bool(int(resp))
+        return self.auto_range
+    
+    def set_auto_range(self, auto = True):
+        print "set_auto_range", auto
+        if auto:
+            self.write("SENS:POW:RANG:AUTO ON") # turn on auto range
+        else:
+            self.write("SENS:POW:RANG:AUTO OFF") # turn off auto range
+    
     
     def measure_frequency(self):
         self.frequency = self.ask("MEAS:FREQ?")
         if self.debug: print "frequency", self.frequency
         return self.frequency
 
+
+    def get_zero_magnitude(self):
+        resp = self.ask("SENS:CORR:COLL:ZERO:MAGN?")
+        if self.debug:
+            print "zero_magnitude", repr(resp)
+        self.zero_magnitude = float(resp)
+        return self.zero_magnitude
+        
+    def get_zero_state(self): 
+        resp = self.ask("SENS:CORR:COLL:ZERO:STAT?")
+        if self.debug:
+            print "zero_state", repr(resp)
+        self.zero_state = bool(int(resp))
+        if self.debug:
+            print "zero_state", repr(resp), '-->', self.zero_state
+        return self.zero_state
+    
+    def run_zero(self):
+        resp = self.ask("SENS:CORR:COLL:ZERO:INIT")
+        return resp
+    
+    def get_photodiode_response(self):
+        resp = self.ask("SENS:CORR:POW:PDIOde:RESP?")
+        #resp = self.ask("SENS:CORR:VOLT:RANG?")
+        #resp = self.ask("SENS:CURR:RANG?")
+        if self.debug:
+            print "photodiode_response (A/W)", repr(resp)
+        
+        self.photodiode_response = float(resp) # A/W
+        return self.photodiode_response 
+    
+    def measure_current(self):
+        resp = self.ask("MEAS:CURR?")
+        if self.debug:
+            print "measure_current", repr(resp)
+        self.current = float(resp)
+        return self.current
+    
+    def get_current_range(self):
+        resp = self.ask("SENS:CURR:RANG:UPP?")
+        if self.debug:
+            print "current_range (A)", repr(resp)
+        self.current_range = float(resp)
+        return self.current_range
+        
     def close(self):
         return self.pm.close()
 

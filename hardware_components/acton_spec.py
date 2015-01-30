@@ -25,7 +25,7 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
                                 name="center_wl",
                                 dtype=float, 
                                 fmt="%1.3f",
-                                ro=True,
+                                ro=False,
                                 unit = "nm",
                                 vmin=-100, vmax=2000,
                                 )
@@ -37,7 +37,9 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
                                 ro=True,
                                 )
 
-
+        # connect to gui
+        
+        self.center_wl.connect_bidir_to_widget(self.gui.ui.acton_spec_center_wl_doubleSpinBox)
 
     def connect(self):
         if self.debug: print "connecting to acton_spectrometer"

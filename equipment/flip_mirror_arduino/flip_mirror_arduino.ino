@@ -37,7 +37,7 @@ void loop()
       flip_state = 1;  
     }
     else if (inByte == '?') {
-      Serial.println(flip_state); 
+      Serial.print(flip_state); 
       //Serial.write("\n"); 
     }
   }
