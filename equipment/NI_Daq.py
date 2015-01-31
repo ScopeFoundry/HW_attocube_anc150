@@ -399,34 +399,102 @@ class Dac(NI):
         assert writeCount.value == 1, \
             "sample count {} transfer count {}".format( 1, writeCount.value )
 
- #  various test code 
+class Sync(NI):
+    '''
+    creates simultaneous input and output tasks with synchronized start triggers
+    input and output task elapsed time need not be equal, but typically will be, 
+    can oversample input with for example 10x rate, 10x sample count
+    for now scan through output block once, wait for all input data, later
+    use callbacks, implement multiple scans
+    '''
+    def __init__(self, out_chan, in_chan, range = 10.0,  out_name = '', in_name = '', terminalConfig='default' ):
+        # create input and output tasks
+        self.dac = Dac( out_chan, out_name)        
+        self.adc = Adc( in_chan, range, in_name, terminalConfig )
+
+        #sync dac start to adc start
+        buffSize = 512
+        buff = mx.create_string_buffer( buffSize )
+        self.adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
+        trig_name = '/' + buff.value + '/ai/StartTrigger'
+        self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
+        
+    def setup(self, rate_out, count_out, rate_in, count_in):
+        self.dac.set_rate(rate_out, count_out, finite=True)
+        self.adc.set_rate(rate_in, count_in)
+        
+    def out_data(self, data):
+        self.dac.load_buffer(data)
+    
+    def start(self):
+        self.dac.start() #start dac first, waits for trigger from ADC to output data
+        self.adc.start()
+       
+    def read_buffer(self):
+        return self.adc.read_buffer() 
+    
+#  various test code 
 if __name__ == '__main__':
     import time
     import matplotlib.pyplot as plt
+
+    test = 'sync'
     
-    dac = Dac('X-6368/ao0:1', 'SEM ext scan')
-    data = np.arange(0, 10, 0.001, dtype = np.float64)
-    
-    adc = Adc('X-6368/ai2:3', 5, name = 'chan 2-3')
-    test = 'dual'
-    
-    if test == 'dual':
-        block = 100000
-        rate = 1.0e6
-        amplitude = 0.05
+    if test == 'sync':
+        # make output waveform
+        block = 100
+        rate = 1.0e5
+                
+        amplitude = 0.5
         period = 2
-        adc.set_rate(rate, block)   #finite read
-        dac.set_rate(rate, block, finite=True)
         out1 = amplitude * np.sin( np.linspace( 0, period*2*np.pi, block) )
         out2 = amplitude * np.sin( np.linspace( 0 + np.pi/2, period*2*np.pi+ np.pi/2, block) )
         buff_out = np.zeros( len(out1) + len(out2) )
-        buff_out[::2] = out1
-        buff_out[1::2] = out2
+        buff_out[::2] = out1    #interlaced output
+        buff_out[1::2] = out2   
+
+        #setup tasks
+        scan = Sync('X-6368/ao0:1', 'X-6368/ai2:3', 1.0)
+        scan.setup(rate, block, 10*rate, 10*block)
+        scan.out_data(buff_out)
+
+        scan.start()
+        x = scan.read_buffer()
         
+        in1 = x[::2]
+        in2 = x[1::2]
+        plt.subplot(211)
+        plt.plot(in1)
+        plt.plot(out1)
+        plt.subplot(212)
+        plt.plot(in2)
+        plt.plot(out2)
+        plt.show()
+    else:         
+        dac = Dac('X-6368/ao0:1', 'SEM ext scan')
+        data = np.arange(0, 10, 0.001, dtype = np.float64)
+    
+        adc = Adc('X-6368/ai2:3', 5, name = 'chan 2-3')
+    
+    if test == 'dual':
+        # make output waveform
+        block = 100000
+        amplitude = 0.5
+        period = 2
+        out1 = amplitude * np.sin( np.linspace( 0, period*2*np.pi, block) )
+        out2 = amplitude * np.sin( np.linspace( 0 + np.pi/2, period*2*np.pi+ np.pi/2, block) )
+        buff_out = np.zeros( len(out1) + len(out2) )
+        buff_out[::2] = out1    #interlaced output
+        buff_out[1::2] = out2   
 #         plt.plot( out1 )
 #         plt.plot( out2 )
 #         plt.show()
-#          
+        
+        rate = 1.0e6
+        adc.set_rate(rate, block)   #finite read
+        dac.set_rate(rate, block, finite=True)
+        
+         
         buffSize = 512
         buff = mx.create_string_buffer( buffSize )
         adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
