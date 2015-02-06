@@ -42,77 +42,8 @@
           <string>2D Scan Area</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="8" column="1">
-           <widget class="QDoubleSpinBox" name="ysize_doubleSpinBox"/>
-          </item>
-          <item row="8" column="0">
-           <widget class="QLabel" name="ysize_label">
-            <property name="text">
-             <string>ysize:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QDoubleSpinBox" name="dv_doubleSpinBox">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="2" colspan="2">
-           <widget class="QPushButton" name="pushButton_2">
-            <property name="text">
-             <string>Stop</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="v_label">
-            <property name="text">
-             <string>V:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="0" colspan="2">
-           <widget class="QPushButton" name="pushButton">
-            <property name="text">
-             <string>Start</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>µm</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QDoubleSpinBox" name="h1_doubleSpinBox">
-            <property name="decimals">
-             <number>3</number>
-            </property>
-            <property name="value">
-             <double>45.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QDoubleSpinBox" name="v0_doubleSpinBox">
-            <property name="decimals">
-             <number>3</number>
-            </property>
-            <property name="value">
-             <double>25.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="3">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>µm</string>
-            </property>
-           </widget>
+          <item row="9" column="1">
+           <widget class="QDoubleSpinBox" name="angle_doubleSpinBox"/>
           </item>
           <item row="0" column="1">
            <widget class="QDoubleSpinBox" name="h0_doubleSpinBox">
@@ -124,31 +55,17 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="2">
-           <widget class="QLabel" name="label_9">
+          <item row="6" column="0">
+           <widget class="QLabel" name="yoffset_label">
             <property name="text">
-             <string>um</string>
+             <string>yoffset:</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="1">
-           <widget class="QDoubleSpinBox" name="dh_doubleSpinBox">
-            <property name="decimals">
-             <number>4</number>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="dh_label">
+          <item row="2" column="3">
+           <widget class="QLabel" name="label_4">
             <property name="text">
-             <string>dH:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>um</string>
+             <string>µm</string>
             </property>
            </widget>
           </item>
@@ -156,33 +73,6 @@
            <widget class="QLabel" name="dv_label">
             <property name="text">
              <string>dV:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="h_label">
-            <property name="text">
-             <string>H:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QDoubleSpinBox" name="v1_doubleSpinBox">
-            <property name="decimals">
-             <number>3</number>
-            </property>
-            <property name="value">
-             <double>45.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="QDoubleSpinBox" name="xsize_doubleSpinBox"/>
-          </item>
-          <item row="7" column="0">
-           <widget class="QLabel" name="xsize_label">
-            <property name="text">
-             <string>xsize:</string>
             </property>
            </widget>
           </item>
@@ -227,10 +117,154 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="yoffset_label">
+          <item row="3" column="2">
+           <widget class="QLabel" name="label_7">
             <property name="text">
-             <string>yoffset:</string>
+             <string>um</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="h_label">
+            <property name="text">
+             <string>H:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QDoubleSpinBox" name="v1_doubleSpinBox">
+            <property name="decimals">
+             <number>3</number>
+            </property>
+            <property name="value">
+             <double>45.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QDoubleSpinBox" name="xsize_doubleSpinBox"/>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="xsize_label">
+            <property name="text">
+             <string>xsize:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="dh_label">
+            <property name="text">
+             <string>dH:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QDoubleSpinBox" name="dh_doubleSpinBox">
+            <property name="decimals">
+             <number>4</number>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>um</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDoubleSpinBox" name="v0_doubleSpinBox">
+            <property name="decimals">
+             <number>3</number>
+            </property>
+            <property name="value">
+             <double>25.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QDoubleSpinBox" name="h1_doubleSpinBox">
+            <property name="decimals">
+             <number>3</number>
+            </property>
+            <property name="value">
+             <double>45.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>µm</string>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton">
+            <property name="text">
+             <string>Start</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="v_label">
+            <property name="text">
+             <string>V:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="2" colspan="2">
+           <widget class="QPushButton" name="pushButton_2">
+            <property name="text">
+             <string>Stop</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="dv_doubleSpinBox">
+            <property name="decimals">
+             <number>4</number>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="ysize_label">
+            <property name="text">
+             <string>ysize:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QDoubleSpinBox" name="ysize_doubleSpinBox"/>
+          </item>
+          <item row="10" column="1">
+           <widget class="QDoubleSpinBox" name="sample_rate_doubleSpinBox"/>
+          </item>
+          <item row="9" column="2">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>degree</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="2">
+           <widget class="QLabel" name="label_15">
+            <property name="text">
+             <string>Hz</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0">
+           <widget class="QLabel" name="angle_label">
+            <property name="text">
+             <string>angle:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="0">
+           <widget class="QLabel" name="sample_rate_label">
+            <property name="text">
+             <string>sample rate:</string>
             </property>
            </widget>
           </item>

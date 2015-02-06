@@ -60,7 +60,8 @@ class SemRasterSingleScan(Measurement):
         self.yoffset.connect_bidir_to_widget(self.gui.ui.yoffset_doubleSpinBox)
         self.xsize.connect_bidir_to_widget(self.gui.ui.xsize_doubleSpinBox)
         self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
-        
+        self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
+        self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
     def setup_figure(self):
         self.fig = self.gui.add_figure('sem_raster', self.gui.ui.sem_raster_plot_widget)
 

@@ -5,6 +5,7 @@ Created on Jan 30, 2015
 '''
 from __future__ import division
 import numpy as np
+from math import pi as pi
 
 class RasterGenerator(object):
     '''
@@ -40,7 +41,7 @@ class RasterGenerator(object):
 
         xsize = 0.5*self.param['xsize']*self.xrange/100
         ysize = 0.5*self.param['ysize']*self.yrange/100
-        angle = self.param['angle']
+        angle = self.param['angle']/180.0*pi
         xmax = self.param['xmax']
         ymax = self.param['ymax']
         xx = abs(xsize*np.cos(angle)) + abs(ysize*np.sin(angle))
@@ -76,7 +77,7 @@ class RasterGenerator(object):
         '''
         points = self.param['points']
         lines = self.param['lines']
-        angle = self.param['angle']
+        angle = self.param['angle']/180.0*pi
         pixels = points * lines
         xsize = self.param['xsize']*self.xrange/100
         ysize = self.param['ysize']*self.yrange/100
