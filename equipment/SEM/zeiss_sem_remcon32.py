@@ -10,11 +10,11 @@ import numpy as np
 
 class ZeissSEMRemCon32(object):
     
-    def __init__(self, port="COM4", debug=False):
+    def __init__(self, port=4, debug=False):
         '''
         The serial setting has to be exact the same as the setting on the RemCon32 Console
         '''
-        self.port=port
+        self.port='COM'+str(port)
         self.ser = serial.Serial(port=self.port, baudrate=9600, 
                                  bytesize= serial.EIGHTBITS, 
                                  parity=serial.PARITY_NONE, 
@@ -245,19 +245,20 @@ Test Cases
 
 if __name__=='__main__':    
     rem=ZeissSEMRemCon32()
-    resp=rem.read_stage_cords_array()
-    print('read_stage_cord_array:'+str(resp))
-    resp=rem.read_stage_status()
-    print('read stage_status:'+str(resp))
-    resp=rem.read_stage_x()
-    print('read stage_x:'+str(resp))
-    resp=rem.read_stage_y()
-    print('read stage_y:'+str(resp))
-    resp=rem.read_stage_z()
-    print('read stage_z:'+str(resp))
-    resp=rem.read_stage_tilt()
-    print('read stage_t:'+str(resp))
-    resp=rem.read_stage_rotation()
-    print('read stage_r:'+str(resp))
-    resp=rem.read_stage_m()
-    print('read stage_m:'+str(resp))
+#     resp=rem.read_stage_cords_array()
+#     print('read_stage_cord_array:'+str(resp))
+#     resp=rem.read_stage_status()
+#     print('read stage_status:'+str(resp))
+#     resp=rem.read_stage_x()
+#     print('read stage_x:'+str(resp))
+#     resp=rem.read_stage_y()
+#     print('read stage_y:'+str(resp))
+#     resp=rem.read_stage_z()
+#     print('read stage_z:'+str(resp))
+#     resp=rem.read_stage_tilt()
+#     print('read stage_t:'+str(resp))
+#     resp=rem.read_stage_rotation()
+#     print('read stage_r:'+str(resp))
+#     resp=rem.read_stage_m()
+#     print('read stage_m:'+str(resp))
+    

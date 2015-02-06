@@ -55,7 +55,9 @@ class SemRasterSingleScan(Measurement):
         #connect events
         self.gui.ui.sem_raster_start_pushButton.clicked.connect(self.start)
         self.gui.ui.sem_raster_interrupt_pushButton.clicked.connect(self.interrupt)
-
+        
+        self.xoffset.connect_bidir_to_widget(self.gui.ui.xoffset_doubleSpinBox)
+        self.yoffset.connect_bidir_to_widget(self.gui.ui.yoffset_doubleSpinBox)
         self.xsize.connect_bidir_to_widget(self.gui.ui.xsize_doubleSpinBox)
         self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
         

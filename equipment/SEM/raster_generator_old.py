@@ -22,9 +22,7 @@ class RasterGenerator(object):
                           mode = 'raster', clip = True)
         
         for k, v in set_param.iteritems():
-            self.param[k] = v  
-        self.xrange= self.param['xmax']-self.param['xmin']
-        self.yrange= self.param['ymax']-self.param['ymin']       
+            self.param[k] = v           
         self.clip()
         
     def clip(self):
@@ -38,8 +36,8 @@ class RasterGenerator(object):
         #xy size scaled to allow rotation with aspect ratio
         #offset clipped to allow size...other methods possible
 
-        xsize = 0.5*self.param['xsize']*self.xrange/100
-        ysize = 0.5*self.param['ysize']*self.yrange/100
+        xsize = 0.5*self.param['xsize']
+        ysize = 0.5*self.param['ysize']
         angle = self.param['angle']
         xmax = self.param['xmax']
         ymax = self.param['ymax']
@@ -48,12 +46,12 @@ class RasterGenerator(object):
         
         scale = max(xx/xmax, yy/ymax)
         if scale >= 1.0:
-            self.param['xsize'] = 2.0 * xsize/self.xrange / scale *100.0
-            self.param['ysize'] = 2.0 * ysize/self.yrange / scale *100.0
+            self.param['xsize'] = 2.0 * xsize / scale
+            self.param['ysize'] = 2.0 * ysize / scale
             xx /= scale
             yy /= scale
-        self.param['xoffset'] = np.clip(self.param['xoffset']*self.xrange, -xmax + xx, xmax - xx)/self.xrange
-        self.param['yoffset'] = np.clip(self.param['yoffset']*self.yrange, -ymax + yy, ymax - yy)/self.yrange
+        self.param['xoffset'] = np.clip(self.param['xoffset'], -xmax + xx, xmax - xx)
+        self.param['yoffset'] = np.clip(self.param['yoffset'], -ymax + yy, ymax - yy)
                    
         #other validation here
         #clipping goes here, check values
@@ -78,8 +76,8 @@ class RasterGenerator(object):
         lines = self.param['lines']
         angle = self.param['angle']
         pixels = points * lines
-        xsize = self.param['xsize']*self.xrange/100
-        ysize = self.param['ysize']*self.yrange/100
+        xsize = self.param['xsize']
+        ysize = self.param['ysize']
             
         x = np.zeros(pixels)
         y = np.zeros(pixels)
@@ -100,8 +98,8 @@ class RasterGenerator(object):
             x = x1*np.cos(angle) - y1*np.sin(angle)
             y = x1*np.sin(angle) + y1*np.cos(angle)
         
-        x += self.param['xoffset']*self.xrange    
-        y += self.param['yoffset']*self.yrange
+        x += self.param['xoffset']    
+        y += self.param['yoffset']
         
         buff_out[::2] = x
         buff_out[1::2] = y   
