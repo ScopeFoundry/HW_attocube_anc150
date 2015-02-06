@@ -88,7 +88,7 @@ class SemRasterSingleScan(Measurement):
         
         self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels))
         
-        self.sync_analog_io.out_data(self.xy_raster_volts)
+        self.sync_analog_io.out_data(self.xy_raster_voltFOCs)
 
         self.sync_analog_io.start()
         self.adc_data = self.sync_analog_io.read_buffer(timeout=10)

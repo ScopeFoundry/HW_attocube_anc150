@@ -9,6 +9,7 @@ from base_gui import BaseMicroscopeGUI
 # Import Measurement Components
 #from measurement_components.powermeter_optimizer import PowerMeterOptimizerMeasurement
 from measurement_components.SEM.sem_raster_singlescan import SemRasterSingleScan
+from hardware_components.SEM.sem_remcon import SEMRemCon
 
 
 class SEMMicroscopeGUI(BaseMicroscopeGUI):
@@ -25,6 +26,7 @@ class SEMMicroscopeGUI(BaseMicroscopeGUI):
         print "Create Measurement objects"
         #self.apd_optimizer_measure = self.add_measurement_component(APDOptimizerMeasurement(self))
         self.sem_raster_singlescan = self.add_measurement_component(SemRasterSingleScan(self))
+        self.sem_remcon=self.add_hardware_component(SEMRemCon(self))
 
         #Add additional logged quantities
 

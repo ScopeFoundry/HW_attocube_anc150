@@ -8,13 +8,15 @@ Communicating with RemCon32 on the SEM computer through RS232 Serial communcatio
 import serial
 import numpy as np
 
+
+
 class ZeissSEMRemCon32(object):
     
-    def __init__(self, port=4, debug=False):
+    def __init__(self, port='COM4',debug=False):
         '''
         The serial setting has to be exact the same as the setting on the RemCon32 Console
         '''
-        self.port='COM'+str(port)
+        self.port=port
         self.ser = serial.Serial(port=self.port, baudrate=9600, 
                                  bytesize= serial.EIGHTBITS, 
                                  parity=serial.PARITY_NONE, 
@@ -62,7 +64,7 @@ class ZeissSEMRemCon32(object):
         return self.write_cmd('EHT?\r')
     
     def write_EHT(self,val):
-        return self.write_cmd('EHT?\r')
+        return self.write_cmd('EHT %f\r' % val)
 
     
     '''
@@ -118,15 +120,16 @@ class ZeissSEMRemCon32(object):
     '''
     24 92 Stigmator
     '''
-    def read_stigmator(self):
+    def _read_stigmator(self):
         return self.write_cmd('STI?\r')
     
-    def write_stigmator(self,x_val,y_val):
+    def _write_stigmator(self,x_val,y_val):
         if (min(x_val,y_val)>=-100 and max(x_val,y_val)<=100):
             return self.write_cmd('STIM '+str(x_val)+' ' +str(y_val) +'\r' )
         else:
             raise ValueError("value out of range [-100,100]" )  
         
+    
     '''
      27 28 Brightness
     '''
@@ -238,6 +241,8 @@ class ZeissSEMRemCon32(object):
     def _write_stage_all(self,cords):
         return
     
+    def close(self):
+        self.ser.close()
      
 '''
 Test Cases
@@ -245,6 +250,8 @@ Test Cases
 
 if __name__=='__main__':    
     rem=ZeissSEMRemCon32()
+    resp=rem.write_beam_blanking(0)
+    print(resp)
 #     resp=rem.read_stage_cords_array()
 #     print('read_stage_cord_array:'+str(resp))
 #     resp=rem.read_stage_status()
@@ -261,4 +268,3 @@ if __name__=='__main__':
 #     print('read stage_r:'+str(resp))
 #     resp=rem.read_stage_m()
 #     print('read stage_m:'+str(resp))
-    
