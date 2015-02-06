@@ -6,7 +6,7 @@ Created on Jan 30, 2015
 from __future__ import division
 import numpy as np
 
-class Scan(object):
+class RasterGenerator(object):
     '''
     generates xy coordinates for SEM and related image scanning
     '''

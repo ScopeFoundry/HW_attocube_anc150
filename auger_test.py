@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import PyDAQmx as mx
 
-from equipment.SEM.scanner import Scan
+from equipment.SEM.raster_generator import RasterGenerator
 from equipment.NI_Daq import Dac, Sync, Adc
 
 
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     if test == 'sem':
         # make output waveform
         rate = 5e5          
-        sem = Scan(points=1024, lines=768)
+        sem = RasterGenerator(points=1024, lines=768)
         buff_out = sem.data()
         block = sem.count()
 
