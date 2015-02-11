@@ -38,6 +38,58 @@ class SEMRemCon(HardwareComponent):
                                                    vmax=1,
                                                    unit='',
                                                    choices=[('Off',0),('On',1)])
+        
+        self.stigmatorX = self.add_logged_quantity('stigmatorX', 
+                                                   dtype=float,
+                                                   ro=False,
+                                                   vmin=-100.0,
+                                                   vmax=100.0,
+                                                   unit='%')
+         
+        self.stigmatorY = self.add_logged_quantity('stigmatorY', 
+                                                   dtype=float,
+                                                   ro=False,
+                                                   vmin=-100.0,
+                                                   vmax=100.0,
+                                                   unit='%')
+          
+        self.WD = self.add_logged_quantity('WD', 
+                                                   dtype=float,
+                                                   ro=False,
+                                                   vmin=0.0,
+                                                   vmax=121.0,
+                                                   unit='mm')
+        
+#         self.probe_current = self.add_logged_quantity('probe_current', 
+#                                                    dtype=float,
+#                                                    ro=False,
+#                                                    vmin=1.0e-14,
+#                                                    vmax=2.0e-5,
+#                                                    unit='A')
+#         
+#         
+#         aperture_choices=list([('[1] 60.00 um',1),
+#                                ('[2] 20.00 um',2),
+#                                ('[3] 30.00 um',3),
+#                                ('[4] 75.00 um',4),
+#                                ('[5] 90.00 um',5),
+#                                ('[6] 120.00 um',6)])
+        
+#         self.select_aperture = self.add_logged_quantity('select_aperture', 
+#                                                    dtype=int,
+#                                                    ro=True,
+#                                                    vmin=1,
+#                                                    vmax=6,
+#                                                    unit='',
+#                                                    choices=aperture_choices)
+        
+        self.external_scan = self.add_logged_quantity('external_scan', 
+                                                   dtype=int,
+                                                   ro=False,
+                                                   vmin=0,
+                                                   vmax=1,
+                                                   unit='',
+                                                   choices=[('Off',0),('On',1)])
         #connect to GUI
         
     def connect(self):
@@ -60,7 +112,38 @@ class SEMRemCon(HardwareComponent):
                 self.remcon.read_beam_blanking
         self.beam_blanking.hardware_set_func= \
                 self.remcon.write_beam_blanking
-    
+        
+        self.stigmatorX.hardware_read_func=\
+                self.remcon.read_stigmatorX
+        self.stigmatorX.hardware_set_func= \
+                self.remcon.write_stigmatorX
+                
+        self.stigmatorY.hardware_read_func=\
+                self.remcon.read_stigmatorY
+        self.stigmatorY.hardware_set_func= \
+                self.remcon.write_stigmatorY
+                
+        self.WD.hardware_read_func=\
+                self.remcon.read_WD
+        self.WD.hardware_set_func= \
+                self.remcon.write_WD
+                
+#         self.probe_current.hardware_read_func=\
+#                 self.remcon.read_probe_current
+#         self.probe_current.hardware_set_func= \
+#                 self.remcon.write_probe_current
+                
+#         self.select_aperture.hardware_read_func=\
+#                 self.remcon.read_select_aperture
+#         self.select_aperture.hardware_set_func= \
+#                 self.remcon.write_select_aperture
+                
+        self.external_scan.hardware_read_func=\
+                self.remcon.read_external_scan
+        self.external_scan.hardware_set_func= \
+                self.remcon.write_external_scan
+        
+        
     
     def disconnect(self):
         for lq in self.logged_quantities.values():

@@ -7,9 +7,9 @@ Created on Feb 4, 2015
 from measurement_components.measurement import Measurement
 
 
-class SemRasterSingleScan(Measurement):
+class SemRasterRepScan(Measurement):
 
-    name = "sem_raster_single_scan"
+    name = "sem_raster_rep_scan"
     
     def setup(self):        
         self.display_update_period = 0.050 #seconds
@@ -51,6 +51,8 @@ class SemRasterSingleScan(Measurement):
         
         
         self.sample_rate = self.add_logged_quantity("sample_rate", dtype=float, ro=False, initial=5e5, vmin=1, vmax=2e6, unit='Hz')
+        self.continuous_scan = self.add_logged_quantity("continuous_scan", dtype=int, ro=False, initial=0, vmin=0, vmax=1, unit='',
+                                                        choices=[('Off',0),('On',1)])
         
         #connect events
         self.gui.ui.sem_raster_start_pushButton.clicked.connect(self.start)
@@ -79,35 +81,36 @@ class SemRasterSingleScan(Measurement):
         
         self.xy_raster_volts = self.raster_gen.data()
         self.num_pixels = self.raster_gen.count()
-
+       
         #setup tasks
-        self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
+        while self.continuous_scan.val==1:
+            self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
         
         #self.sync_analog_io.setup(rate_out=self.sample_rate.val, count_out=self.num_pixels, 
         #                          rate_in=self.sample_rate.val, count_in=self.num_pixels )
+            self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels))
         
-        self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels))
+       
+            self.sync_analog_io.out_data(self.xy_raster_volts)
+
+            self.sync_analog_io.start()
+            self.adc_data = self.sync_analog_io.read_buffer(timeout=10)
+
         
-        self.sync_analog_io.out_data(self.xy_raster_volts)
+            in3 = self.adc_data[::3]
+            in1 = self.adc_data[1::3]
+            in2 = self.adc_data[2::3]
+            out1 = self.xy_raster_volts[::2]
+            out2 = self.xy_raster_volts[1::2]
 
-        self.sync_analog_io.start()
-        self.adc_data = self.sync_analog_io.read_buffer(timeout=10)
+            out1 = out1.reshape(self.raster_gen.shape())
+            out2 = out2.reshape(self.raster_gen.shape())
+            in1 = in1.reshape(self.raster_gen.shape())
+            in2 = in2.reshape(self.raster_gen.shape())
+            in3 = in3.reshape(self.raster_gen.shape())
 
-        
-        in3 = self.adc_data[::3]
-        in1 = self.adc_data[1::3]
-        in2 = self.adc_data[2::3]
-        out1 = self.xy_raster_volts[::2]
-        out2 = self.xy_raster_volts[1::2]
-
-        out1 = out1.reshape(self.raster_gen.shape())
-        out2 = out2.reshape(self.raster_gen.shape())
-        in1 = in1.reshape(self.raster_gen.shape())
-        in2 = in2.reshape(self.raster_gen.shape())
-        in3 = in3.reshape(self.raster_gen.shape())
-
-        self.sem_image = in3
-        
+            self.sem_image = in3
+            #self.update_display()
         
     def update_display(self):        
         #print "updating figure"

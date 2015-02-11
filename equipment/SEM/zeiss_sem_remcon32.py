@@ -25,10 +25,12 @@ class ZeissSEMRemCon32(object):
         pass
     
     def send_cmd(self,cmd):
+        self.ser.flushOutput()
         self.ser.write(cmd)
         pass
     
     def write_cmd(self,cmd):
+        self.ser.flushInput()
         self.send_cmd(cmd)
         resp=self.ser.readlines()
         return self.conv_resp(resp)
@@ -124,12 +126,30 @@ class ZeissSEMRemCon32(object):
         return self.write_cmd('STI?\r')
     
     def _write_stigmator(self,x_val,y_val):
-        if (min(x_val,y_val)>=-100 and max(x_val,y_val)<=100):
             return self.write_cmd('STIM '+str(x_val)+' ' +str(y_val) +'\r' )
+        
+    def _read_stigmator_array(self):
+        return np.fromstring(self._read_stigmator(),sep=' ')
+    
+    def read_stigmatorX(self):
+        return self._read_stigmator_array()[0]
+    
+    def read_stigmatorY(self):
+        return self._read_stigmator_array()[1]
+    
+    def write_stigmatorX(self,val):
+        if (val>=-100.0 and val<=100.0):
+            stig=self._read_stigmator_array()
+            self._write_stigmator(val,stig[1])
         else:
             raise ValueError("value out of range [-100,100]" )  
         
-    
+    def write_stigmatorY(self,val):
+        if (val>=-100.0 and val<=100.0):
+            stig=self._read_stigmator_array()
+            self._write_stigmator(stig[0],val)
+        else:
+            raise ValueError("value out of range [-100,100]" )  
     '''
      27 28 Brightness
     '''
@@ -176,70 +196,106 @@ class ZeissSEMRemCon32(object):
             raise ValueError("value %s out of range [0.0,121.0]" % val)  
         
     '''
-    43 Spot Mode
+    69 External Scan
     '''
-    def write_spot_mode(self,x_val,y_val):
-        if ((x_val>=0 and x_val<1024) and (y_val>=0 and y_val<768)):
-            return self.write_cmd('SPOT '+str(x_val)+' ' +str(y_val) +'\r' )
+    def read_external_scan(self):
+        return self.write_cmd('EXS?\r')
+    
+    def write_external_scan(self,val):
+        if val>=0 and val<=1:
+            return self.write_cmd('EDX %i.r' % val)
         else:
-            raise ValueError("value out of range 1024x768" )  
+            raise ValueError("value %s out of range [0,10]" % val)  
         
     '''
-    44 Line Profile Mode
+    70 77 Probe Current
     '''
-    def write_line_mode(self,val):
-        if val>=0 and val<=767:
-            return self.write_cmd('LPR %i\r' % val)
+    def read_probe_current(self):
+        return self.write_cmd('PRB?\r')
+    
+    def write_probe_current(self,val):
+        if val>=1.0e-14 and val<=2.0e-5:
+            return self.write_cmd('PROB %f\r' % val)
         else:
-            raise ValueError("value %s out of range [0,767]" % val)  
-    
+            raise ValueError("value %s out of range [1.0e-14,2.0e-5]" % val)  
+        
     '''
-    45 Normal Mode
+    74 75 Select Aperture
     '''
-    def write_normal_mode(self):
-        return self.write_cmd('NORM\r')
+    def read_select_aperture(self):
+        return self.write_cmd('APR?\r')
     
-    '''
-    58 59 Stage Control
-    x 0.0-152mm
-    y 0.0-152mm
-    z 0.0-40mm
-    t 0.0-90 degrees
-    r 0.0-360 degrees
-    m 0.0-10.0 degrees
-    '''
-    def read_stage_all(self):
-        '''
-        output: x y z t r m move_status
-        '''
-        return self.write_cmd('c95?\r')
-       
-    def read_stage_cords_array(self):
-        return np.fromstring(self.read_stage_all(),sep=' ')[0:6]
-    
-    def read_stage_status(self):
-        return int(np.fromstring(self.read_stage_all(),sep=' ')[6])
-    
-    def read_stage_x(self):
-        return self.read_stage_cords_array()[0]
-    
-    def read_stage_y(self):
-        return self.read_stage_cords_array()[1]
-    
-    def read_stage_z(self):
-        return self.read_stage_cords_array()[2]
-    
-    def read_stage_tilt(self):
-        return self.read_stage_cords_array()[3]
-    
-    def read_stage_rotation(self):
-        return self.read_stage_cords_array()[4]
-    
-    def read_stage_m(self):
-        return self.read_stage_cords_array()[5]
-    
-    def _write_stage_all(self,cords):
-        return
+    def write_select_aperture(self,val):
+        if val>=1 and val<=6:
+            return self.write_cmd('APER %i\r' % val)
+        else:
+            raise ValueError("value %s out of range [1,6]" % val)  
+        
+#     '''
+#     43 Spot Mode
+#     '''
+#     def write_spot_mode(self,x_val,y_val):
+#         if ((x_val>=0 and x_val<1024) and (y_val>=0 and y_val<768)):
+#             return self.write_cmd('SPOT '+str(x_val)+' ' +str(y_val) +'\r' )
+#         else:
+#             raise ValueError("value out of range 1024x768" )  
+#         
+#     '''
+#     44 Line Profile Mode
+#     '''
+#     def write_line_mode(self,val):
+#         if val>=0 and val<=767:
+#             return self.write_cmd('LPR %i\r' % val)
+#         else:
+#             raise ValueError("value %s out of range [0,767]" % val)  
+#     
+#     '''
+#     45 Normal Mode
+#     '''
+#     def write_normal_mode(self):
+#         return self.write_cmd('NORM\r')
+#     
+#     '''
+#     58 59 Stage Control
+#     x 0.0-152mm
+#     y 0.0-152mm
+#     z 0.0-40mm
+#     t 0.0-90 degrees
+#     r 0.0-360 degrees
+#     m 0.0-10.0 degrees
+#     '''
+#     def read_stage_all(self):
+#         '''
+#         output: x y z t r m move_status
+#         '''
+#         return self.write_cmd('c95?\r')
+#        
+#     def read_stage_cords_array(self):
+#         return np.fromstring(self.read_stage_all(),sep=' ')[0:6]
+#     
+#     def read_stage_status(self):
+#         return int(np.fromstring(self.read_stage_all(),sep=' ')[6])
+#     
+#     def read_stage_x(self):
+#         return self.read_stage_cords_array()[0]
+#     
+#     def read_stage_y(self):
+#         return self.read_stage_cords_array()[1]
+#     
+#     def read_stage_z(self):
+#         return self.read_stage_cords_array()[2]
+#     
+#     def read_stage_tilt(self):
+#         return self.read_stage_cords_array()[3]
+#     
+#     def read_stage_rotation(self):
+#         return self.read_stage_cords_array()[4]
+#     
+#     def read_stage_m(self):
+#         return self.read_stage_cords_array()[5]
+#     
+#     def _write_stage_all(self,cords):
+#         return
     
     def close(self):
         self.ser.close()
@@ -250,7 +306,7 @@ Test Cases
 
 if __name__=='__main__':    
     rem=ZeissSEMRemCon32()
-    resp=rem.write_beam_blanking(0)
+    resp=rem.read_magnification()
     print(resp)
 #     resp=rem.read_stage_cords_array()
 #     print('read_stage_cord_array:'+str(resp))
