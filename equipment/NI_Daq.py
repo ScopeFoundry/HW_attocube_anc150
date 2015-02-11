@@ -419,15 +419,15 @@ class Sync(NI):
         trig_name = '/' + buff.value + '/ai/StartTrigger'
         self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
         
-    def setup(self, rate_out, count_out, rate_in, count_in, pad = True):
+    def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
         # Pad = true, acquire one extra input value per channel, strip off
         # first read, so writes/reads align 
         if pad:
             self.delta = np.int(np.rint(rate_in / rate_out))
         else:
             self.delta = 0
-        self.dac.set_rate(rate_out, count_out, finite=True)
-        self.adc.set_rate(rate_in, count_in+self.delta)
+        self.dac.set_rate(rate_out, count_out, finite=is_finite)
+        self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite)
         
     def out_data(self, data):
         self.dac.load_buffer(data)

@@ -88,11 +88,12 @@ class SemRasterRepScan(Measurement):
         
         #self.sync_analog_io.setup(rate_out=self.sample_rate.val, count_out=self.num_pixels, 
         #                          rate_in=self.sample_rate.val, count_in=self.num_pixels )
-            self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels))
+            self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels),is_finite=True)
         
        
             self.sync_analog_io.out_data(self.xy_raster_volts)
-
+        
+        #for i in range(2):
             self.sync_analog_io.start()
             self.adc_data = self.sync_analog_io.read_buffer(timeout=10)
 
