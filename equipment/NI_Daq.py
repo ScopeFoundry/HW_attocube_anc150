@@ -399,7 +399,7 @@ class Dac(NI):
         assert writeCount.value == 1, \
             "sample count {} transfer count {}".format( 1, writeCount.value )
 
-class Sync(NI):
+class Sync(object):
     '''
     creates simultaneous input and output tasks with synchronized start triggers
     input and output task elapsed time need not be equal, but typically will be, 
@@ -439,3 +439,7 @@ class Sync(NI):
     def read_buffer(self, timeout = 1.0):
         x = self.adc.read_buffer(timeout=timeout)
         return x[self.delta*self.adc.get_chan_count()::] 
+    
+    def stop(self):
+        self.dac.stop() 
+        self.adc.stop()
