@@ -307,6 +307,7 @@ Test Cases
 if __name__=='__main__':    
     rem=ZeissSEMRemCon32()
     resp=rem.read_magnification()
+    resp=rem.send_cmd('BMON 2\r')
     print(resp)
 #     resp=rem.read_stage_cords_array()
 #     print('read_stage_cord_array:'+str(resp))
