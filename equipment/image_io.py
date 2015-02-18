@@ -86,10 +86,37 @@ class Collection(object):
         self.file.close()
          
     def setup_main_group(self):
+        '''
+        There are three groups:
+        measurement is for store metadata in the measurement
+        component, such as scan rate, pixel sizes, voltage etc.
+        
+        hardware components is for storing hardware configurations,
+        such as EHT, magnification, focus etc.
+        
+        data_group contains channels and datasets that has the actual
+        images or traces of a scan 
+        '''
         self.measurement=self.file.create_group('measurement')
         self.hardware=self.file.create_group('hardware')
         self.data_group=self.file.create_group('data_group')
          
+    def save_logged_quantities(self,group,logged_quantities):
+        for name in logged_quantities:
+            group.attrs[name]=logged_quantities[name]
+            
+    def save_measurement_component(self,vals,units):
+        vals_group=self.measurement.create_group('vals')
+        units_group=self.measurement.create_group('units')
+        self.save_logged_quantities(vals_group,vals)
+        self.save_logged_quantities(units_group,units)
+        
+    def save_hardware_component(self,hardware_name,vals,units):
+        hardware_group=self.hardware.create_group(hardware_name)
+        vals_group=hardware_group.create_group('vals')
+        units_group=hardware_group.create_group('units')
+        self.save_logged_quantities(vals_group,vals)
+        self.save_logged_quantities(units_group,units)
      
     def setup_channels(self,channel_infos=[ChannelInfo()]):
         '''
@@ -134,5 +161,5 @@ class Collection(object):
         for channel in self.channels:
             channel.resize(self.size)
  
-if __name__=='main':
+if __name__=='__main__':
     print('Start testing:')

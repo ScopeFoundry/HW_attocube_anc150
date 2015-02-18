@@ -42,5 +42,5 @@ if __name__ == '__main__':
     
     gui = SEMMicroscopeGUI()
     gui.show()
-    
+
     sys.exit(app.exec_())

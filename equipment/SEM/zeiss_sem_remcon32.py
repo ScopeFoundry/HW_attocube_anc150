@@ -203,7 +203,7 @@ class ZeissSEMRemCon32(object):
     
     def write_external_scan(self,val):
         if val>=0 and val<=1:
-            return self.write_cmd('EDX %i.r' % val)
+            return self.write_cmd('EDX %i\r' % val)
         else:
             raise ValueError("value %s out of range [0,10]" % val)  
         
@@ -307,7 +307,7 @@ Test Cases
 if __name__=='__main__':    
     rem=ZeissSEMRemCon32()
     resp=rem.read_magnification()
-    resp=rem.send_cmd('BMON 2\r')
+    #resp=rem.write_cmd('BMON 1\r')
     print(resp)
 #     resp=rem.read_stage_cords_array()
 #     print('read_stage_cord_array:'+str(resp))

@@ -50,8 +50,25 @@ class SemRasterRepScan(Measurement):
         self.angle = self.add_logged_quantity("angle", dtype=float, ro=False, initial=0, vmin=-180, vmax=180, unit="deg")
         
         
-        self.sample_rate = self.add_logged_quantity("sample_rate", dtype=float, ro=False, initial=5e5, vmin=1, vmax=2e6, unit='Hz')
-        self.continuous_scan = self.add_logged_quantity("continuous_scan", dtype=int, ro=False, initial=0, vmin=0, vmax=1, unit='',
+        self.sample_rate = self.add_logged_quantity("sample_rate", dtype=float, 
+                                                    ro=False, 
+                                                    initial=5e5, 
+                                                    vmin=1, 
+                                                    vmax=2e6,
+                                                    unit='Hz')
+        self.continuous_scan = self.add_logged_quantity("continuous_scan", dtype=int, 
+                                                        ro=False, 
+                                                        initial=0, 
+                                                        vmin=0, 
+                                                        vmax=1, 
+                                                        unit='',
+                                                        choices=[('Off',0),('On',1)])
+        self.tracking = self.add_logged_quantity("tracking", dtype=int, 
+                                                        ro=False, 
+                                                        initial=0, 
+                                                        vmin=0, 
+                                                        vmax=1, 
+                                                        unit='',
                                                         choices=[('Off',0),('On',1)])
         
         #connect events
@@ -89,6 +106,19 @@ class SemRasterRepScan(Measurement):
         #self.sync_analog_io.setup(rate_out=self.sample_rate.val, count_out=self.num_pixels, 
         #                          rate_in=self.sample_rate.val, count_in=self.num_pixels )
         self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels),is_finite=True)
+        from equipment.image_io import ChannelInfo
+        from equipment.image_io import Collection
+        if self.tracking.val==1:
+            ch_infos=[ChannelInfo('image',(self.points.val,self.lines.val))]
+            self.collection=Collection(name='scan2',
+                                  create=True,
+                                  initial_size=100,
+                                  expansion_size=100,
+                                  channel_infos=ch_infos)
+            self.collection.save_measurement_component(self.dict_logged_quantity_val(self.logged_quantities), self.dict_logged_quantity_unit(self.logged_quantities))
+            self.sem_remcon=self.gui.sem_remcon
+            self.collection.save_hardware_component('sem_remcon', self.dict_logged_quantity_val(self.sem_remcon.logged_quantities), self.dict_logged_quantity_unit(self.sem_remcon.logged_quantities))
+        
         
         while self.continuous_scan.val==1:
             self.sync_analog_io.out_data(self.xy_raster_volts)
@@ -107,9 +137,12 @@ class SemRasterRepScan(Measurement):
             #in1 = in1.reshape(self.raster_gen.shape())
             #in2 = in2.reshape(self.raster_gen.shape())
             in3 = in3.reshape(self.raster_gen.shape())
-
+            if self.tracking.val==1:
+                self.collection.update({'image':in3})
             self.sem_image = in3
             self.sync_analog_io.stop()
+        if self.tracking.val==1:
+            self.collection.close()
         
     def update_display(self):        
         #print "updating figure"
@@ -124,5 +157,28 @@ class SemRasterRepScan(Measurement):
         self.img.set_data(self.sem_image)
 
         self.fig.canvas.draw()
-        
-        
+    
+    def get_hardware_logged_quantity(self,hardware):
+        return hardware.logged_quantities
+    
+    def list_hardware_components(self):
+        return self.gui.hardware_components
+    
+    def dict_logged_quantity_val(self,logged_quantities):
+        val_dict=dict()
+        for name in self.logged_quantities:
+            val_dict[name]=self.logged_quantities[name].val
+        return val_dict
+    
+    def dict_logged_quantity_unit(self,logged_quantities):
+        val_dict=dict()
+        for name in self.logged_quantities:
+            val_dict[name]=self.logged_quantities[name].unit
+        return val_dict
+
+# if __name__=='__main__':
+#     from base_gui import BaseMicroscopeGUI
+#    
+#     scan=SemRasterRepScan(gui)
+#     resp=scan.get_measurement_logged_quantity()
+#     print(resp)
