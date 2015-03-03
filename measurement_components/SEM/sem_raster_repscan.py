@@ -63,7 +63,7 @@ class SemRasterRepScan(Measurement):
                                                         vmax=1, 
                                                         unit='',
                                                         choices=[('Off',0),('On',1)])
-        self.tracking = self.add_logged_quantity("tracking", dtype=int, 
+        self.save_file = self.add_logged_quantity("save_file", dtype=int, 
                                                         ro=False, 
                                                         initial=0, 
                                                         vmin=0, 
@@ -81,6 +81,7 @@ class SemRasterRepScan(Measurement):
         self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
         self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
         self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
+        
     def setup_figure(self):
         self.fig = self.gui.add_figure('sem_raster', self.gui.ui.sem_raster_plot_widget)
 
@@ -88,6 +89,7 @@ class SemRasterRepScan(Measurement):
     def _run(self):
         from equipment.SEM.raster_generator import  RasterGenerator
         from equipment.NI_Daq import Sync
+        from datetime import datetime
 
         self.raster_gen = RasterGenerator(points=self.points.val, lines=self.lines.val, 
                                           xoffset=self.xoffset.val, yoffset=self.yoffset.val,
@@ -108,9 +110,12 @@ class SemRasterRepScan(Measurement):
         self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels),is_finite=True)
         from equipment.image_io import ChannelInfo
         from equipment.image_io import Collection
-        if self.tracking.val==1:
+        if self.save_file.val==1:
             ch_infos=[ChannelInfo('image',(self.points.val,self.lines.val))]
-            self.collection=Collection(name='scan2',
+            
+            t=datetime.now()
+            tname=t.strftime('%Y-%m-%d-%H-%M-%S')
+            self.collection=Collection(name=tname,
                                   create=True,
                                   initial_size=100,
                                   expansion_size=100,
@@ -137,11 +142,11 @@ class SemRasterRepScan(Measurement):
             #in1 = in1.reshape(self.raster_gen.shape())
             #in2 = in2.reshape(self.raster_gen.shape())
             in3 = in3.reshape(self.raster_gen.shape())
-            if self.tracking.val==1:
+            if self.save_file.val==1:
                 self.collection.update({'image':in3})
             self.sem_image = in3
             self.sync_analog_io.stop()
-        if self.tracking.val==1:
+        if self.save_file.val==1:
             self.collection.close()
         
     def update_display(self):        

@@ -6,14 +6,43 @@ import matplotlib.pyplot as plt
 import PyDAQmx as mx
 
 from equipment.SEM.raster_generator import RasterGenerator
-from equipment.NI_Daq import Dac, Sync, Adc
+from equipment.NI_Daq import Dac, Sync, Adc, Counter
 
 
 #  various test code 
 if __name__ == '__main__':
 
-    test = 'sem'
+    test = 'block counter'
     
+    if test == 'block counter':
+        rate = 1e5
+        block = 1000
+        dac = Dac('X-6368/ao0')
+        ctr = Counter('X-6368/ctr0','PFI0')        
+        ctr.set_rate( rate, block )   #finite read     
+        dac.set_rate(rate, block, finite=True)
+        dac.load_buffer(np.zeros(block))
+
+        ctr.start()
+        dac.start()        
+        time.sleep(1)
+        x = ctr.read_buffer()
+        #plt.ion()
+        plt.plot(x)
+        plt.show()
+        
+    if test == 'counter':  
+        ctr = Counter('X-6368/ctr2','PFI12')
+        ctr.start()
+        elapsed = time.clock()
+        for i in range(10):
+            time.sleep(0.1)
+            events =  ctr.get()
+            now = time.clock()
+            rate = events / (now - elapsed)
+            print rate
+            elaspsed = now
+        
     if test == 'sem':
         # make output waveform
         rate = 5e5          

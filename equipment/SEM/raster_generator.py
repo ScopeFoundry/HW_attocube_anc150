@@ -18,7 +18,7 @@ class RasterGenerator(object):
         self.param = dict(points=1024, lines=768,
                           xmin=-10.0, xmax = 10.0, ymin = -10.0, ymax = 10.0,
                           xoffset = 0.0, yoffset = 0.0,
-                          xsize = 20.0, ysize = 15.0,
+                          xsize = 100.0, ysize = 100.0,
                           angle = 0.0,
                           mode = 'raster', clip = True)
         

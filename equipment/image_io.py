@@ -21,21 +21,25 @@ class Channel(object):
     def __init__(self,
                  channel_info,
                  data_group,
-                 initial_size=100):
-         
+                 initial_size=100,create=True):
+        
         self.name=channel_info.name
         self.dimension=channel_info.dimension
         self.dtype=channel_info.dtype
         self.unit=channel_info.unit
         self.data_group=data_group
         self.size=initial_size
+        self.new=create
         self.setup()
          
     def setup(self):
-        self.data=self.data_group.create_dataset(self.name,
-                                                (self.size,)+self.dimension,
-                                                maxshape=(None,)+self.dimension,
-                                                dtype=self.dtype)
+        if self.new:
+            self.data=self.data_group.create_dataset(self.name,
+                                                     (self.size,)+self.dimension,
+                                                     maxshape=(None,)+self.dimension,
+                                                     dtype=self.dtype)
+        else:
+            self.data=self.data_group[self.name]
              
     def resize(self,size):
         self.size=size
@@ -44,7 +48,8 @@ class Channel(object):
     def add_frame(self,counter,frame):
         self.data[counter]=frame        
  
-     
+    def get_frame(self,count):
+        return self.data[count]
  
 class Collection(object):
     '''
@@ -58,8 +63,9 @@ class Collection(object):
                  initial_size=100,
                  expansion_size=100, 
                  channel_infos=[ChannelInfo(),]):
+        self.name=name
         if create:
-            self.name=name
+            self.new=True
             self.initial_size=initial_size
             self.expansion_size=expansion_size
             self.size=self.initial_size
@@ -74,17 +80,58 @@ class Collection(object):
             self.channel_infos=channel_infos
             self.setup_channels(self.channel_infos)
         else:
-            pass
-         
+            self.new=False
+            self.open(self.name)
+            self.link_main_group()
+            self.channel_infos=list()
+            
+            '''
+            read in channel infos
+            '''
+            for item in self.data_group.items():
+                name,dimension,dtype=self.read_channel_info(item)
+                self.channel_infos.append(ChannelInfo(name,dimension,dtype))
+            
+            '''
+            link to channels
+            '''
+            self.link_channels(self.channel_infos)
+            self.end_count=self.read_count()
+                
     def create(self):
         try:
-            self.file=h5py.File(self.name+'.hdf5','w')
+            self.file=h5py.File(self.name+'.hdf5','w-')
         except:
             raise IOError('The file name already exist, please choose a new name')
              
     def close(self):
+        if self.new:
+            self.measurement.attrs['end_count']=self.counter
         self.file.close()
-         
+    
+    def open(self,name):
+        try:
+            self.file=h5py.File(self.name+'.hdf5','r')
+        except:
+            raise IOError('The file cannot be opened!')
+        
+    def link_main_group(self):
+        self.measurement=self.file['measurement']
+        self.hardware=self.file['hardware']
+        self.data_group=self.file['data_group']
+        
+    def read_channel_info(self,data_group_item):
+        name=data_group_item[0]
+        dset=data_group_item[1]
+        dimension=dset.shape[1:]
+        dtype=dset.dtype
+        return name,dimension,dtype
+        
+    def read_count(self):
+        '''
+        read the total number of frames
+        '''
+        return self.measurement.attrs['end_count']
     def setup_main_group(self):
         '''
         There are three groups:
@@ -122,16 +169,31 @@ class Collection(object):
         '''
         create a list of channels and set them up
         '''
-        self.channels=list()
+        self.channels=dict()
          
         '''
         for all channel listed in channel_infos,
         create a channel object and add it to the channel list
         '''
         for channel_info in channel_infos:
-            self.channels.append(Channel(channel_info,
-                                         data_group=self.data_group,
-                                         initial_size=self.initial_size))
+            self.channels[channel_info.name]=Channel(channel_info,
+                                                     data_group=self.data_group,
+                                                     initial_size=self.initial_size)
+    
+    def link_channels(self,channel_infos):
+        '''
+        create a list of channels and set them up
+        '''
+        self.channels=dict()
+         
+        '''
+        for all channel listed in channel_infos,
+        create a channel object and add it to the channel list
+        '''
+        for channel_info in channel_infos:
+            self.channels[channel_info.name]=Channel(channel_info,
+                                                     data_group=self.data_group,
+                                                     create=False)
    
     def add_frames(self,counter,frames):
         '''
@@ -143,8 +205,8 @@ class Collection(object):
         if self.counter>=self.size:
             self.expand()
              
-        for channel in self.channels:
-            channel.add_frame(self.counter,frames[channel.name])
+        for channel_name in self.channels:
+            self.channels[channel_name].add_frame(self.counter,frames[channel_name])
              
         #increase the count by 1    
         self.counter+=1
@@ -158,8 +220,8 @@ class Collection(object):
         iterate through all channels
         '''
         self.size+=self.expansion_size
-        for channel in self.channels:
-            channel.resize(self.size)
+        for channel_name in self.channels:
+            self.channels[channel_name].resize(self.size)
  
 if __name__=='__main__':
     print('Start testing:')
