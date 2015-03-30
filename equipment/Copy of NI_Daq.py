@@ -546,11 +546,11 @@ class Sync(object):
     for now scan through output block once, wait for all input data, later
     use callbacks, implement multiple scans
     '''
-    def __init__(self, out_chan, in_chan,ctr_chan, ctr_term, range = 10.0,  out_name = '', in_name = '',ctr_name='', terminalConfig='default' ):
+    def __init__(self, out_chan, in_chan, range = 10.0,  out_name = '', in_name = '', terminalConfig='default' ):
         # create input and output tasks
         self.dac = Dac( out_chan, out_name)        
         self.adc = Adc( in_chan, range, in_name, terminalConfig )
-        self.ctr=Counter(ctr_chan,ctr_term,ctr_name)
+
         #sync dac start to adc start
         buffSize = 512
         buff = mx.create_string_buffer( buffSize )
@@ -567,26 +567,18 @@ class Sync(object):
             self.delta = 0
         self.dac.set_rate(rate_out, count_out, finite=is_finite)
         self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite)
-        self.ctr.set_rate(rate_in,count_in+self.delta,clock_source='ai/SampleClock',finite=is_finite)
         
     def out_data(self, data):
         self.dac.load_buffer(data)
     
     def start(self):
-        self.ctr.start()
         self.dac.start() #start dac first, waits for trigger from ADC to output data
         self.adc.start()
-        
        
-    def read_adc_buffer(self, timeout = 1.0):
+    def read_buffer(self, timeout = 1.0):
         x = self.adc.read_buffer(timeout=timeout)
-        return x[self.delta*self.adc.get_chan_count()::]
-    
-    def read_ctr_buffer(self, timeout = 1.0):
-        x = self.ctr.read_buffer(timeout=timeout)
-        return x[self.delta*self.ctr.get_chan_count()::]
+        return x[self.delta*self.adc.get_chan_count()::] 
     
     def stop(self):
         self.dac.stop() 
         self.adc.stop()
-        self.ctr.stop()

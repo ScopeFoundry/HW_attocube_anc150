@@ -166,7 +166,7 @@ class Adc(NI):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self, rate = 1e4, count = 1000, finite = True):
+    def set_rate(self, rate = 1e4, count = 1000, finite = False):
         """
         Input buffer
             In continuous mode, count determines per-channel buffer size only if
@@ -197,7 +197,15 @@ class Adc(NI):
         except mx.DAQError as err:
             self.error(err)
             self._rate = 0
-            
+    
+    def set_callback(self,destination):
+        self.data_buffer=np.zeros(self._count)
+        self.task.EveryNCallback=self.EveryNCallback
+        self.task.DoneCallback=self.DoneCallback
+        self.task.AutoRegisterEveryNSamplesEvent(mx.DAQmx_Val_Acquired_Into_Buffer,self._count,0)
+        self.task.AutoRegisterDoneEvent(0)
+        self._destination=destination
+        
     def set_single(self):
         ''' single-value [multi channel] input, no clock or buffer
                    
@@ -266,6 +274,14 @@ class Adc(NI):
 #           "sample count {} transfer count {}".format( 1, read_count.value )
         return data
     
+    def EveryNCallback(self):
+        self.data_buffer=self.read_buffer(self._count, timeout=10)
+        self._destination.append(self.data_buffer)
+        return 0 # The function should return an integer
+    
+    def DoneCallback(self, status):
+        print "Status",status.value
+        return 0 # The function should return an integer
             
 class Dac(NI):
     '''
@@ -294,7 +310,7 @@ class Dac(NI):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self, rate = 1e4, count = 1000, finite = True):
+    def set_rate(self, rate = 1e4, count = 1000, finite = False):
         """
         Output buffer size determined by amount of data written, unless explicitly set by DAQmxCfgOutputBuffer()
         
@@ -330,10 +346,19 @@ class Dac(NI):
             self.task.GetSampClkRate(mx.byref(dac_rate));
             self._rate = dac_rate.value
             self._mode = 'buffered'
+            self._count=count
         except mx.DAQError as err:
             self.error(err)
             self._rate = 0
-            
+    
+    def set_callback(self,source):
+        self.data_buffer=np.zeros(self._count)
+        self.task.EveryNCallback=self.EveryNCallback
+        self.task.DoneCallback=self.DoneCallback
+        self.task.AutoRegisterEveryNSamplesEvent(mx.DAQmx_Val_Transferred_From_Buffer,self._count,0)
+        self.task.AutoRegisterDoneEvent(0)
+        self._source=source
+    
     def set_single(self):
         ''' single-value [multi channel] output, no clock or buffer
         
@@ -399,6 +424,15 @@ class Dac(NI):
         assert writeCount.value == 1, \
             "sample count {} transfer count {}".format( 1, writeCount.value )
 
+    def EveryNCallback(self):
+        #np.copyto(self.data_buffer,self._source,None)
+        self.load_buffer(self.data_buffer)
+        return 0 # The function should return an integer
+    
+    def DoneCallback(self, status):
+        print "Status",status.value
+        return 0 # The function should return an integer
+
 class Counter( NI ):
     '''
     Event counting input task, inherits from abstract NI task
@@ -432,7 +466,7 @@ class Counter( NI ):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self,rate = 1e4, count = 1000,  clock_source = 'ao/SampleClock', finite = True):
+    def set_rate(self,rate = 1e4, count = 1000,  clock_source = 'ao/SampleClock', finite = False):
         """
         NOTE analog output and input clocks are ONLY available when Dac or Adc task are running. This
         is OK for simultaneous acquisition. Otherwise use dummy task or use another crt as a clock. If the 
@@ -470,6 +504,14 @@ class Counter( NI ):
             self.error(err)
             self._rate = 0
             
+    def set_callback(self,destination):
+        self.data_buffer=np.zeros(self._count)
+        self.task.EveryNCallback=self.EveryNCallback
+        self.task.DoneCallback=self.DoneCallback
+        self.task.AutoRegisterEveryNSamplesEvent(mx.DAQmx_Val_Acquired_Into_Buffer,self._count,0)
+        self.task.AutoRegisterDoneEvent(0)
+        self._destination=destination
+              
     def set_single(self):
         ''' single-value [multi channel] input, no clock or buffer
                    
@@ -536,7 +578,15 @@ class Counter( NI ):
 #        assert read_count.value == 1, \
 #           "sample count {} transfer count {}".format( 1, read_count.value )
         return data  
-            
+        
+    def EveryNCallback(self):
+        self.data_buffer=self.read_buffer(self._count, timeout=10)
+        self._destination.append(self.data_buffer)
+        return 0 # The function should return an integer
+    
+    def DoneCallback(self, status):
+        print "Status",status
+        return 0 # The function should return an integer
 
 class Sync(object):
     '''
@@ -558,7 +608,7 @@ class Sync(object):
         trig_name = '/' + buff.value + '/ai/StartTrigger'
         self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
         
-    def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
+    def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=False):
         # Pad = true, acquire one extra input value per channel, strip off
         # first read, so writes/reads align 
         if pad:

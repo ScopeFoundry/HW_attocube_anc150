@@ -5,7 +5,8 @@ Created on Feb 4, 2015
 '''
 
 from measurement_components.measurement import Measurement
-
+import numpy as np
+import matplotlib.cm as cm
 
 class SemRasterSingleScan(Measurement):
 
@@ -49,8 +50,26 @@ class SemRasterSingleScan(Measurement):
         
         self.angle = self.add_logged_quantity("angle", dtype=float, ro=False, initial=0, vmin=-180, vmax=180, unit="deg")
         
+        self.sample_rate = self.add_logged_quantity("sample_rate", dtype=float, 
+                                                    ro=False, 
+                                                    initial=2e6, 
+                                                    vmin=1, 
+                                                    vmax=2e6,
+                                                    unit='Hz')
         
-        self.sample_rate = self.add_logged_quantity("sample_rate", dtype=float, ro=False, initial=5e5, vmin=1, vmax=2e6, unit='Hz')
+        self.output_rate = self.add_logged_quantity("output_rate", dtype=float, 
+                                                    ro=True, 
+                                                    initial=5e5, 
+                                                    vmin=1, 
+                                                    vmax=2e6,
+                                                    unit='Hz')
+        
+        self.sample_per_point = self.add_logged_quantity("sample_per_point", dtype=int, 
+                                                    ro=False, 
+                                                    initial=1, 
+                                                    vmin=1, 
+                                                    vmax=100,
+                                                    unit='samples')
         
         #connect events
         self.gui.ui.sem_raster_start_pushButton.clicked.connect(self.start)
@@ -62,6 +81,7 @@ class SemRasterSingleScan(Measurement):
         self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
         self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
         self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
+        self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox)
     def setup_figure(self):
         self.fig = self.gui.add_figure('sem_raster', self.gui.ui.sem_raster_plot_widget)
 
@@ -79,34 +99,52 @@ class SemRasterSingleScan(Measurement):
         
         self.xy_raster_volts = self.raster_gen.data()
         self.num_pixels = self.raster_gen.count()
-
+        self.num_samples= self.num_pixels *self.sample_per_point.val
+       
         #setup tasks
-        self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
+        #while self.continuous_scan.val==1:
+        #self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
+        self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3','X-6368/ctr0','PFI0')
+        '''
+        from sample per point and sample rate, calculate the output(scan rate)
+        '''
+        self.output_rate.val=self.sample_rate.val/self.sample_per_point.val
         
         #self.sync_analog_io.setup(rate_out=self.sample_rate.val, count_out=self.num_pixels, 
         #                          rate_in=self.sample_rate.val, count_in=self.num_pixels )
-        
-        self.sync_analog_io.setup(self.sample_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_pixels))
+        self.sync_analog_io.setup(self.output_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_samples),is_finite=True)
         
         self.sync_analog_io.out_data(self.xy_raster_volts)
 
         self.sync_analog_io.start()
-        self.adc_data = self.sync_analog_io.read_buffer(timeout=10)
-
+        self.adc_data = self.sync_analog_io.read_adc_buffer(timeout=10)
+        self.ctr_data=self.sync_analog_io.read_ctr_buffer(timeout=10)
         
         in3 = self.adc_data[::3]
-        in1 = self.adc_data[1::3]
-        in2 = self.adc_data[2::3]
-        out1 = self.xy_raster_volts[::2]
-        out2 = self.xy_raster_volts[1::2]
+        ctr=self.ctr_data
+    
+        if self.sample_per_point.val>1:
+                '''
+                average signal if oversampling is on
+                '''
+                in3=in3.reshape((self.num_pixels,self.sample_per_point.val))
+                in3= in3.mean(axis=1)
+                ctr=ctr.reshape((self.num_pixels,self.sample_per_point.val))
+                ctr= ctr.mean(axis=1)
+            #in1 = self.adc_data[1::3]
+            #in2 = self.adc_data[2::3]
+            #out1 = self.xy_raster_volts[::2]
+            #out2 = self.xy_raster_volts[1::2]
 
-        out1 = out1.reshape(self.raster_gen.shape())
-        out2 = out2.reshape(self.raster_gen.shape())
-        in1 = in1.reshape(self.raster_gen.shape())
-        in2 = in2.reshape(self.raster_gen.shape())
+            #out1 = out1.reshape(self.raster_gen.shape())
+            #out2 = out2.reshape(self.raster_gen.shape())
+            #in1 = in1.reshape(self.raster_gen.shape())
+            #in2 = in2.reshape(self.raster_gen.shape())
         in3 = in3.reshape(self.raster_gen.shape())
-
+        ctr = ctr.reshape(self.raster_gen.shape())
         self.sem_image = in3
+        self.sem_image2 = ctr
+        self.sync_analog_io.stop()
         
         
     def update_display(self):        
@@ -114,13 +152,20 @@ class SemRasterSingleScan(Measurement):
         #self.fig.clf()
         
         if not hasattr(self,'ax'):
-            self.ax = self.fig.add_subplot(111)
+            self.ax = self.fig.add_subplot(211)
             
         if not hasattr(self, 'img'):
-            self.img = self.ax.imshow(self.sem_image)
+            self.img = self.ax.imshow(self.sem_image,cmap = cm.Greys_r)
+            
+        if not hasattr(self,'ax2'):
+            self.ax2 = self.fig.add_subplot(212)
+            
+        if not hasattr(self, 'img2'):
+            self.img2 = self.ax2.imshow(self.sem_image2,cmap = cm.Greys_r)
 
         self.img.set_data(self.sem_image)
-
+        self.img2.set_data(self.sem_image2)
+        
         self.fig.canvas.draw()
         
         

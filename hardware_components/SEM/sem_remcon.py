@@ -90,6 +90,8 @@ class SEMRemCon(HardwareComponent):
                                                    vmax=1,
                                                    unit='',
                                                    choices=[('Off',0),('On',1)])
+        
+        self.magnification.connect_bidir_to_widget(self.gui.ui.sem_magnification_doubleSpinBox)
         #connect to GUI
         
     def connect(self):
