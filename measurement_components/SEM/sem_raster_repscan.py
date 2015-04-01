@@ -17,61 +17,6 @@ class SemRasterRepScan(Measurement):
         self.display_update_period = 0.050 #seconds
 
         # Created logged quantities
-        self.points = self.add_logged_quantity('points', initial=1024,
-                                                   dtype=int,
-                                                   ro=False,
-                                                   vmin=1,
-                                                   vmax=1e6,
-                                                   unit='pixels')
-
-        self.lines = self.add_logged_quantity('lines', initial=1024,
-                                                   dtype=int,
-                                                   ro=False,
-                                                   vmin=1,
-                                                   vmax=1e6,
-                                                   unit='pixels')
-
-
-
-        lq_params = dict(  dtype=float, ro=False,
-                           initial = 0,
-                           vmin=-50,
-                           vmax=50,
-                           unit='%')
-        self.xoffset = self.add_logged_quantity('xoffset', **lq_params)
-        self.yoffset = self.add_logged_quantity('yoffset', **lq_params)
-
-        lq_params = dict(  dtype=float, ro=False,
-                           initial = 100,
-                           vmin=-100,
-                           vmax=100,
-                           unit='%')        
-        self.xsize = self.add_logged_quantity("xsize", **lq_params)
-        self.ysize = self.add_logged_quantity("ysize", **lq_params)
-        
-        self.angle = self.add_logged_quantity("angle", dtype=float, ro=False, initial=0, vmin=-180, vmax=180, unit="deg")
-        
-        
-        self.sample_rate = self.add_logged_quantity("sample_rate", dtype=float, 
-                                                    ro=False, 
-                                                    initial=2e6, 
-                                                    vmin=1, 
-                                                    vmax=2e6,
-                                                    unit='Hz')
-        
-        self.output_rate = self.add_logged_quantity("output_rate", dtype=float, 
-                                                    ro=True, 
-                                                    initial=5e5, 
-                                                    vmin=1, 
-                                                    vmax=2e6,
-                                                    unit='Hz')
-        
-        self.sample_per_point = self.add_logged_quantity("sample_per_point", dtype=int, 
-                                                    ro=False, 
-                                                    initial=1, 
-                                                    vmin=1, 
-                                                    vmax=100,
-                                                    unit='samples')
         
         self.continuous_scan = self.add_logged_quantity("continuous_scan", dtype=int, 
                                                         ro=False, 
@@ -87,52 +32,26 @@ class SemRasterRepScan(Measurement):
                                                         vmax=1, 
                                                         unit='',
                                                         choices=[('Off',0),('On',1)])
+        self.scanner=self.gui.sem_raster_scanner
         
         #connect events
         self.gui.ui.sem_raster_repscan_start_pushButton.clicked.connect(self.start)
         self.gui.ui.sem_raster_repscan_stop_pushButton.clicked.connect(self.interrupt)
         
-        self.points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
-        self.lines.connect_bidir_to_widget(self.gui.ui.lines_doubleSpinBox)
-        self.xoffset.connect_bidir_to_widget(self.gui.ui.xoffset_doubleSpinBox)
-        self.yoffset.connect_bidir_to_widget(self.gui.ui.yoffset_doubleSpinBox)
-        self.xsize.connect_bidir_to_widget(self.gui.ui.xsize_doubleSpinBox)
-        self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
-        self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
-        self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
-        self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox)
         self.save_file.connect_bidir_to_widget(self.gui.ui.save_file_comboBox)
         
     def setup_figure(self):
         self.fig = self.gui.add_figure('sem_raster', self.gui.ui.sem_raster_plot_widget)
 
     def _run(self):
-        from equipment.SEM.raster_generator import  RasterGenerator
-        from equipment.NI_Daq import Sync
         from datetime import datetime
-
-        self.raster_gen = RasterGenerator(points=self.points.val, lines=self.lines.val, 
-                                          xoffset=self.xoffset.val, yoffset=self.yoffset.val,
-                                          xsize=self.xsize.val, ysize=self.ysize.val,
-                                          angle=self.angle.val)
-        
         # need to update values based on clipping
-        
-        self.xy_raster_volts = self.raster_gen.data()
-        self.num_pixels = self.raster_gen.count()
-        self.num_samples= self.num_pixels *self.sample_per_point.val
-       
-        #setup tasks
-        #while self.continuous_scan.val==1:
-        self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3','X-6368/ctr0','PFI0')
-        '''
-        from sample per point and sample rate, calculate the output(scan rate)
-        '''
-        self.output_rate.val=self.sample_rate.val/self.sample_per_point.val
-        
-        #self.sync_analog_io.setup(rate_out=self.sample_rate.val, count_out=self.num_pixels, 
-        #                          rate_in=self.sample_rate.val, count_in=self.num_pixels )
-        self.sync_analog_io.setup(self.output_rate.val, int(self.num_pixels), self.sample_rate.val, int(self.num_samples),is_finite=True)
+        self.sync_analog_io=self.scanner.sync_analog_io
+        self.xy_raster_volts = self.scanner.xy_raster_volts
+        self.num_pixels = self.scanner.num_pixels
+        self.num_samples= self.scanner.num_samples
+        self.sample_per_point= self.scanner.sample_per_point
+        self.raster_gen=self.scanner.raster_gen
         '''
         image_io contains the classes needed for saving and loading data
         The data is in HDF5 format

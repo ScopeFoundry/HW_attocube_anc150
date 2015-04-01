@@ -590,3 +590,8 @@ class Sync(object):
         self.dac.stop() 
         self.adc.stop()
         self.ctr.stop()
+        
+    def close(self):
+        self.dac.close()
+        self.adc.close()
+        self.ctr.close()
