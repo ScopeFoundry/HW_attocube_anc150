@@ -10,7 +10,7 @@ try:
 except Exception as err:
     print "could not load modules needed for ZeissSEMRemCon32:", err
 
-REMCON_PORT='COM4'
+REMCON_PORT='COM3'
 
 class SEMRemCon(HardwareComponent):
      

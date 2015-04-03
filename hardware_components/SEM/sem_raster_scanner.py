@@ -79,15 +79,15 @@ class SemRasterScanner(HardwareComponent):
         
         self.output_channel_names= self.add_logged_quantity("output_channel_names",dtype=str,
                                                         ro=False,
-                                                        initial='X-6368/ao0:1')
+                                                        initial='X-6363/ao0:1')
         
         self.input_channel_names= self.add_logged_quantity("input_channel_names",dtype=str,
                                                         ro=False,
-                                                        initial='X-6368/ai1:3')
+                                                        initial='X-6363/ai1')
         
         self.counter_channel_names= self.add_logged_quantity("counter_channel_names",dtype=str,
                                                         ro=False,
-                                                        initial='X-6368/ctr0,X-6368/ctr1')
+                                                        initial='X-6363/ctr0,X-6363/ctr1')
         
         self.counter_channel_terminals= self.add_logged_quantity("counter_channel_terminals",dtype=str,
                                                         ro=False,

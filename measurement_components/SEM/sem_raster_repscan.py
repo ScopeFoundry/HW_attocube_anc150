@@ -107,7 +107,7 @@ class SemRasterRepScan(Measurement):
             '''
             obtain input signal, average copies of samples and reshape it for image display
             '''
-            in1 = self.adc_data[::3]
+            in1 = self.adc_data
 
             if self.scanner.sample_per_point.val>1:
                 '''
@@ -131,6 +131,7 @@ class SemRasterRepScan(Measurement):
             self.sem_image.append(in1)
             
             for i in xrange(self.scanner.ctr_num):
+                self.ctr_data[i][0]=0
                 self.sem_image.append(self.ctr_data[i])
                 
             self.scanner.sync_analog_io.stop()
