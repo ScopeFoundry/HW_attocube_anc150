@@ -49,32 +49,32 @@
             </property>
            </widget>
           </item>
-          <item row="8" column="1">
-           <widget class="QDoubleSpinBox" name="sem_magnification_doubleSpinBox"/>
+          <item row="7" column="1">
+           <widget class="QDoubleSpinBox" name="sample_per_point_doubleSpinBox"/>
           </item>
-          <item row="6" column="2">
-           <widget class="QLabel" name="label_16">
-            <property name="text">
-             <string>samples</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0">
+          <item row="7" column="0">
            <widget class="QLabel" name="samples_per_point">
             <property name="text">
              <string>samples per pixel</string>
             </property>
            </widget>
           </item>
-          <item row="8" column="0">
+          <item row="9" column="1">
+           <widget class="QDoubleSpinBox" name="sem_magnification_doubleSpinBox"/>
+          </item>
+          <item row="9" column="0">
            <widget class="QLabel" name="sample_rate_label_3">
             <property name="text">
              <string>magnification</string>
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
-           <widget class="QDoubleSpinBox" name="sample_per_point_doubleSpinBox"/>
+          <item row="7" column="2">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string>samples</string>
+            </property>
+           </widget>
           </item>
           <item row="2" column="2">
            <widget class="QDoubleSpinBox" name="xsize_doubleSpinBox"/>
@@ -167,6 +167,23 @@
            <widget class="QLabel" name="h_label">
             <property name="text">
              <string>point/lines:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="2">
+           <widget class="QComboBox" name="unit_of_rate_comboBox"/>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="sample_rate_label_4">
+            <property name="text">
+             <string>scan rate:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QDoubleSpinBox" name="ms_per_unit_doubleSpinBox">
+            <property name="decimals">
+             <number>4</number>
             </property>
            </widget>
           </item>
@@ -320,7 +337,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>642</width>
+             <width>1051</width>
              <height>923</height>
             </rect>
            </property>
@@ -351,7 +368,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>642</width>
+             <width>1051</width>
              <height>923</height>
             </rect>
            </property>
