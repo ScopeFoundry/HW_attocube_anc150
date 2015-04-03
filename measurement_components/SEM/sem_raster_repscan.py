@@ -45,13 +45,11 @@ class SemRasterRepScan(Measurement):
 
     def _run(self):
         from datetime import datetime
-        # need to update values based on clipping
-        self.sync_analog_io=self.scanner.sync_analog_io
-        self.xy_raster_volts = self.scanner.xy_raster_volts
-        self.num_pixels = self.scanner.num_pixels
-        self.num_samples= self.scanner.num_samples
-        self.sample_per_point= self.scanner.sample_per_point
-        self.raster_gen=self.scanner.raster_gen
+        '''
+        connect to the scanner hardware component which set scan parameters
+        '''
+        self.scanner.connect()
+
         '''
         image_io contains the classes needed for saving and loading data
         The data is in HDF5 format
@@ -99,44 +97,45 @@ class SemRasterRepScan(Measurement):
         while self.continuous_scan.val==1:
             if self.interrupt_measurement_called:
                 break
-            self.sync_analog_io.out_data(self.xy_raster_volts)
-            self.sync_analog_io.start()
-            self.adc_data = self.sync_analog_io.read_adc_buffer(timeout=10)
-            self.ctr_data=self.sync_analog_io.read_ctr_buffer(timeout=10)
+            self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
+            self.scanner.sync_analog_io.start()
+            self.adc_data = self.scanner.sync_analog_io.read_adc_buffer(timeout=10)
+            self.ctr_data=[]
+            for i in xrange(self.scanner.ctr_num):
+                self.ctr_data.append(self.scanner.sync_analog_io.read_ctr_buffer_diff(i,timeout=10))
             
             '''
             obtain input signal, average copies of samples and reshape it for image display
             '''
-            in3 = self.adc_data[::3]
-            ctr=self.ctr_data
-            
-            if self.sample_per_point.val>1:
+            in1 = self.adc_data[::3]
+
+            if self.scanner.sample_per_point.val>1:
                 '''
                 average signal if oversampling is on
                 '''
-                in3=in3.reshape((self.num_pixels,self.sample_per_point.val))
-                in3= in3.mean(axis=1)
-                ctr=ctr.reshape((self.num_pixels,self.sample_per_point.val))
-                ctr= ctr.mean(axis=1)
-            #in1 = self.adc_data[1::3]
-            #in2 = self.adc_data[2::3]
-            #out1 = self.xy_raster_volts[::2]
-            #out2 = self.xy_raster_volts[1::2]
+                in1=in1.reshape((self.scanner.num_pixels,self.scanner.sample_per_point.val))
+                in1= in1.mean(axis=1)
+                for i in xrange(self.scanner.ctr_num):
+                    self.ctr_data[i]=self.ctr_data[i].reshape((self.scanner.num_pixels,self.scanner.sample_per_point.val))
+                    self.ctr_data[i]= self.ctr_data[i].mean(axis=1)
 
-            #out1 = out1.reshape(self.raster_gen.shape())
-            #out2 = out2.reshape(self.raster_gen.shape())
-            #in1 = in1.reshape(self.raster_gen.shape())
-            #in2 = in2.reshape(self.raster_gen.shape())
-            in3 = in3.reshape(self.raster_gen.shape())
-            ctr = ctr.reshape(self.raster_gen.shape())
+            in1 = in1.reshape(self.scanner.raster_gen.shape())
+            for i in xrange(self.scanner.ctr_num):
+                self.ctr_data[i] = self.ctr_data[i].reshape(self.scanner.raster_gen.shape())
             if self.save_file.val==1:
                 '''
                 store data in each channel
                 '''
-                self.collection.update({'voltage':in3,'counter':ctr})
-            self.sem_image = in3
-            self.sem_image2 = ctr
-            self.sync_analog_io.stop()
+                self.collection.update({'voltage':in1,'counter':self.ctr_data[0]})
+            self.sem_image=[]
+            self.sem_image.append(in1)
+            
+            for i in xrange(self.scanner.ctr_num):
+                self.sem_image.append(self.ctr_data[i])
+                
+            self.scanner.sync_analog_io.stop()
+        
+        self.scanner.disconnect()
         if self.save_file.val==1:
             self.collection.close()
         
@@ -145,19 +144,26 @@ class SemRasterRepScan(Measurement):
         #self.fig.clf()
         
         if not hasattr(self,'ax'):
-            self.ax = self.fig.add_subplot(211)
+            self.ax = self.fig.add_subplot(221)
             
         if not hasattr(self, 'img'):
-            self.img = self.ax.imshow(self.sem_image,cmap = cm.Greys_r)
+            self.img = self.ax.imshow(self.sem_image[0],cmap = cm.Greys_r)
             
         if not hasattr(self,'ax2'):
-            self.ax2 = self.fig.add_subplot(212)
+            self.ax2 = self.fig.add_subplot(223)
             
         if not hasattr(self, 'img2'):
-            self.img2 = self.ax2.imshow(self.sem_image2,cmap = cm.Greys_r)
-
-        self.img.set_data(self.sem_image)
-        self.img2.set_data(self.sem_image2)
+            self.img2 = self.ax2.imshow(self.sem_image[1],cmap = cm.Greys_r)
+        
+        if not hasattr(self,'ax3'):
+            self.ax3 = self.fig.add_subplot(224)
+            
+        if not hasattr(self, 'img3'):
+            self.img3 = self.ax3.imshow(self.sem_image[2],cmap = cm.Greys_r)
+            
+        self.img.set_data(self.sem_image[0])
+        self.img2.set_data(self.sem_image[1])
+        self.img3.set_data(self.sem_image[2])
         
         self.fig.canvas.draw()
     

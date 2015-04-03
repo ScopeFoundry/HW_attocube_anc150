@@ -77,7 +77,21 @@ class SemRasterScanner(HardwareComponent):
                                                     vmax=100,
                                                     unit='samples')
         
+        self.output_channel_names= self.add_logged_quantity("output_channel_names",dtype=str,
+                                                        ro=False,
+                                                        initial='X-6368/ao0:1')
         
+        self.input_channel_names= self.add_logged_quantity("input_channel_names",dtype=str,
+                                                        ro=False,
+                                                        initial='X-6368/ai1:3')
+        
+        self.counter_channel_names= self.add_logged_quantity("counter_channel_names",dtype=str,
+                                                        ro=False,
+                                                        initial='X-6368/ctr0,X-6368/ctr1')
+        
+        self.counter_channel_terminals= self.add_logged_quantity("counter_channel_terminals",dtype=str,
+                                                        ro=False,
+                                                        initial='PFI0,PFI12')
         #connect events
         
         self.points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
@@ -88,8 +102,7 @@ class SemRasterScanner(HardwareComponent):
         self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
         self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
         self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
-        self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox)   
-        
+        self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox)     
         
     def connect(self):
         if self.debug_mode.val: print "connecting to {}".format(self.name)
@@ -107,7 +120,8 @@ class SemRasterScanner(HardwareComponent):
        
         #setup tasks
         #while self.continuous_scan.val==1:
-        self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3','X-6368/ctr0','PFI0')
+        self.sync_analog_io = Sync(self.output_channel_names.val,self.input_channel_names.val,self.counter_channel_names.val.split(','),self.counter_channel_terminals.val.split(','))
+        self.ctr_num=2
         '''
         from sample per point and sample rate, calculate the output(scan rate)
         '''
