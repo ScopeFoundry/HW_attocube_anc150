@@ -77,6 +77,14 @@ class SemRasterScanner(HardwareComponent):
                                                     vmax=100,
                                                     unit='samples')
         
+        self.ms_per_unit=self.add_logged_quantity("ms_per_unit",dtype=float,
+                                                  ro=False)
+        
+        self.unit_of_rate=self.add_logged_quantity("unit_of_rate",dtype=int,
+                                                   ro=False,
+                                                   initial=0,
+                                                   choices=[('ms/pixel',0),('ms/line',1),('ms/frame',2)])
+        
         self.output_channel_names= self.add_logged_quantity("output_channel_names",dtype=str,
                                                         ro=False,
                                                         initial='X-6368/ao0:1')
