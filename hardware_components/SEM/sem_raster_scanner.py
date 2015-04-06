@@ -57,7 +57,7 @@ class SemRasterScanner(HardwareComponent):
         
         
         self.sample_rate = self.add_logged_quantity("sample_rate", dtype=float, 
-                                                    ro=False, 
+                                                    ro=True, 
                                                     initial=2e6, 
                                                     vmin=1, 
                                                     vmax=2e6,
@@ -71,11 +71,22 @@ class SemRasterScanner(HardwareComponent):
                                                     unit='Hz')
         
         self.sample_per_point = self.add_logged_quantity("sample_per_point", dtype=int, 
-                                                    ro=False, 
+                                                    ro=True, 
                                                     initial=1, 
                                                     vmin=1, 
-                                                    vmax=100,
+                                                    vmax=1e10,
                                                     unit='samples')
+        
+        self.ms_per_unit=self.add_logged_quantity("ms_per_unit",dtype=float,
+                                                  ro=False,
+                                                  initial=0.0005,
+                                                  vmin=0.0005,
+                                                  vmax=1e10)
+        
+        self.unit_of_rate=self.add_logged_quantity("unit_of_rate",dtype=int,
+                                                   ro=False,
+                                                   initial=0,
+                                                   choices=[('ms/pixel',0),('ms/line',1),('ms/frame',2)])
         
         self.output_channel_names= self.add_logged_quantity("output_channel_names",dtype=str,
                                                         ro=False,
@@ -102,10 +113,16 @@ class SemRasterScanner(HardwareComponent):
         self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
         self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
         self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
-        self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox)     
+        self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox) 
+        self.ms_per_unit.connect_bidir_to_widget(self.gui.ui.ms_per_unit_doubleSpinBox)
+        self.unit_of_rate.connect_bidir_to_widget(self.gui.ui.unit_of_rate_comboBox)    
         
     def connect(self):
         if self.debug_mode.val: print "connecting to {}".format(self.name)
+        from equipment.SEM.rate_converter import RateConverter
+        
+        self.rate_converter=RateConverter(self.points.val,self.lines.val,self.sample_rate.val)
+        self.sample_per_point.update_value(self.rate_converter.set_rate(self.ms_per_unit.val,self.unit_of_rate.val))
         
         self.raster_gen = RasterGenerator(points=self.points.val, lines=self.lines.val, 
                                           xoffset=self.xoffset.val, yoffset=self.yoffset.val,
@@ -125,7 +142,7 @@ class SemRasterScanner(HardwareComponent):
         '''
         from sample per point and sample rate, calculate the output(scan rate)
         '''
-        self.output_rate.val=self.sample_rate.val/self.sample_per_point.val
+        self.output_rate.update_value(self.sample_rate.val/self.sample_per_point.val)
         
         #self.sync_analog_io.setup(rate_out=self.sample_rate.val, count_out=self.num_pixels, 
         #                          rate_in=self.sample_rate.val, count_in=self.num_pixels )

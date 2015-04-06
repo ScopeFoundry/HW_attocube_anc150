@@ -1,7 +1,7 @@
 '''
 Created on Feb 4, 2015
 
-@author: NIuser
+@author: Hao Wu
 '''
 
 from measurement_components.measurement import Measurement
