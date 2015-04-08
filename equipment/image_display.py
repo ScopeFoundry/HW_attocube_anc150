@@ -47,7 +47,6 @@ class ImageData(object):
     
     def crunch(self,data):
         if self._sample_per_point>1:
-            print(self._sample_per_point)
             data=data.reshape(self._num_pixels,self._sample_per_point)
             data=data.mean(axis=1)
         data=data.reshape(self._image_shape)
@@ -84,10 +83,8 @@ class ImageDisplay(object):
         self.presetup()
         
     def load(self,data):
-        self.viewer.setImage(data,autoRange=False)
-        self.viewer.view.disableAutoRange()
-        self.viewer.view.setXRange(0,128)
-        self.viewer.view.setYRange(0,128)
+        self.viewer.setImage(data)
+
         
     def presetup(self):
         test_np=np.random.rand(1,1)
