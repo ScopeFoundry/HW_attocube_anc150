@@ -8,6 +8,7 @@ from measurement_components.measurement import Measurement
 import time
 import numpy as np
 import matplotlib.cm as cm
+from equipment.image_display import ImageData
 
 class SemRasterRepScan(Measurement):
 
@@ -41,7 +42,7 @@ class SemRasterRepScan(Measurement):
         self.save_file.connect_bidir_to_widget(self.gui.ui.save_file_comboBox)
         
     def setup_figure(self):
-        self.fig = self.gui.add_figure('sem_raster', self.gui.ui.sem_raster_plot_widget)
+        self.fig = self.gui.add_figure('main_display', self.gui.ui.sem_raster_plot_widget)
 
     def _run(self):
         from datetime import datetime
@@ -62,7 +63,7 @@ class SemRasterRepScan(Measurement):
         '''
         Turning on Continuous scan
         '''
-        self.continuous_scan.val=1
+        self.continuous_scan.update_value(1)
         '''
         If save file flag is on, start save file routine
         '''
@@ -72,7 +73,7 @@ class SemRasterRepScan(Measurement):
             it is used in setting up channels during the creating of
             a Collection object
             '''
-            image_dimension=(self.points.val,self.lines.val)
+            image_dimension=(self.scanner.points.val,self.scanner.lines.val)
             ch_infos=[ChannelInfo('voltage',image_dimension),ChannelInfo('counter',image_dimension)]
             
             t=datetime.now()
@@ -93,12 +94,22 @@ class SemRasterRepScan(Measurement):
             self.sem_remcon=self.gui.sem_remcon
             self.collection.save_hardware_component('sem_remcon', self.dict_logged_quantity_val(self.sem_remcon.logged_quantities), self.dict_logged_quantity_unit(self.sem_remcon.logged_quantities))
         
+        self.images=ImageData(sync_object=self.scanner.sync_analog_io, 
+                              ai_chans=self.scanner.input_channel_addresses.val,
+                              ai_names=self.scanner.input_channel_names.val,
+                              ctr_chans=self.scanner.counter_channel_addresses.val,
+                              ctr_names=self.scanner.counter_channel_names.val,
+                              num_pixels=self.scanner.num_pixels,
+                              image_shape=self.scanner.raster_gen.shape(),
+                              sample_per_point=self.scanner.sample_per_point.val,
+                              timeout=10)
         
         while self.continuous_scan.val==1:
             if self.interrupt_measurement_called:
                 break
             self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
             self.scanner.sync_analog_io.start()
+<<<<<<< HEAD
             self.adc_data = self.scanner.sync_analog_io.read_adc_buffer(timeout=10)
             self.ctr_data=[]
             for i in xrange(self.scanner.ctr_num):
@@ -134,13 +145,22 @@ class SemRasterRepScan(Measurement):
                 self.ctr_data[i][0]=0
                 self.sem_image.append(self.ctr_data[i])
                 
+=======
+            self.images.read_all()
+            self.sem_image=[]
+            self.sem_image.append(self.images.get_by_name(self.scanner.main_channel.val))
+
+>>>>>>> a05c2578c91f99c8af5d5e7a645791263cb9b3f9
             self.scanner.sync_analog_io.stop()
-        
+            
+            
         self.scanner.disconnect()
         if self.save_file.val==1:
             self.collection.close()
+    def update_display(self):
+        self.fig.load(self.sem_image[0])
         
-    def update_display(self):        
+    def update_display_old(self):        
         #print "updating figure"
         #self.fig.clf()
         

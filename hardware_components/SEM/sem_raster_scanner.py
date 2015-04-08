@@ -21,14 +21,14 @@ class SemRasterScanner(HardwareComponent):
         self.display_update_period = 0.050 #seconds
 
         # Created logged quantities
-        self.points = self.add_logged_quantity('points', initial=1024,
+        self.points = self.add_logged_quantity('points', initial=128,
                                                    dtype=int,
                                                    ro=False,
                                                    vmin=1,
                                                    vmax=1e6,
                                                    unit='pixels')
 
-        self.lines = self.add_logged_quantity('lines', initial=1024,
+        self.lines = self.add_logged_quantity('lines', initial=128,
                                                    dtype=int,
                                                    ro=False,
                                                    vmin=1,
@@ -88,13 +88,25 @@ class SemRasterScanner(HardwareComponent):
                                                    initial=0,
                                                    choices=[('ms/pixel',0),('ms/line',1),('ms/frame',2)])
         
-        self.output_channel_names= self.add_logged_quantity("output_channel_names",dtype=str,
+        self.output_channel_addresses= self.add_logged_quantity("output_channel_addresses",dtype=str,
                                                         ro=False,
                                                         initial='X-6363/ao0:1')
         
+        self.input_channel_addresses= self.add_logged_quantity("input_channel_addresses",dtype=str,
+                                                        ro=False,
+                                                        initial='X-6368/ai1,X-6368/ai2,X-6368/ai3')
+        
         self.input_channel_names= self.add_logged_quantity("input_channel_names",dtype=str,
                                                         ro=False,
+<<<<<<< HEAD
                                                         initial='X-6363/ai1')
+=======
+                                                        initial='X-6368/ai1,X-6368/ai2,X-6368/ai3')
+        
+        self.counter_channel_addresses= self.add_logged_quantity("counter_channel_addresses",dtype=str,
+                                                        ro=False,
+                                                        initial='X-6368/ctr0,X-6368/ctr1')
+>>>>>>> a05c2578c91f99c8af5d5e7a645791263cb9b3f9
         
         self.counter_channel_names= self.add_logged_quantity("counter_channel_names",dtype=str,
                                                         ro=False,
@@ -103,6 +115,11 @@ class SemRasterScanner(HardwareComponent):
         self.counter_channel_terminals= self.add_logged_quantity("counter_channel_terminals",dtype=str,
                                                         ro=False,
                                                         initial='PFI0,PFI12')
+        
+        self.main_channel = self.add_logged_quantity("main_channel", dtype=str, 
+                                                        ro=False, 
+                                                        initial='X-6368/ai1', 
+                                                        choices=[('X-6368/ai1','X-6368/ai1'),('X-6368/ai2','X-6368/ai2'),('X-6368/ai3','X-6368/ai3'),('X-6368/ctr0','X-6368/ctr0'),('X-6368/ctr1','X-6368/ctr1')])
         #connect events
         
         self.points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
@@ -116,6 +133,7 @@ class SemRasterScanner(HardwareComponent):
         self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox) 
         self.ms_per_unit.connect_bidir_to_widget(self.gui.ui.ms_per_unit_doubleSpinBox)
         self.unit_of_rate.connect_bidir_to_widget(self.gui.ui.unit_of_rate_comboBox)    
+        self.main_channel.connect_bidir_to_widget(self.gui.ui.main_channel_comboBox)
         
     def connect(self):
         if self.debug_mode.val: print "connecting to {}".format(self.name)
@@ -137,7 +155,7 @@ class SemRasterScanner(HardwareComponent):
        
         #setup tasks
         #while self.continuous_scan.val==1:
-        self.sync_analog_io = Sync(self.output_channel_names.val,self.input_channel_names.val,self.counter_channel_names.val.split(','),self.counter_channel_terminals.val.split(','))
+        self.sync_analog_io = Sync(self.output_channel_addresses.val,self.input_channel_addresses.val,self.counter_channel_addresses.val.split(','),self.counter_channel_terminals.val.split(','))
         self.ctr_num=2
         '''
         from sample per point and sample rate, calculate the output(scan rate)
