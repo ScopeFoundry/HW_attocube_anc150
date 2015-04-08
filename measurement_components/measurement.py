@@ -97,6 +97,7 @@ class Measurement(QtCore.QObject):
     
     @QtCore.Slot()
     def on_display_update_timer(self):
+#         pass
         #update figure
         try:
             self.update_display()
