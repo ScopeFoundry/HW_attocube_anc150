@@ -109,48 +109,10 @@ class SemRasterRepScan(Measurement):
                 break
             self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
             self.scanner.sync_analog_io.start()
-<<<<<<< HEAD
-            self.adc_data = self.scanner.sync_analog_io.read_adc_buffer(timeout=10)
-            self.ctr_data=[]
-            for i in xrange(self.scanner.ctr_num):
-                self.ctr_data.append(self.scanner.sync_analog_io.read_ctr_buffer_diff(i,timeout=10))
-            
-            '''
-            obtain input signal, average copies of samples and reshape it for image display
-            '''
-            in1 = self.adc_data
-
-            if self.scanner.sample_per_point.val>1:
-                '''
-                average signal if oversampling is on
-                '''
-                in1=in1.reshape((self.scanner.num_pixels,self.scanner.sample_per_point.val))
-                in1= in1.mean(axis=1)
-                for i in xrange(self.scanner.ctr_num):
-                    self.ctr_data[i]=self.ctr_data[i].reshape((self.scanner.num_pixels,self.scanner.sample_per_point.val))
-                    self.ctr_data[i]= self.ctr_data[i].mean(axis=1)
-
-            in1 = in1.reshape(self.scanner.raster_gen.shape())
-            for i in xrange(self.scanner.ctr_num):
-                self.ctr_data[i] = self.ctr_data[i].reshape(self.scanner.raster_gen.shape())
-            if self.save_file.val==1:
-                '''
-                store data in each channel
-                '''
-                self.collection.update({'voltage':in1,'counter':self.ctr_data[0]})
-            self.sem_image=[]
-            self.sem_image.append(in1)
-            
-            for i in xrange(self.scanner.ctr_num):
-                self.ctr_data[i][0]=0
-                self.sem_image.append(self.ctr_data[i])
-                
-=======
             self.images.read_all()
             self.sem_image=[]
             self.sem_image.append(self.images.get_by_name(self.scanner.main_channel.val))
 
->>>>>>> a05c2578c91f99c8af5d5e7a645791263cb9b3f9
             self.scanner.sync_analog_io.stop()
             
             
