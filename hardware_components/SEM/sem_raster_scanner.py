@@ -9,14 +9,15 @@ try:
     from equipment.NI_Daq import Sync
 except Exception as err:
     print "could not load modules needed for AttoCubeECC100:", err
-
-
+from PySide import QtCore, QtGui, QtUiTools
+from equipment.image_display import ImageDisplay
 
 
 class SemRasterScanner(HardwareComponent):
     
     name = 'sem_raster_scanner'
-
+    ui_filename='image_window.ui'
+    
     def setup(self):
         self.display_update_period = 0.050 #seconds
 
@@ -118,6 +119,7 @@ class SemRasterScanner(HardwareComponent):
                                                         choices=[('X-6368/ai1','X-6368/ai1'),('X-6368/ai2','X-6368/ai2'),('X-6368/ai3','X-6368/ai3'),('X-6368/ctr0','X-6368/ctr0'),('X-6368/ctr1','X-6368/ctr1')])
         #connect events
         
+        self.gui.ui.set_scan_area_pushButton.clicked.connect(self.open_set_window)
         self.points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
         self.lines.connect_bidir_to_widget(self.gui.ui.lines_doubleSpinBox)
         self.xoffset.connect_bidir_to_widget(self.gui.ui.xoffset_doubleSpinBox)
@@ -174,3 +176,15 @@ class SemRasterScanner(HardwareComponent):
         
         # clean up hardware object
         #del self.nanodrive
+
+    def open_set_window(self):
+        ui_loader = QtUiTools.QUiLoader()
+        ui_file = QtCore.QFile(self.ui_filename)
+        ui_file.open(QtCore.QFile.ReadOnly); 
+        self.set_window=QtGui.QWidget()
+        self.set_window.ui = ui_loader.load(ui_file)
+        ui_file.close()
+        self.image_view=ImageDisplay('set scan area', self.set_window.ui.plot_container)
+
+        self.set_window.ui.show()
+        
