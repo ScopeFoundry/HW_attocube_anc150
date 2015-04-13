@@ -55,17 +55,14 @@ class ImageData(object):
     def read_ai(self):
         self._adc_data=self._sync_object.read_adc_buffer(timeout=self._timeout)
         for i in xrange(self._ai_nums):
-            self._images[self._ai_chans[i]]=self._adc_data[i::self._ai_nums]
+            self._images[self._ai_names[i]]=self._adc_data[i::self._ai_nums]
         
     def read_ctr(self):
         for i in xrange(self._ctr_nums):
-            self._images[self._ctr_chans[i]]=self._sync_object.read_ctr_buffer_diff(i,timeout=self._timeout)
-    
-    def get_by_chan(self,chan):
-        return self._images[chan]
+            self._images[self._ctr_names[i]]=self._sync_object.read_ctr_buffer_diff(i,timeout=self._timeout)
 
     def get_by_name(self,name):
-        return self._images[self._lookup_table[name]]
+        return self._images[name]
     
 class ImageDisplay(object):
     
@@ -83,13 +80,18 @@ class ImageDisplay(object):
         self.presetup()
         
     def load(self,data):
-        self.viewer.setImage(data)
+        self.viewer.setImage(np.fliplr(np.rot90(data,3)))
 
         
     def presetup(self):
         test_np=np.random.rand(1,1)
         self.load(test_np)
         
+    def create_roi(self):
+        self.roi=self.viewer.roi()
+        self.viewer.roiChanged=self.roiChanged()
+        
+                
 class ImageWindow(QtGui.QWidget):
     
     def __init__(self,title):

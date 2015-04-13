@@ -99,7 +99,7 @@ class SemRasterScanner(HardwareComponent):
         
         self.input_channel_names= self.add_logged_quantity("input_channel_names",dtype=str,
                                                         ro=False,
-                                                        initial='X-6363/ai1')
+                                                        initial='SE')
         
         self.counter_channel_addresses= self.add_logged_quantity("counter_channel_addresses",dtype=str,
                                                         ro=False,
@@ -108,7 +108,7 @@ class SemRasterScanner(HardwareComponent):
         
         self.counter_channel_names= self.add_logged_quantity("counter_channel_names",dtype=str,
                                                         ro=False,
-                                                        initial='X-6363/ctr0,X-6363/ctr1')
+                                                        initial='PMT,VPSE')
         
         self.counter_channel_terminals= self.add_logged_quantity("counter_channel_terminals",dtype=str,
                                                         ro=False,
@@ -116,8 +116,14 @@ class SemRasterScanner(HardwareComponent):
         
         self.main_channel = self.add_logged_quantity("main_channel", dtype=str, 
                                                         ro=False, 
-                                                        initial='X-6363/ai1', 
-                                                        choices=[('X-6363/ai1','X-6363/ai1'),('X-6363/ctr0','X-6363/ctr0'),('X-6363/ctr1','X-6363/ctr1')])
+                                                        initial='SE', 
+                                                        choices=[('SE','SE'),('PMT','PMT'),('VPSE','VPSE')])
+        
+        self.timeout= self.add_logged_quantity("timeout",dtype=float,
+                                               ro=False,
+                                               initial=30,
+                                               vmin=1,
+                                               vmax=1e5)
         #connect events
         
         self.gui.ui.set_scan_area_pushButton.clicked.connect(self.open_set_window)
@@ -170,8 +176,9 @@ class SemRasterScanner(HardwareComponent):
         #for lq in self.logged_quantities.values():
         #    lq.hardware_read_func = None
         #    lq.hardware_set_func = None
-        self.sync_analog_io.close()
-        del self.sync_analog_io
+        if self.connected.val:
+            self.sync_analog_io.close()
+            del self.sync_analog_io
         #disconnect hardware
         #self.nanodrive.close()
         
@@ -186,6 +193,6 @@ class SemRasterScanner(HardwareComponent):
         self.set_window.ui = ui_loader.load(ui_file)
         ui_file.close()
         self.image_view=ImageDisplay('set scan area', self.set_window.ui.plot_container)
-
+        self.set_window.ui.load_pushButton.b
         self.set_window.ui.show()
         

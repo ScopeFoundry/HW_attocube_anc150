@@ -10,7 +10,7 @@ try:
 except Exception as err:
     print "could not load modules needed for ZeissSEMRemCon32:", err
 
-REMCON_PORT='COM3'
+REMCON_PORT='COM4'
 
 class SEMRemCon(HardwareComponent):
      
@@ -30,6 +30,14 @@ class SEMRemCon(HardwareComponent):
                                                    vmin=0.0,
                                                    vmax=40.0,
                                                    unit='kV')
+        
+        self.beam_status = self.add_logged_quantity('beam_status', 
+                                                   dtype=int,
+                                                   ro=False,
+                                                   vmin=1,
+                                                   vmax=2,
+                                                   unit='',
+                                                   choices=[('EHT Off',2),('EHT On',1)])
         
         self.beam_blanking = self.add_logged_quantity('beam_blanking', 
                                                    dtype=int,
@@ -145,13 +153,13 @@ class SEMRemCon(HardwareComponent):
         self.external_scan.hardware_set_func= \
                 self.remcon.write_external_scan
         
-        
+        self.beam_status.hardware_set_func=\
+                self.remcon.turn_EHT
     
     def disconnect(self):
         for lq in self.logged_quantities.values():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
-            
-        self.remcon.close()
-        
-        del self.remcon
+        if self.connected.val:
+            self.remcon.close()
+            del self.remcon

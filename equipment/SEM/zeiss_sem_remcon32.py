@@ -231,6 +231,11 @@ class ZeissSEMRemCon32(object):
         else:
             raise ValueError("value %s out of range [1,6]" % val)  
         
+    def turn_EHT(self,val):
+        if val>=1 and val<=2:
+            return self.write_cmd('BMON %i\r' % val)
+        else:
+            raise ValueError("value %s out of range [1,6]" % val)  
 #     '''
 #     43 Spot Mode
 #     '''

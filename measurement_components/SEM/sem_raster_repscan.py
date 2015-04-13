@@ -102,7 +102,7 @@ class SemRasterRepScan(Measurement):
                               num_pixels=self.scanner.num_pixels,
                               image_shape=self.scanner.raster_gen.shape(),
                               sample_per_point=self.scanner.sample_per_point.val,
-                              timeout=10)
+                              timeout=self.scanner.timeout.val)
         
         while self.continuous_scan.val==1:
             if self.interrupt_measurement_called:
@@ -122,34 +122,6 @@ class SemRasterRepScan(Measurement):
     def update_display(self):
         self.fig.load(self.sem_image[0])
         
-    def update_display_old(self):        
-        #print "updating figure"
-        #self.fig.clf()
-        
-        if not hasattr(self,'ax'):
-            self.ax = self.fig.add_subplot(221)
-            
-        if not hasattr(self, 'img'):
-            self.img = self.ax.imshow(self.sem_image[0],cmap = cm.Greys_r)
-            
-        if not hasattr(self,'ax2'):
-            self.ax2 = self.fig.add_subplot(223)
-            
-        if not hasattr(self, 'img2'):
-            self.img2 = self.ax2.imshow(self.sem_image[1],cmap = cm.Greys_r)
-        
-        if not hasattr(self,'ax3'):
-            self.ax3 = self.fig.add_subplot(224)
-            
-        if not hasattr(self, 'img3'):
-            self.img3 = self.ax3.imshow(self.sem_image[2],cmap = cm.Greys_r)
-            
-        self.img.set_data(self.sem_image[0])
-        self.img2.set_data(self.sem_image[1])
-        self.img3.set_data(self.sem_image[2])
-        
-        self.fig.canvas.draw()
-    
     def get_hardware_logged_quantity(self,hardware):
         return hardware.logged_quantities
     

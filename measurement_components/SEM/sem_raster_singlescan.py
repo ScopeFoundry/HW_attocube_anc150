@@ -71,32 +71,8 @@ class SemRasterSingleScan(Measurement):
         '''
         If save file flag is on, start save file routine
         '''
-        if self.save_file.val==1:
-            '''
-            ChannelInfo contains the name of channel, and the dimension info,
-            it is used in setting up channels during the creating of
-            a Collection object
-            '''
-            image_dimension=(self.scanner.points.val,self.scanner.lines.val)
-            ch_infos=[ChannelInfo('voltage',image_dimension),ChannelInfo('counter',image_dimension)]
+       
             
-            t=datetime.now()
-            '''
-            a file is named by a time stamp
-            '''
-            tname='data/img'+t.strftime('%Y-%m-%d-%H-%M-%S')
-            self.collection=Collection(name=tname,
-                                  create=True,
-                                  initial_size=100,
-                                  expansion_size=100,
-                                  channel_infos=ch_infos)
-            
-            '''
-            all configurations from the measurement and hardware components can be saved
-            '''
-            self.collection.save_measurement_component(self.dict_logged_quantity_val(self.logged_quantities), self.dict_logged_quantity_unit(self.logged_quantities))
-            self.sem_remcon=self.gui.sem_remcon
-            self.collection.save_hardware_component('sem_remcon', self.dict_logged_quantity_val(self.sem_remcon.logged_quantities), self.dict_logged_quantity_unit(self.sem_remcon.logged_quantities))
         
         self.images=ImageData(sync_object=self.scanner.sync_analog_io, 
                               ai_chans=self.scanner.input_channel_addresses.val,
@@ -106,8 +82,33 @@ class SemRasterSingleScan(Measurement):
                               num_pixels=self.scanner.num_pixels,
                               image_shape=self.scanner.raster_gen.shape(),
                               sample_per_point=self.scanner.sample_per_point.val,
-                              timeout=10)
+                              timeout=self.scanner.timeout.val)
         
+        if self.save_file.val==1:
+            '''
+            ChannelInfo contains the name of channel, and the dimension info,
+            it is used in setting up channels during the creating of
+            a Collection object
+            '''
+            image_dimension=(self.scanner.points.val,self.scanner.lines.val)
+            ch_infos=[]
+            for name in self.images._lookup_table:
+                ch_infos.append(ChannelInfo(name,image_dimension))
+            t=datetime.now()
+            '''
+            a file is named by a time stamp
+            '''
+            tname='data/img'+t.strftime('%Y-%m-%d-%H-%M-%S')
+            self.collection=Collection(name=tname,
+                                  create=True,
+                                  initial_size=1,
+                                  expansion_size=1,
+                                  channel_infos=ch_infos)
+            self.collection.save_measurement_component(self.dict_logged_quantity_val(self.logged_quantities), self.dict_logged_quantity_unit(self.logged_quantities))
+            self.sem_remcon=self.gui.sem_remcon
+            self.collection.save_hardware_component('sem_remcon', self.dict_logged_quantity_val(self.sem_remcon.logged_quantities), self.dict_logged_quantity_unit(self.sem_remcon.logged_quantities))
+            
+            
         if self.single_scan.val==1:
             self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
             self.scanner.sync_analog_io.start()            
@@ -115,8 +116,8 @@ class SemRasterSingleScan(Measurement):
             self.sem_image=[]
             self.sem_image.append(self.images.get_by_name(self.scanner.main_channel.val))
             self.update_display()
-
-            
+            if self.save_file.val==1:
+                self.collection.update(self.images._images)
 
             self.scanner.sync_analog_io.stop()
 
