@@ -53,7 +53,10 @@ class SemRasterSingleScan(Measurement):
         '''
         connect to the scanner hardware component which set scan parameters
         '''
+        if self.scanner.square.val==True:
+            self.scanner.lines.update_value(self.scanner.points.val)
         self.scanner.connect()
+        
 
         '''
         image_io contains the classes needed for saving and loading data
@@ -120,7 +123,7 @@ class SemRasterSingleScan(Measurement):
                 self.collection.update(self.images._images)
 
             self.scanner.sync_analog_io.stop()
-
+            self.scanner.sync_analog_io.close()
         self.scanner.disconnect()
         if self.save_file.val==1:
             self.collection.close()

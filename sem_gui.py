@@ -23,14 +23,15 @@ class SEMMicroscopeGUI(BaseMicroscopeGUI):
         print "Adding Hardware Components"
         
         #self.picoharp_hc = self.add_hardware_component(PicoHarpHardwareComponent(self))
-
+        self.sem_raster_scanner=self.add_hardware_component(SemRasterScanner(self))
+        self.sem_remcon=self.add_hardware_component(SEMRemCon(self))
         #Add measurement components
         print "Create Measurement objects"
         #self.apd_optimizer_measure = self.add_measurement_component(APDOptimizerMeasurement(self))
-        self.sem_raster_scanner=self.add_hardware_component(SemRasterScanner(self))
+        
         self.sem_raster_singlescan = self.add_measurement_component(SemRasterSingleScan(self))
         self.sem_raster_repscan = self.add_measurement_component(SemRasterRepScan(self))
-        self.sem_remcon=self.add_hardware_component(SEMRemCon(self))
+        
         self.add_figure('main_display',self.ui.sem_raster_plot_widget)
 
         #Add additional logged quantities

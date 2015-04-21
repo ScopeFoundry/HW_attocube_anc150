@@ -194,6 +194,13 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="3">
+           <widget class="QCheckBox" name="square_checkBox">
+            <property name="text">
+             <string>square</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

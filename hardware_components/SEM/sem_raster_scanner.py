@@ -36,7 +36,9 @@ class SemRasterScanner(HardwareComponent):
                                                    vmax=1e6,
                                                    unit='pixels')
 
-
+        self.square=self.add_logged_quantity('square', initial=1,
+                                                   dtype=bool,
+                                                   ro=False)
 
         lq_params = dict(  dtype=float, ro=False,
                            initial = 0,
@@ -129,6 +131,7 @@ class SemRasterScanner(HardwareComponent):
         self.gui.ui.set_scan_area_pushButton.clicked.connect(self.open_set_window)
         self.points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
         self.lines.connect_bidir_to_widget(self.gui.ui.lines_doubleSpinBox)
+        self.square.connect_bidir_to_widget(self.gui.ui.square_checkBox)
         self.xoffset.connect_bidir_to_widget(self.gui.ui.xoffset_doubleSpinBox)
         self.yoffset.connect_bidir_to_widget(self.gui.ui.yoffset_doubleSpinBox)
         self.xsize.connect_bidir_to_widget(self.gui.ui.xsize_doubleSpinBox)
@@ -139,6 +142,7 @@ class SemRasterScanner(HardwareComponent):
         self.ms_per_unit.connect_bidir_to_widget(self.gui.ui.ms_per_unit_doubleSpinBox)
         self.unit_of_rate.connect_bidir_to_widget(self.gui.ui.unit_of_rate_comboBox)    
         self.main_channel.connect_bidir_to_widget(self.gui.ui.main_channel_comboBox)
+        
         
     def connect(self):
         if self.debug_mode.val: print "connecting to {}".format(self.name)
@@ -193,6 +197,5 @@ class SemRasterScanner(HardwareComponent):
         self.set_window.ui = ui_loader.load(ui_file)
         ui_file.close()
         self.image_view=ImageDisplay('set scan area', self.set_window.ui.plot_container)
-        self.set_window.ui.load_pushButton.b
         self.set_window.ui.show()
         
