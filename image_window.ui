@@ -32,10 +32,18 @@
        </attribute>
        <layout class="QVBoxLayout" name="plot2d_layout" stretch="0,0">
         <item>
-         <widget class="QComboBox" name="comboBox"/>
+         <widget class="QComboBox" name="channel_comboBox"/>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="plot_container"/>
+         <layout class="QVBoxLayout" name="plot_container">
+          <item>
+           <widget class="QGroupBox" name="plot_widget">
+            <property name="title">
+             <string>plot</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>

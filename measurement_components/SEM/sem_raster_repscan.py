@@ -27,8 +27,8 @@ class SemRasterRepScan(Measurement):
                                                         unit='',
                                                         choices=[('Off',0),('On',1)])
         self.save_file = self.add_logged_quantity("save_file", dtype=int, 
-                                                        ro=False, 
-                                                        initial=0, 
+                                                        ro=True, 
+                                                        initial=1, 
                                                         vmin=0, 
                                                         vmax=1, 
                                                         unit='',

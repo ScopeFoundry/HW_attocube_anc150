@@ -10,7 +10,7 @@ try:
 except Exception as err:
     print "could not load modules needed for AttoCubeECC100:", err
 from PySide import QtCore, QtGui, QtUiTools
-from equipment.image_display import ImageDisplay
+from equipment.image_display import ImageDisplay, ImageWindow
 
 
 class SemRasterScanner(HardwareComponent):
@@ -116,19 +116,25 @@ class SemRasterScanner(HardwareComponent):
                                                         ro=False,
                                                         initial='PFI0,PFI12')
         
+        self.generate_choice_list()
+        
         self.main_channel = self.add_logged_quantity("main_channel", dtype=str, 
                                                         ro=False, 
-                                                        initial='SE', 
-                                                        choices=[('SE','SE'),('PMT','PMT'),('VPSE','VPSE')])
+                                                        initial=self.name_choices[0][1], 
+                                                        choices=self.name_choices)
         
         self.timeout= self.add_logged_quantity("timeout",dtype=float,
                                                ro=False,
                                                initial=30,
                                                vmin=1,
                                                vmax=1e5)
+        
+        self.display_windows=dict()
+        self.display_window_channels=dict()
+        self.display_windows_counter=0
         #connect events
         
-        self.gui.ui.set_scan_area_pushButton.clicked.connect(self.open_set_window)
+        self.gui.ui.add_window_pushButton.clicked.connect(self.open_new_window)
         self.points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
         self.lines.connect_bidir_to_widget(self.gui.ui.lines_doubleSpinBox)
         self.square.connect_bidir_to_widget(self.gui.ui.square_checkBox)
@@ -145,6 +151,8 @@ class SemRasterScanner(HardwareComponent):
         
         
     def connect(self):
+        self.generate_choice_list()
+        self.main_channel.choices=self.name_choices
         if self.debug_mode.val: print "connecting to {}".format(self.name)
         from equipment.SEM.rate_converter import RateConverter
         
@@ -189,13 +197,28 @@ class SemRasterScanner(HardwareComponent):
         # clean up hardware object
         #del self.nanodrive
 
-    def open_set_window(self):
-        ui_loader = QtUiTools.QUiLoader()
-        ui_file = QtCore.QFile(self.ui_filename)
-        ui_file.open(QtCore.QFile.ReadOnly); 
-        self.set_window=QtGui.QWidget()
-        self.set_window.ui = ui_loader.load(ui_file)
-        ui_file.close()
-        self.image_view=ImageDisplay('set scan area', self.set_window.ui.plot_container)
-        self.set_window.ui.show()
+    def open_new_window(self):
+#         ui_loader = QtUiTools.QUiLoader()
+#         ui_file = QtCore.QFile(self.ui_filename)
+#         ui_file.open(QtCore.QFile.ReadOnly); 
+#         self.display_window=QtGui.QWidget()
+#         self.display_window.ui = ui_loader.load(ui_file)
+#         ui_file.close()
+#         self.image_view=ImageDisplay('display window', self.display_window.ui.plot_container)
+#         self.display_window.ui.show()
+        new_title='figure'+str(self.display_windows_counter)
+        self.display_windows[new_title]=ImageWindow(new_title)
+        self.display_window_channels[new_title]=self.add_logged_quantity(new_title, dtype=str, 
+                                                        ro=False, 
+                                                        initial=self.name_choices[0][1], 
+                                                        choices=self.name_choices)
+        self.display_window_channels[new_title].connect_bidir_to_widget(self.display_windows[new_title].ui.channel_comboBox)
+        self.display_windows_counter+=1
         
+    def generate_choice_list(self):
+        self.name_choices=list()
+        for name in self.input_channel_names.val.split(','):
+            self.name_choices.append((name,name))
+        for name in self.counter_channel_names.val.split(','):
+            self.name_choices.append((name,name))
+        print(self.name_choices)

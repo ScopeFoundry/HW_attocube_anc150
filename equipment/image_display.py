@@ -6,7 +6,8 @@ Created on Apr 7, 2015
 import sys
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore,QtGui
+from PySide import QtCore, QtGui, QtUiTools
+
 
 
 class ImageData(object):
@@ -93,14 +94,16 @@ class ImageDisplay(object):
         
                 
 class ImageWindow(QtGui.QWidget):
+    ui_filename='image_window.ui'
     
-    def __init__(self,title):
-        super(ImageWindow,self).__init__()
-        self._title=title
-        
-        self.initWindow()
-        
-    def initWindow(self):
-        self.setGeometry(300,300,250,150)
-        self.setWindowTitle(self._title)
-        self.show()
+    def __init__(self,title='figure0'):
+        ui_loader = QtUiTools.QUiLoader()
+        ui_file = QtCore.QFile(self.ui_filename)
+        ui_file.open(QtCore.QFile.ReadOnly); 
+        self.display_window=QtGui.QWidget()
+        self.display_window.ui = ui_loader.load(ui_file)
+        self.display_window.ui.setWindowTitle(title)
+        self.image_view=ImageDisplay('display window', self.display_window.ui.plot_container)
+        self.display_window.ui.show()
+        self.ui=self.display_window.ui
+        ui_file.close()

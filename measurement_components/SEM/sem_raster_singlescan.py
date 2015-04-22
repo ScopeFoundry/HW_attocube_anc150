@@ -9,6 +9,9 @@ import time
 import numpy as np
 import matplotlib.cm as cm
 from equipment.image_display import ImageData
+from PySide import QtGui, QtCore
+from equipment.image_io import ChannelInfo
+from equipment.image_io import Collection
 
 class SemRasterSingleScan(Measurement):
 
@@ -27,8 +30,8 @@ class SemRasterSingleScan(Measurement):
                                                         unit='',
                                                         choices=[('Off',0),('On',1)])
         self.save_file = self.add_logged_quantity("save_file", dtype=int, 
-                                                        ro=False, 
-                                                        initial=0, 
+                                                        ro=True, 
+                                                        initial=1, 
                                                         vmin=0, 
                                                         vmax=1, 
                                                         unit='',
@@ -40,6 +43,7 @@ class SemRasterSingleScan(Measurement):
         
         #connect events
         self.gui.ui.sem_raster_start_pushButton.clicked.connect(self.start)
+        self.gui.ui.sem_raster_save_pushButton.clicked.connect(self.save_current_view)
         self.gui.ui.sem_raster_interrupt_pushButton.clicked.connect(self.interrupt)
         
         self.save_file.connect_bidir_to_widget(self.gui.ui.save_file_comboBox)
@@ -65,8 +69,7 @@ class SemRasterSingleScan(Measurement):
         it create an HDF5 file and Collection.update(dict({'name':data_frame}))
         stores each frames into the HDF5 file
         '''
-        from equipment.image_io import ChannelInfo
-        from equipment.image_io import Collection
+        
         '''
         Turning on Continuous scan
         '''
@@ -116,8 +119,6 @@ class SemRasterSingleScan(Measurement):
             self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
             self.scanner.sync_analog_io.start()            
             self.images.read_all()
-            self.sem_image=[]
-            self.sem_image.append(self.images.get_by_name(self.scanner.main_channel.val))
             self.update_display()
             if self.save_file.val==1:
                 self.collection.update(self.images._images)
@@ -129,7 +130,10 @@ class SemRasterSingleScan(Measurement):
             self.collection.close()
         
     def update_display(self):
-        self.fig.load(self.sem_image[0])
+        self.fig.load(self.images.get_by_name(self.scanner.main_channel.val))
+        for window_name in self.scanner.display_windows:
+            current_window=self.scanner.display_windows[window_name]
+            current_window.image_view.load(self.images.get_by_name(self.scanner.display_window_channels[window_name].val))
     
     def get_hardware_logged_quantity(self,hardware):
         return hardware.logged_quantities
@@ -149,6 +153,29 @@ class SemRasterSingleScan(Measurement):
             val_dict[name]=self.logged_quantities[name].unit
         return val_dict
 
+    def save_current_view(self):
+        dialog=QtGui.QFileDialog()
+        dialog.setAcceptMode(dialog.AcceptSave)
+        
+        if dialog.exec_():
+            fname=dialog.selectedFiles()[0]
+            
+            image_dimension=(self.scanner.points.val,self.scanner.lines.val)
+            ch_infos=[]
+            for name in self.images._lookup_table:
+                ch_infos.append(ChannelInfo(name,image_dimension))
+
+            collection=Collection(name=fname,
+                                  create=True,
+                                  initial_size=1,
+                                  expansion_size=1,
+                                  channel_infos=ch_infos)
+            collection.save_measurement_component(self.dict_logged_quantity_val(self.logged_quantities), self.dict_logged_quantity_unit(self.logged_quantities))
+            self.sem_remcon=self.gui.sem_remcon
+            collection.save_hardware_component('sem_remcon', self.dict_logged_quantity_val(self.sem_remcon.logged_quantities), self.dict_logged_quantity_unit(self.sem_remcon.logged_quantities))
+            collection.update(self.images._images)
+            collection.close()
+            
 # if __name__=='__main__':
 #     from base_gui import BaseMicroscopeGUI
 #    
