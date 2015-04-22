@@ -113,8 +113,6 @@ class SemRasterRepScan(Measurement):
             self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
             self.scanner.sync_analog_io.start()
             self.images.read_all()
-            self.sem_image=[]
-            self.sem_image.append(self.images.get_by_name(self.scanner.main_channel.val))
 
             self.scanner.sync_analog_io.stop()
             
@@ -124,7 +122,10 @@ class SemRasterRepScan(Measurement):
         if self.save_file.val==1:
             self.collection.close()
     def update_display(self):
-        self.fig.load(self.sem_image[0])
+        self.fig.load(self.images.get_by_name(self.scanner.main_channel.val))
+        for window_name in self.scanner.display_windows:
+            current_window=self.scanner.display_windows[window_name]
+            current_window.image_view.load(self.images.get_by_name(self.scanner.display_window_channels[window_name].val))
         
     def get_hardware_logged_quantity(self,hardware):
         return hardware.logged_quantities
