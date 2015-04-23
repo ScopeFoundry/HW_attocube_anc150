@@ -14,8 +14,8 @@ class LaserPowerFeedbackControl(Measurement):
         self.p_gain = self.add_logged_quantity("p_gain", dtype=float, unit = "steps/V", initial = 1000, si=True)
 
 
-        self.max_position = self.add_logged_quantity("max_position", dtype=int, unit="step", initial=2400, si=False)
-        self.min_position = self.add_logged_quantity("min_position", dtype=int, unit="step", initial=0, si=False)
+        self.max_position = self.add_logged_quantity("max_position", dtype=int, unit="step", initial=24000000, si=False)
+        self.min_position = self.add_logged_quantity("min_position", dtype=int, unit="step", initial=-24000000, si=False)
 
         self.set_voltage      = self.add_logged_quantity("set_voltage",    unit="V", dtype=float, ro=False, vmin=0, vmax=2, si=True)
         self.present_voltage  = self.add_logged_quantity("present_voltage", unit="V", dtype=float, ro=True, si=True)
