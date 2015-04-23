@@ -250,7 +250,15 @@ class AndorCCD(object):
 
         self.buffer = np.zeros(shape=(self.Ny_ro, self.Nx_ro), dtype=np.int32 )
 
-        
+    ### Function to return the binning based on the current readout mode ####
+    def get_current_hbin(self):
+        if self.ro_mode == 'IMG':
+            return self.hbin
+        elif self.ro_mode == 'SINGLE_TRACK':
+            return self.ro_st_hbin
+        elif self.ro_mode == 'FULL_VERTICAL_BINNING':
+            return self.ro_fvb_hbin
+    
     
     ##### Acquisition Modes #####
     def set_aq_single_scan(self, exposure=None):

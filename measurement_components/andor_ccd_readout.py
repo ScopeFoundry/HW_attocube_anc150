@@ -14,16 +14,16 @@ ROW1 = 271
 
 
 
-def pixel2wavelength(grating_position, pixel_index):
+def pixel2wavelength(grating_position, pixel_index, binning = 1):
     # Wavelength calibration based off of work on 4/30/2014
-    offset = -5.2646 #nm
+    # changed 3/20/2015 after apd alignement offset = -5.2646 #nm
+    offset = -4.2810
     focal_length = 293.50 #mm
     delta = 0.0704  #radians
     gamma = 0.6222  # radian
     grating_spacing = 1/150.  #mm
     pixel_size = 16e-3  #mm   #Binning!
     m_order = 1 #diffraction order
-    binning = 1
 
     wl_center = (grating_position + offset)*1e-6
     px_from_center = pixel_index*binning +binning/2. - 256
@@ -113,7 +113,8 @@ class AndorCCDReadout(Measurement):
                 
                 #print self.gui.acton_spec_hc.center_wl.val
                 
-                wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, np.arange(512))
+                self.wls = wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, 
+                                          np.arange(width_px), binning=ccd.get_current_hbin())
                 
                 #update figure
                 self.andor_ccd_imshow.set_data(buffer_)
@@ -196,7 +197,8 @@ class AndorCCDReadBackground(Measurement):
         
         t_acq = self.gui.andor_ccd_hc.exposure_time.val #in seconds
         
-        wait_time = np.min(1.0,np.max(0.05*t_acq, 0.05)) # limit update period to 50ms (in ms) or as slow as 1sec
+        wait_time = min(1.0,np.max(0.05*t_acq, 0.05)) # limit update period to 50ms (in ms) or as slow as 1sec
+        print 'wait time %f' % wait_time
         
         print "starting acq"
         ccd.start_acquisition()
@@ -289,7 +291,8 @@ class AndorCCDReadSingle(Measurement):
         #wait_time = np.min(1.0,np.max(0.05*t_acq, 0.05)) # limit update period to 50ms (in ms) or as slow as 1sec
         wait_time = 0.05
         
-        wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, np.arange(512))
+        self.wls = wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, 
+                                          np.arange(width_px), binning=ccd.get_current_hbin())
 
         
         print "starting acq"
@@ -341,6 +344,7 @@ class AndorCCDReadSingle(Measurement):
         
         save_dict = {
                  'spectrum': self.spectrum,
+                 'wls': self.wls,
                     }               
                 
         for lqname,lq in self.gui.logged_quantities.items():

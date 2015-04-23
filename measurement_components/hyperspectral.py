@@ -9,16 +9,16 @@ from .base_2d_scan import Base2DScan
 import numpy as np
 import time
 
-def pixel2wavelength(grating_position, pixel_index):
+def pixel2wavelength(grating_position, pixel_index, binning = 1):
     # Wavelength calibration based off of work on 4/30/2014
-    offset = -5.2646 #nm
+    # changed 3/20/2015 after apd alignement offset = -5.2646 #nm
+    offset = -4.2810
     focal_length = 293.50 #mm
     delta = 0.0704  #radians
     gamma = 0.6222  # radian
     grating_spacing = 1/150.  #mm
     pixel_size = 16e-3  #mm   #Binning!
     m_order = 1 #diffraction order
-    binning = 1
 
     wl_center = (grating_position + offset)*1e-6
     px_from_center = pixel_index*binning +binning/2. - 256
@@ -94,8 +94,10 @@ class SpectrumScan2DMeasurement(Base2DScan):
                                     extent=self.imshow_extent)
         
         print "Hyperspectral map 2D scanning"
+        self.t_scan_start = time.time()
         
     def collect_pixel(self,i_h,i_v):
+        t0 = time.time()
         # collect data
         ccd = self.andor_ccd
         ccd.start_acquisition()
@@ -134,6 +136,14 @@ class SpectrumScan2DMeasurement(Base2DScan):
         self.integrated_count_map[i_v,i_h] = np.sum(self.spectra_data)
         print self.integrated_count_map[i_v,i_h]
 
+        if True:
+            t1 = time.time()
+            T_pixel=(t1-t0)
+            total_px = self.Nv*self.Nh
+            print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600,'| Nh, Nv:', self.Nh, self.Nv,
+            Time_finish = time.localtime(total_px*T_pixel+self.t_scan_start)
+            print '| scan finishes at: {}:{}'.format(Time_finish.tm_hour,Time_finish.tm_min)
+ 
         
     def scan_specific_savedict(self):
         save_dict = {
@@ -146,7 +156,7 @@ class SpectrumScan2DMeasurement(Base2DScan):
         return save_dict
 
     def update_display(self):     
-        wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, np.arange(512))
+        wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, np.arange(self.N_spec))
 
         self.spec_plotline.set_xdata(wls)
         self.spec_plotline.set_ydata(self.spectra_data)
