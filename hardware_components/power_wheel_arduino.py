@@ -16,25 +16,15 @@ PowerWheelArduinoPort = 'COM1'
 
 class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
     
-    name = 'power_wheel_arduino'
+    name = 'power wheel arduino'
     debug = False
     
     def setup(self):
         self.debug = True
 
         # logged quantity        
-        self.encoder_pos = self.add_logged_quantity('encoder_pos', 
-                                                    dtype=int, unit='steps', 
-                                                    si=False, ro=True)
-        self.move_steps  = self.add_logged_quantity('move_steps',  
-                                                    dtype=int, unit='steps',
-                                                    vmin=1, vmax=3200, initial=10,  
-                                                    si=False, ro=False)
-        self.speed       = self.add_logged_quantity("speed", 
-                                                    dtype=int, unit='steps/sec', 
-                                                    vmin=1, vmax=1000, initial=100, 
-                                                    si=True, ro=False)
-
+        self.encoder_pos = self.add_logged_quantity('encoder_pos', dtype=int, unit='steps', ro=True)
+        self.move_steps  = self.add_logged_quantity('move_steps',  dtype=int, unit='steps', vmin=1, vmax=3200, initial=10, ro=False)
 
         #  operations
         self.add_operation("zero_encoder", self.zero_encoder)
@@ -56,13 +46,10 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         # connect logged quantities
         self.encoder_pos.hardware_set_func = \
              self.power_wheel.write_steps
+             
         self.encoder_pos.hardware_read_func= \
              self.power_wheel.read_encoder
 
-        self.speed.hardware_set_func = \
-            self.power_wheel.write_speed
-        self.speed.hardware_read_func = \
-            self.power_wheel.read_speed
 
         print 'connected to ',self.name
     
@@ -83,9 +70,9 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
     #@QtCore.Slot()
     def move_fwd(self):
         #self.power_wheel.write_steps(self.move_steps.val)
-        t0 = time.time()
         self.power_wheel.write_steps_and_wait(self.move_steps.val)
-        print time.time() - t0, "sec for", self.move_steps.val, "steps"
+        time.sleep(0.2)
+        #TODO really should wait until done
         self.power_wheel.read_status()
         self.encoder_pos.read_from_hardware()
         
@@ -96,8 +83,10 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         #TODO really should wait until done
 
         self.encoder_pos.read_from_hardware()
+        
 
-    #@QtCore.Slot()
     def zero_encoder(self):
         self.power_wheel.write_zero_encoder()
         self.encoder_pos.read_from_hardware()
+
+

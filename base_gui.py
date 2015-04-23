@@ -10,6 +10,7 @@ import numpy as np
 import collections
 
 from PySide import QtCore, QtGui, QtUiTools
+import pyqtgraph as pg
 
 import matplotlib
 matplotlib.rcParams['backend.qt4'] = 'PySide'
@@ -20,7 +21,7 @@ from matplotlib.figure import Figure
 
 from logged_quantity import LoggedQuantity
 
-
+from equipment.image_display import ImageDisplay
 class BaseMicroscopeGUI(object):
     
     ui_filename = None
@@ -57,25 +58,41 @@ class BaseMicroscopeGUI(object):
     def setup(self):
         """ Override to add Hardware and Measurement Components"""
         raise NotImplementedError()
+    
+    
         
-    def add_figure(self,name, widget):
-            """creates a matplotlib figure attaches it to the qwidget specified
-            (widget needs to have a layout set (preferably verticalLayout) 
-            adds a figure to self.figs"""
-            print "---adding figure", name, widget
-            if name in self.figs:
-                return self.figs[name]
-            else:
-                fig = Figure()
-                fig.patch.set_facecolor('w')
-                canvas = FigureCanvas(fig)
-                nav    = NavigationToolbar2(canvas, self.ui)
-                widget.layout().addWidget(canvas)
-                widget.layout().addWidget(nav)
-                canvas.setFocusPolicy( QtCore.Qt.ClickFocus )
-                canvas.setFocus()
-                self.figs[name] = fig
-                return fig
+    def add_figure_pyqt(self,name,widget):
+        print "---adding figure", name, widget
+        if name in self.figs:
+            return self.figs[name]
+        else:
+            disp=ImageDisplay(name,widget)
+            self.figs[name]=disp
+            return disp
+            
+            
+    
+    def add_figure_plt(self,name, widget):
+        """creates a matplotlib figure attaches it to the qwidget specified
+        (widget needs to have a layout set (preferably verticalLayout) 
+        adds a figure to self.figs"""
+        print "---adding figure", name, widget
+        if name in self.figs:
+            return self.figs[name]
+        else:
+            fig = Figure()
+            fig.patch.set_facecolor('w')
+            canvas = FigureCanvas(fig)
+            nav    = NavigationToolbar2(canvas, self.ui)
+            widget.layout().addWidget(canvas)
+            widget.layout().addWidget(nav)
+            canvas.setFocusPolicy( QtCore.Qt.ClickFocus )
+            canvas.setFocus()
+            self.figs[name] = fig
+            return fig
+    
+    def add_figure(self,name,widget):
+        return self.add_figure_pyqt(name,widget)
     
     def add_logged_quantity(self, name, **kwargs):
         lq = LoggedQuantity(name=name, **kwargs)

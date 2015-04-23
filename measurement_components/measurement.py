@@ -99,11 +99,13 @@ class Measurement(QtCore.QObject):
     
     @QtCore.Slot()
     def on_display_update_timer(self):
+#         pass
         #update figure
         try:
             self.update_display()
         except Exception, err:
-            print self.name, "Failed to update figure:", err            
+            pass
+            #print self.name, "Failed to update figure:", err            
         finally:
             if not self.is_measuring():
                 self.display_update_timer.stop()

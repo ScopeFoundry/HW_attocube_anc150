@@ -123,7 +123,9 @@ class LoggedQuantity(QtCore.QObject):
                 widget.setEnabled(False)
         elif type(widget) == QtGui.QLineEdit:
             self.updated_text_value[str].connect(widget.setText)
-            widget.setReadOnly(True)  # FIXME           
+            if self.ro:
+                widget.setReadOnly(True)  # FIXME     
+            widget.textChanged[str].connect(self.updated_text_value)
         elif type(widget) == QtGui.QComboBox:
             # need to have a choice list to connect to a QComboBox
             assert self.choices is not None 
