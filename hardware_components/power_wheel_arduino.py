@@ -16,7 +16,7 @@ PowerWheelArduinoPort = 'COM1'
 
 class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
     
-    name = 'power wheel arduino'
+    name = 'power_wheel_arduino'
     debug = False
     
     def setup(self):
