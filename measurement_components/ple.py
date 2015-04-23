@@ -13,13 +13,7 @@ from scipy import interpolate
 
 from .measurement import Measurement 
 
-PM_SAMPLE_NUMBER = 1
-UP_AND_DOWN_SWEEP = True
 
-# Optional amount of time to wait between measurement steps to let sample relax to
-# ground state from one excitation energy to the next.  This only works if a shutter
-# is installed.  Set to 0 to disable.  Value is in seconds.
-WAIT_TIME_BETWEEN_STEPS = 1
 
 class PLEPointMeasurement(Measurement):
     
@@ -46,7 +40,7 @@ class PLEPointMeasurement(Measurement):
         self.ax_excite_power.set_ylabel("power (W)")
 
         self.ax_laser_spec = self.fig_aotf_point_scan.add_subplot(222)
-        self.ax_laser_spec.set_xlabel("wavelenth (nm)")
+        self.ax_laser_spec.set_xlabel("wavelength (nm)")
         
         self.ax_emission_intensity = self.fig_aotf_point_scan.add_subplot(223)
         self.ax_emission_intensity.set_ylabel("Counts")
@@ -59,6 +53,19 @@ class PLEPointMeasurement(Measurement):
             ax.set_xlabel("frequency (MHz)")
         
     def _run(self):    
+        self.display_update_period = 0.100 #seconds
+
+        print "running PLE"
+        PM_SAMPLE_NUMBER = 1
+        UP_AND_DOWN_SWEEP = True
+        
+        # Optional amount of time to wait between measurement steps to let sample relax to
+        # ground state from one excitation energy to the next.  This only works if a shutter
+        # is installed.  Set to 0 to disable.  Value is in seconds.
+        WAIT_TIME_BETWEEN_STEPS = 0        
+        
+        SHUTTER_ENABLE = False
+        
         
         # check the type of detector selected in GUI
         use_ccd = self.gui.ui.ple_point_scan_detector_comboBox.currentText() == "Andor CCD"
@@ -76,11 +83,14 @@ class PLEPointMeasurement(Measurement):
         
         # Use a shutter if it is installed; NOTE:  shutter is assumed to be after the OO
         # and PM and only opens for data acquisition.
-        if self.gui.shutter_servo_hc.connected.val:
+        
+        if SHUTTER_ENABLE and self.gui.shutter_servo_hc.connected.val:
             use_shutter = True
             shutter = self.gui.shutter_servo_hc
             # Start with shutter closed.
             shutter.shutter_open.update_value(False)
+        else:
+            use_shutter = False
             
         
         # Turn the AOTF modulation on.
@@ -154,180 +164,168 @@ class PLEPointMeasurement(Measurement):
         
         # Setup complete... start sweep and perform the measurement!
         #print freqs
-        for ii, freq in enumerate(freqs):
-            print ii, freq
-            if self.interrupt_measurement_called:
-                break
-            
-            # Tune the AOTF
-            aotf.freq0.update_value(freq)
-            time.sleep(0.020)
-            
-            try_count = 0
-            while True:
-                try:
-                    if freq > 150:
-                        aotf.pwr0.update_value(2000)
-                    else:
-                        aotf.pwr0.update_value(2000)
-                    time.sleep(0.02)
+        try:
+            for ii, freq in enumerate(freqs):
+                print ii, freq
+                if self.interrupt_measurement_called:
                     break
-                except:
-                    try_count = try_count + 1 
-                    if try_count > 9:
-                        print "Failed to set AOTF power."
-                        break
-                    time.sleep(0.010)         
-            
-            # Record laser spectrum from OO 
-            oospectrometer.acquire_spectrum()
-            oo_spectrum = oospectrometer.spectrum.copy()
-            self.oo_specs[ii] = (oo_spectrum)
-            
-            #compute wavelength of laser
-            max_i = oo_spectrum[10:-10].argmax() + 10
-            wl = self.oo_wavelengths[max_i]
-            self.oo_wl_maxs[ii] = wl
-            
-            # Set the wavelength correction for the power meter.  Try 10 times before 
-            # finally failing.
-            power_meter.wavelength.update_value(wl)
-            
-            # Sleep for 10 ms to let power meter finish processing
-            time.sleep(0.010)
-            
-            # Sample the power at least one time from the power meter.
-            samp_count = 0
-            pm_power = 0.
-            for samp in range(0, PM_SAMPLE_NUMBER):
-                # Try at least 10 times before ultimately failing
+                
+                # Tune the AOTF
+                aotf.freq0.update_value(freq)
+                time.sleep(0.020)
+                
                 try_count = 0
                 while True:
                     try:
-                        pm_power = pm_power + power_meter.power.read_from_hardware(send_signal=True)
-                        samp_count = samp_count + 1
-                        break 
+                        if freq > 150:
+                            aotf.pwr0.update_value(2000)
+                        else:
+                            aotf.pwr0.update_value(2000)
+                        time.sleep(0.02)
+                        break
                     except:
-                        try_count = try_count + 1
+                        try_count = try_count + 1 
                         if try_count > 9:
+                            print "Failed to set AOTF power."
                             break
-                        time.sleep(0.010)
-             
-            if samp_count > 0:              
-                pm_power = pm_power/samp_count
-            else:
-                print "  Failed to read power"
-                pm_power = 10000.    
-            self.pm_powers[ii] = pm_power
-            
-            # Open the shutter
-            if use_shutter:
-                shutter.shutter_open.update_value(True)
-                time.sleep(0.5)
+                        time.sleep(0.010)         
+                
+                # Record laser spectrum from OO 
+                oospectrometer.acquire_spectrum()
+                oo_spectrum = oospectrometer.spectrum.copy()
+                self.oo_specs[ii] = (oo_spectrum)
+                
+                #compute wavelength of laser
+                max_i = oo_spectrum[10:-10].argmax() + 10
+                wl = self.oo_wavelengths[max_i]
+                self.oo_wl_maxs[ii] = wl
+                
+                # Set the wavelength correction for the power meter.  Try 10 times before 
+                # finally failing.
+                power_meter.wavelength.update_value(wl)
+                
+                # Sleep for 10 ms to let power meter finish processing
+                time.sleep(0.010)
+                
+                # Sample the power at least one time from the power meter.
+                samp_count = 0
+                pm_power = 0.
+                for samp in range(0, PM_SAMPLE_NUMBER):
+                    # Try at least 10 times before ultimately failing
+                    try_count = 0
+                    while True:
+                        try:
+                            pm_power = pm_power + power_meter.power.read_from_hardware(send_signal=True)
+                            samp_count = samp_count + 1
+                            break 
+                        except:
+                            try_count = try_count + 1
+                            if try_count > 9:
+                                break
+                            time.sleep(0.010)
+                 
+                if samp_count > 0:              
+                    pm_power = pm_power/samp_count
+                else:
+                    print "  Failed to read power"
+                    pm_power = 10000.    
+                self.pm_powers[ii] = pm_power
+                
+                # Open the shutter
+                if use_shutter:
+                    shutter.shutter_open.update_value(True)
+                    time.sleep(0.5)
+                    
+                if use_ccd:
+                    ccd.start_acquisition()
+                    stat = "ACQUIRING"
+                    while (stat!= "IDLE") and (not self.interrupt_measurement_called):
+                        time.sleep(wait_time)
+                        stat = ccd.get_status()
+        
+                    if not self.interrupt_measurement_called:
+                        buffer_ = ccd.get_acquired_data()
+                        
+                        if do_bgsub:
+                            buffer_ = buffer_ - bg
+                             
+                        spectrum = np.sum(buffer_, axis=0)
+                        
+                        self.ccd_specs[ii] = spectrum
+                        self.total_emission_intensity[ii] = spectrum.sum() 
+                else: #apd
+                    self.apd_intensities[ii] = apd_hc.read_count_rate()
+                    self.total_emission_intensity[ii] = self.apd_intensities[ii]
+                
+                # Close the shutter 
+                if use_shutter:
+                    shutter.shutter_open.update_value(False)
+                
+                if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
+                    time.sleep(WAIT_TIME_BETWEEN_STEPS)
+                
+                self.aotf_modulations[ii] = aotf.modulation_enable.val
+                
+                self.ii = ii
+        
+        #### END Measurement loop ####        
+
+        finally:                       
+            # If the measurement was interrupted, may need to stop the acquisition        
+            if self.interrupt_measurement_called:
+                    self.gui.andor_ccd_hc.interrupt_acquisition()
+                    
+            # Save the data
+            save_dict = {
+                         'oo_specs': self.oo_specs,
+                         'freqs': freqs,
+                         'spec_wl': self.spec_wl,
+                         'oo_wavelengths': self.oo_wavelengths,
+                         'oo_wl_max': self.oo_wl_maxs,
+                         'pm_powers': self.pm_powers,
+                         'use_ccd': use_ccd,
+                         'aotf_modulations': self.aotf_modulations,
+                         'use_shutter': use_shutter,
+                         'WAIT_TIME_BETWEEN_STEPS': WAIT_TIME_BETWEEN_STEPS
+                        }
+    
+            if use_ccd:
+                save_dict.update({
+                                  'ccd_specs': self.ccd_specs,
+                                  'do_bgsub': do_bgsub,
+                                  'bg': bg                     
+                                  })
+            else: # APD
+                save_dict.update({
+                                  'apd_intensities':self.apd_intensities,
+                                  })
+                        
+            for lqname,lq in self.gui.logged_quantities.items():
+                save_dict[lqname] = lq.val
                 
             if use_ccd:
-                ccd.start_acquisition()
-                stat = "ACQUIRING"
-                while (stat!= "IDLE") and (not self.interrupt_measurement_called):
-                    time.sleep(wait_time)
-                    stat = ccd.get_status()
-    
-                if not self.interrupt_measurement_called:
-                    buffer_ = ccd.get_acquired_data()
+                for lqname,lq in self.gui.andor_ccd_hc.logged_quantities.items():
+                    save_dict[self.gui.andor_ccd_hc.name + "_" + lqname] = lq.val
+            else:
+                for lqname,lq in apd_hc.logged_quantities.items():
+                    save_dict[apd_hc.name + "_" + lqname] = lq.val
                     
-                    if do_bgsub:
-                        buffer_ = buffer_ - bg
-                         
-                    spectrum = np.sum(buffer_, axis=0)
-                    
-                    self.ccd_specs[ii] = spectrum
-                    self.total_emission_intensity[ii] = spectrum.sum() 
-            else: #apd
-                self.apd_intensities[ii] = apd_hc.read_count_rate()
-                self.total_emission_intensity[ii] = self.apd_intensities[ii]
+            for lqname,lq in self.logged_quantities.items():
+                save_dict[self.name +"_"+ lqname] = lq.val
             
-            # Close the shutter shutter
-            if use_shutter:
-                shutter.shutter_open.update_value(False)
+            data_fname = "%i_ple_scan.npz" % time.time()
+            np.savez_compressed(data_fname, **save_dict)
+            print "PLE scan complete, data saved as", data_fname
+            #if use_ccd:
+                # Close the shutter          
+            #    self.gui.andor_ccd_hc.shutter_open.update_value(False)
             
-            if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
-                time.sleep(WAIT_TIME_BETWEEN_STEPS)
-            
-            self.aotf_modulations[ii] = aotf.modulation_enable.val
-            
-            self.ii = ii
-                            
-        #### END Measurement loop ####        
-            
-        # If the measurement was interrupted, may need to stop the acqusition        
-        if self.interrupt_measurement_called:
-                self.gui.andor_ccd_hc.interrupt_acquisition()
-                
-        # Save the data
-        save_dict = {
-                     'oo_specs': self.oo_specs,
-                     'freqs': freqs,
-                     'spec_wl': self.spec_wl,
-                     'oo_wavelengths': self.oo_wavelengths,
-                     'oo_wl_max': self.oo_wl_maxs,
-                     'pm_powers': self.pm_powers,
-                     'use_ccd': use_ccd,
-                     'aotf_modulations': self.aotf_modulations,
-                     'use_shutter': use_shutter,
-                     'WAIT_TIME_BETWEEN_STEPS': WAIT_TIME_BETWEEN_STEPS
-                    }
-
-        if use_ccd:
-            save_dict.update({
-                              'ccd_specs': self.ccd_specs,
-                              'do_bgsub': do_bgsub,
-                              'bg': bg                     
-                              })
-        else: # APD
-            save_dict.update({
-                              'apd_intensities':self.apd_intensities,
-                              })
-                    
-        for lqname,lq in self.gui.logged_quantities.items():
-            save_dict[lqname] = lq.val
-            
-        if use_ccd:
-            for lqname,lq in self.gui.andor_ccd_hc.logged_quantities.items():
-                save_dict[self.gui.andor_ccd_hc.name + "_" + lqname] = lq.val
-        else:
-            for lqname,lq in apd_hc.logged_quantities.items():
-                save_dict[apd_hc.name + "_" + lqname] = lq.val
-                
-        for lqname,lq in self.logged_quantities.items():
-            save_dict[self.name +"_"+ lqname] = lq.val
-        
-        np.savez_compressed("%i_ple_scan.npz" % time.time(), **save_dict)
-
-        #if use_ccd:
-            # Close the shutter          
-        #    self.gui.andor_ccd_hc.shutter_open.update_value(False)
-        
-        if not self.interrupt_measurement_called:
-            self.measurement_sucessfully_completed.emit()
-        else:
-            pass
+            if not self.interrupt_measurement_called:
+                self.measurement_sucessfully_completed.emit()
+            else:
+                pass                                        
     
-    @QtCore.Slot()
-    def start(self):
-        self.interrupt_measurement_called = False
-        self.acq_thread = threading.Thread(target=self._run)
-        self.acq_thread.start()
-        self.t_start = time.time()
-        self.display_update_timer.start(100)
-    
-    @QtCore.Slot()
-    def interrupt(self):
-        self.interrupt_measurement_called = True
-        #Make sure display is up to date        
-        self.on_display_update_timer() 
 
-    def is_measuring(self):
-        return self.acq_thread.is_alive()
         
     
     @QtCore.Slot()
@@ -336,8 +334,11 @@ class PLEPointMeasurement(Measurement):
         try:
             self.excite_power_plotline.set_ydata(self.pm_powers)
                            
-            self.laser_spec_plotline.set_ydata(self.oo_specs[self.ii])
-                          
+            #self.laser_spec_plotline.set_ydata(self.oo_specs[self.ii])
+            self.laser_spec_plotline.set_data(np.arange(512), self.ccd_specs[self.ii,:])
+            print "test", self.ccd_specs.shape
+            
+            
             self.emission_intensity_plotline.set_ydata(self.total_emission_intensity)
             
             self.result_plotline.set_data(self.oo_wl_maxs, self.total_emission_intensity/self.pm_powers)    
