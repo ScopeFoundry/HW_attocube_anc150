@@ -49,10 +49,14 @@ class PicoHarpMeasurement(Measurement):
 
         ph.stop_histogram()
         ph.read_histogram_data()
+        self.plotline.set_ydata(ph.histogram_data)
+
+        #print "elasped_meas_time (final):", ph.read_elapsed_meas_time()
         
         save_dict = {
                      'time_histogram': ph.histogram_data,
-                     'time_array': ph.time_array
+                     'time_array': ph.time_array,
+                     'elapsed_meas_time': ph.read_elapsed_meas_time()
                     }               
 
                     
@@ -287,6 +291,7 @@ class TRPLScanMeasurement(Base2DScan):
 
     
     def pre_scan_setup(self):
+        
         #hardware
         ph = self.picoharp = self.gui.picoharp_hc.picoharp
         
@@ -296,7 +301,8 @@ class TRPLScanMeasurement(Base2DScan):
             self.pm_analog_readout = self.gui.thorlabs_powermeter_analog_readout_hc
             self.gui.thorlabs_powermeter_hc.read_from_hardware()
         else:
-            raise IOError("power meter not connected")
+            #raise IOError("power meter not connected")
+            print "power meter not connected"
         
         # TRPL scan specific setup
         self.sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
@@ -311,6 +317,8 @@ class TRPLScanMeasurement(Base2DScan):
                                        dtype=int)
         
         self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3
+        self.elapsed_time_array = np.zeros((self.Nv, self.Nh), dtype=float)
+        
         #update figure
         self.time_trace_plotline.set_xdata(self.time_array)
         
@@ -319,24 +327,38 @@ class TRPLScanMeasurement(Base2DScan):
                                     vmin=1e4, vmax=1e5, interpolation='nearest', 
                                     extent=self.imshow_extent)
 
+        
+        self.t_scan_start = time.time()
+
     def collect_pixel(self, i, j):
         ph = self.picoharp
         # collect data
         #print "sleep_time", self.sleep_time
         t0 = time.time()
         ph.start_histogram()
+
         while not ph.check_done_scanning():
-            ph.read_histogram_data()
-            time.sleep(0.01) #self.sleep_time)  
+            if self.gui.picoharp_hc.logged_quantities['Tacq'].val > 200:
+                ph.read_histogram_data()
+            time.sleep(0.005) #self.sleep_time)  
         ph.stop_histogram()
+        #ta = time.time()
         ph.read_histogram_data()
-        
+        #print "read_histogram_data time", 1000*(time.time() - ta)
+        #print "pixel time", 1000*(time.time() - t0)
+
         if self.record_power:
             self.pm_power_v = self.pm_analog_readout.voltage.read_from_hardware()
         
-        t1 = time.time()
-        
-        #print "time per pixel:", (t1-t0)
+        #print total time
+        if True:
+            t1 = time.time()
+            T_pixel=(t1-t0)
+            total_px = self.Nv*self.Nh
+            print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600,'| Nh, Nv:', self.Nh, self.Nv,
+            Time_finish = time.localtime(total_px*T_pixel+self.t_scan_start)
+            print '| scan finishes at: {}:{}'.format(Time_finish.tm_hour,Time_finish.tm_min)
+            
         
         # store in arrays
         N = self.stored_histogram_channels.val
@@ -344,11 +366,13 @@ class TRPLScanMeasurement(Base2DScan):
         self.integrated_count_map[j,i] = np.sum(self.time_trace_map[j,i])
         if self.record_power:
             self.powermeter_analog_volt_map[j,i] = self.pm_power_v
+        self.elapsed_time_array[j,i] = ph.read_elapsed_meas_time()
 
     def scan_specific_savedict(self):
         savedict = dict( integrated_count_map=self.integrated_count_map,
                      time_trace_map = self.time_trace_map,
                      time_array = self.time_array,
+                     elapsed_time_array = self.elapsed_time_array,
                      )
         if self.record_power:
             savedict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map         
@@ -362,15 +386,31 @@ class TRPLScanMeasurement(Base2DScan):
         
         self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val])
         
-        C = (self.integrated_count_map)
-        self.imgplot.set_data(C)
-        
-        try:
-            count_min =  np.min(C[np.nonzero(C)])
-        except Exception:
-            count_min = 0
-        count_max = np.max(self.integrated_count_map)
-        self.imgplot.set_clim(count_min, count_max + 1)
+        # integrated map
+        if True:
+            C = (self.integrated_count_map)
+            self.imgplot.set_data(C)         
+            try:
+                count_min =  np.min(C[np.nonzero(C)])
+            except Exception:
+                count_min = 0
+            count_max = np.max(C)
+            self.imgplot.set_clim(count_min, count_max + 1)
+            
+        # lifetime 
+        if False:
+            
+            x=1-0.36787944117
+            kk_bg_max = 100 / 2
+            kk_start = kk_bg_max+50/2
+            kk_final = 800/2
+            bg_slice = slice(0,kk_bg_max)
+            bg = np.average(self.time_trace_map[:,:,bg_slice], axis=2).reshape(self.Nv*1,self.Nh*1,1)
+            t  = self.time_trace_map[:,:,kk_start:kk_final]-bg
+            C = self.time_array[np.argmin(np.abs(np.cumsum(t, axis=2)/np.sum(t, axis=2).reshape(self.Nv*1,self.Nh*1,1)-x), axis=2)]
+            # 
+            self.imgplot.set_data(C)
+            self.imgplot.set_clim(0,1.8)
         
         self.fig.canvas.draw()
         
@@ -389,16 +429,30 @@ class TRPLScan3DMeasurement(Base3DScan):
         #hardware
         ph = self.picoharp = self.gui.picoharp_hc.picoharp
         
+        
+        self.record_power = False
+        if self.gui.thorlabs_powermeter_analog_readout_hc.connected.val and self.gui.thorlabs_powermeter_hc.connected.val:
+            self.record_power = True
+            self.pm_analog_readout = self.gui.thorlabs_powermeter_analog_readout_hc
+            self.gui.thorlabs_powermeter_hc.read_from_hardware()
+        else:
+            raise IOError("power meter not connected")
+        
         # TRPL scan specific setup
         self.sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
 
         #create data arrays
+        if self.record_power:
+            self.powermeter_analog_volt_map = np.zeros((self.Nz, self.Ny, self.Nx), dtype=float)
         self.integrated_count_map = np.zeros((self.Nz, self.Ny, self.Nx), dtype=int)
         print "size of time_trace_map %e" %  (self.Nx* self.Ny * self.Nz * self.stored_histogram_channels.val)
 
         self.time_trace_map = np.zeros( (self.Nz, self.Ny, self.Nx, self.stored_histogram_channels.val),dtype=np.uint16)
         
         self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3
+        self.elapsed_time_array = np.zeros((self.Nz, self.Ny, self.Nx), dtype=float)
+        
+        
         #update figure
         #self.time_trace_plotline.set_xdata(self.time_array)
         self.fig = self.gui.trpl_scan_measure.fig
@@ -428,42 +482,81 @@ class TRPLScan3DMeasurement(Base3DScan):
         ph.read_histogram_data()
         
         t1 = time.time()
-        
-        print "time per pixel:", (t1-t0)
-        
+        T_pixel=(t1-t0)
+        total_px = self.Nx*self.Ny*self.Nz
+        print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600, self.Nx, self.Ny, self.Nz
+
+        if self.record_power:
+            self.pm_power_v = self.pm_analog_readout.voltage.read_from_hardware()       
 
         # store in arrays
         N = self.stored_histogram_channels.val
         self.time_trace_map[k,j,i,:] = ph.histogram_data[0:N]
         self.integrated_count_map[k,j,i] = np.sum(self.time_trace_map[k,j,i])
+        if self.record_power:
+            self.powermeter_analog_volt_map[k,j,i] = self.pm_power_v
+        self.elapsed_time_array[k,j,i] = ph.read_elapsed_meas_time()
+
 
     def scan_specific_savedict(self):
-        return dict( integrated_count_map=self.integrated_count_map,
+        savedict=dict( integrated_count_map=self.integrated_count_map,
                      time_trace_map = self.time_trace_map,
                      time_array = self.time_array,
+                     elapsed_time_array = self.elapsed_time_array,
                      )
-        
+        if self.record_power:
+            savedict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map  
+        return savedict
+          
     def update_display(self):
+        
         self.fig = self.gui.trpl_scan_measure.fig
         self.time_trace_plotline = self.gui.trpl_scan_measure.time_trace_plotline
         
-        self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val])
+        self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:500]) # FIXME
         
         visual_slice = [np.s_[:], np.s_[:], np.s_[:]]
         visual_slice[self.slow_axis_id] = self.ijk[self.slow_axis_id]
 
         
-        C = np.log10(self.integrated_count_map[visual_slice[::-1]])
-        self.imgplot.set_data(C)
+        #integrated count map
+        if False:
+            #C = np.log10(self.integrated_count_map[visual_slice[::-1]])
+            C = (self.integrated_count_map[visual_slice[::-1]])
+            self.imgplot.set_data(C)
+            
+            #print self.fast_imshow_extent
+            
+            try:
+                count_min =  -1 #np.min(C[np.nonzero(C)])
+            except Exception:
+                count_min = 0
+            count_max = np.max(C)
+            self.imgplot.set_clim(count_min, count_max + 1)
         
-        #print self.fast_imshow_extent
         
-        try:
-            count_min =  -1 #np.min(C[np.nonzero(C)])
-        except Exception:
-            count_min = 0
-        count_max = 10 #np.max(C)
-        self.imgplot.set_clim(count_min, count_max + 1)
+        # lifetime 
+        if True:
+            x=1-0.36787944117
+            kk_bg_max = 50
+            kk_start = kk_bg_max+25
+            kk_final = 400
+            bg_slice = np.s_[0:kk_bg_max]
+            #bg_full_slice = visual_slice[::-1] + [bg_slice,]
+            print "A"
+            bg = np.average(self.time_trace_map[:,:,:,bg_slice], axis=3).reshape(self.Nz,self.Ny, self.Nx,1)
+            print "B"
+            #fit_slice = visual_slice[::-1] + [np.s_[kk_start:kk_final],]
+            t  = self.time_trace_map[:,:,:,kk_start:kk_final ]-bg
+            print "C"
+            C = self.time_array[np.argmin(np.abs(np.cumsum(t, axis=3)/np.sum(t, axis=3).reshape(self.Nz,self.Ny, self.Nx,1)-x), axis=3)]
+            # 
+            self.imgplot.set_data(C[visual_slice[::-1]])
+            self.imgplot.set_clim(0,2)
+
         
         
         self.fig.canvas.draw()
+        
+        pass
+        

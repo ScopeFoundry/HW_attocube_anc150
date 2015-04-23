@@ -134,6 +134,7 @@ class PowerScanMotorized(Measurement):
             self.spectra = np.zeros( (pw_steps, ccd_width_px), dtype=float )
         if self.collect_lifetime.val:
             self.time_traces = np.zeros( (pw_steps, self.ph_hist_chan), dtype=int )
+            self.elapsed_times = np.zeros(pw_steps, dtype=float)
         
         # setup figure
         self.fig.clf()
@@ -144,7 +145,7 @@ class PowerScanMotorized(Measurement):
         
         self.power_plotline, = self.ax_power.plot([1],[1],'o-')
         if self.collect_spectrum.val:
-            self.spec_plotline, = self.ax_spec.plot(np.arange(512), np.zeros(512))
+            self.spec_plotline, = self.ax_spec.plot(np.arange(self.ccd.Nx_ro), np.zeros(self.ccd.Nx_ro))
         
         # SCAN!!!
         
@@ -175,11 +176,12 @@ class PowerScanMotorized(Measurement):
                 if self.collect_apd.val:
                     self.apd_count_rates[ii] = self.collect_apd_data()
                 if self.collect_lockin.val:
+                    #FIXME
                     self.chopped_current[ii] = self.collect_lifetime_data()
                 if self.collect_spectrum.val:
                     self.spectra[ii,:] = self.collect_spectrum_data()
                 if self.collect_lifetime.val:
-                    self.time_traces[ii,:] = self.collect_lifetime_data()
+                    self.time_traces[ii,:], self.elapsed_times[ii] = self.collect_lifetime_data()
                     
                 # CLose shutter
                 if use_shutter:
@@ -219,6 +221,7 @@ class PowerScanMotorized(Measurement):
             if self.collect_lifetime.val:
                 save_dict['time_traces'] = self.time_traces
                 save_dict['time_array' ] = self.picoharp.time_array
+                save_dict['elapsed_times'] = self.elapsed_times
             
                          
             for lqname,lq in self.gui.logged_quantities.items():
@@ -291,10 +294,11 @@ class PowerScanMotorized(Measurement):
             time.sleep(0.1) #self.sleep_time)  
         self.picoharp.stop_histogram()
         self.picoharp.read_histogram_data()
+        elapsed_meas_time = self.picoharp.read_elapsed_meas_time()
         
         t1 = time.time()
         #print "time per pixel:", (t1-t0)
-        return self.picoharp.histogram_data
+        return self.picoharp.histogram_data, elapsed_meas_time
     
     def collect_pm_power_data(self):
         PM_SAMPLE_NUMBER = 10
@@ -340,8 +344,12 @@ class PowerScanMotorized(Measurement):
         if self.collect_lockin.val:
             self.power_plotline.set_data(self.pm_powers[:,self.ii], self.chopped_current[:self.ii])
         if self.collect_lifetime.val:
-            self.power_plotline.set_data(self.pm_powers_after[:self.ii], np.sum(self.time_traces[:self.ii,:],axis=1))
-
+            self.power_plotline.set_data(
+                        self.pm_powers_after[:self.ii],
+                        np.sum(self.time_traces[:self.ii,:],axis=1) / self.elapsed_times[:self.ii])
+            self.ax_power.set_ylabel("kHz")
+            self.ax_power.set_xlabel("Laser Power (W)")
+            
         self.ax_power.relim()
         self.ax_power.autoscale_view(scalex=True, scaley=True)
 
@@ -377,7 +385,8 @@ class PowerScanContinuous(Measurement):
         self.ax_spec  = self.fig.add_subplot(211)
         
         self.power_plotline, = self.ax_power.plot([1],[1],'o-')
-        self.spec_plotline, = self.ax_spec.plot(np.arange(512), np.zeros(512))
+        if self.detector == 'CCD' and hasattr(self, 'andor_ccd'):
+            self.spec_plotline, = self.ax_spec.plot(np.arange(self.andor_ccd.Nx_ro), np.zeros(self.andor_ccd.Nx_ro))
         
     def _run(self):
 

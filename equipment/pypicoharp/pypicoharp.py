@@ -183,7 +183,28 @@ class PicoHarp300(object):
         if self.debug: print "Read Histogram Data"
         self.handle_err(phlib.PH_GetHistogram(self.devnum, self.histogram_data.ctypes.data, 0)) # grab block 0
         return self.histogram_data
-
+    
+    def write_stop_overflow(self, stop_on_overflow=True, stopcount=65535):
+        """
+        This setting determines if a measurement run will stop if any channel 
+        reaches the maximum set by stopcount. If stop_ofl is 0
+        the measurement will continue but counts above 65,535 in any bin will be clipped.
+        """
+        
+        if stop_on_overflow:
+            overflow_int = 1
+        else:
+            overflow_int = 0
+        
+        self.handle_err(phlib.PH_SetStopOverflow(self.devnum, overflow_int, stopcount))
+        
+    def read_elapsed_meas_time(self):
+        elapsed_time = ctypes.c_double()
+        self.handle_err(phlib.PH_GetElapsedMeasTime(self.devnum, byref(elapsed_time)))
+    
+        self.elapsed_time = elapsed_time.value
+        return self.elapsed_time
+    
     def close(self):
         return self.handle_err(phlib.PH_CloseDevice(self.devnum))
     

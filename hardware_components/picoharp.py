@@ -30,6 +30,7 @@ class PicoHarpHardwareComponent(HardwareComponent):
         self.add_logged_quantity("CFDLevel1", dtype=int, unit="mV", vmin=0, vmax=800, si=False)
         self.add_logged_quantity("CFDZeroCross1", dtype=int, unit="mV", vmin=0, vmax=20, si=False)
 
+        self.add_logged_quantity("stop_on_overflow", dtype=bool)
 
     def connect(self):
         if self.debug: print "Connecting to PicoHarp"
@@ -74,6 +75,9 @@ class PicoHarpHardwareComponent(HardwareComponent):
         LQ["CFDZeroCross1"].hardware_set_func  = PH.write_CFDZeroCross1
         LQ["CFDZeroCross1"].hardware_read_func = lambda PH=PH: PH.CFDZeroCross[1]
 
+        LQ["stop_on_overflow"].hardware_set_func = PH.write_stop_overflow
+        LQ["stop_on_overflow"].update_value(True)
+        
         
         #connect logged quantities to other gui widgets
         
