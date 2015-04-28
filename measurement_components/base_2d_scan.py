@@ -55,6 +55,12 @@ class Base2DScan(Measurement):
         # collect data
         # store in arrays        
         raise NotImplementedError()
+    
+    def post_scan_cleanup(self):
+        pass
+    
+    def scan_specific_savedict(self):
+        return dict()    
         
     def _run(self):
         #hardware 
@@ -127,8 +133,10 @@ class Base2DScan(Measurement):
                 self.stage.x_position.read_from_hardware()
                 self.stage.y_position.read_from_hardware()
                 self.stage.z_position.read_from_hardware()
-                                
-        #scanning done
+                
+                            
+            #scanning done
+            self.post_scan_cleanup()
         #except Exception as err:
         #    self.interrupt()
         #    raise err
@@ -165,5 +173,4 @@ class Base2DScan(Measurement):
             else:
                 pass
 
-    def scan_specific_savedict(self):
-        return dict()
+

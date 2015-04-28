@@ -76,6 +76,8 @@ class Base3DScan(Measurement):
         # store in arrays        
         raise NotImplementedError()
 
+    def post_scan_cleanup(self):
+        pass
 
     def scan_specific_savedict(self):
         "override to add specific data to the save file. should return a dictionary"
@@ -199,7 +201,8 @@ class Base3DScan(Measurement):
                 #get ready for next pixel
                 self.ijk_previous = ijk
       
-        #scanning done
+            #scanning done
+            self.post_scan_cleanup()
         #except Exception as err:
         #    self.interrupt()
         #    raise err
