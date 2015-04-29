@@ -64,7 +64,7 @@ class PLEPointMeasurement(Measurement):
         # is installed.  Set to 0 to disable.  Value is in seconds.
         WAIT_TIME_BETWEEN_STEPS = 0        
         
-        SHUTTER_ENABLE = False
+        SHUTTER_ENABLE = True
         
         
         # check the type of detector selected in GUI
@@ -334,9 +334,9 @@ class PLEPointMeasurement(Measurement):
         try:
             self.excite_power_plotline.set_ydata(self.pm_powers)
                            
-            #self.laser_spec_plotline.set_ydata(self.oo_specs[self.ii])
-            self.laser_spec_plotline.set_data(np.arange(512), self.ccd_specs[self.ii,:])
-            print "test", self.ccd_specs.shape
+            self.laser_spec_plotline.set_ydata(self.oo_specs[self.ii])
+            #self.laser_spec_plotline.set_data(np.arange(512), self.ccd_specs[self.ii,:])
+            #print "test", self.ccd_specs.shape
             
             
             self.emission_intensity_plotline.set_ydata(self.total_emission_intensity)
