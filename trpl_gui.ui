@@ -42,6 +42,13 @@
           <string>2D Scan Area</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
+          <item row="3" column="0">
+           <widget class="QLabel" name="dh_label">
+            <property name="text">
+             <string>dH:</string>
+            </property>
+           </widget>
+          </item>
           <item row="4" column="2">
            <widget class="QLabel" name="label_9">
             <property name="text">
@@ -121,13 +128,6 @@
             </property>
             <property name="value">
              <double>45.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="dh_label">
-            <property name="text">
-             <string>dH:</string>
             </property>
            </widget>
           </item>
@@ -1346,7 +1346,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>9</number>
       </property>
       <widget class="QWidget" name="plot2d_tab">
        <attribute name="title">
@@ -1521,7 +1521,7 @@ Continuously</string>
        <attribute name="title">
         <string>PicoHarp</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,1">
+       <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,1">
         <item>
          <widget class="QGroupBox" name="groupBox_9">
           <property name="title">
@@ -1529,66 +1529,7 @@ Continuously</string>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
-            <widget class="QPushButton" name="picoharp_acquire_one_pushButton">
-             <property name="text">
-              <string>Acquire One</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="picoharp_interrupt_pushButton">
-             <property name="text">
-              <string>Interrupt</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="picoharp_live_controls_groupBox">
-          <property name="title">
-           <string>PowerWheel Control</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_7">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="power_wheel_start_picoharp_pushButton">
-             <property name="text">
-              <string>Start</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QDoubleSpinBox" name="power_wheel_steps_picoharp_doubleSpinBox">
-             <property name="prefix">
-              <string>steps: </string>
-             </property>
-             <property name="decimals">
-              <number>0</number>
-             </property>
-             <property name="minimum">
-              <double>-800.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>800.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QDoubleSpinBox" name="power_wheel_delta_picoharp_doubleSpinBox">
-             <property name="prefix">
-              <string>delta: </string>
-             </property>
-             <property name="suffix">
-              <string> *0.45</string>
-             </property>
-             <property name="decimals">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="3">
-            <widget class="QDoubleSpinBox" name="power_wheel_channels_doubleSpinBox">
+            <widget class="QDoubleSpinBox" name="trpl_live_stored_channels_doubleSpinBox">
              <property name="prefix">
               <string>Channels: </string>
              </property>
@@ -1600,8 +1541,15 @@ Continuously</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="4">
-            <widget class="QPushButton" name="power_wheel_interrupt_picoharp_pushButton">
+           <item>
+            <widget class="QPushButton" name="picoharp_acquire_one_pushButton">
+             <property name="text">
+              <string>Acquire One</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="picoharp_interrupt_pushButton">
              <property name="text">
               <string>Interrupt</string>
              </property>
@@ -1631,21 +1579,21 @@ Continuously</string>
            <string>2D TRPL Scan</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_10">
-           <item row="0" column="1">
+           <item row="0" column="2">
             <widget class="QPushButton" name="trpl_map_interrupt_pushButton">
              <property name="text">
               <string>Interrupt</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
+           <item row="0" column="1">
             <widget class="QPushButton" name="trpl_map_start_pushButton">
              <property name="text">
               <string>Start</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
+           <item row="0" column="0">
             <widget class="QDoubleSpinBox" name="trpl_map_stored_channels_doubleSpinBox">
              <property name="prefix">
               <string>Stored Channels </string>
@@ -1723,7 +1671,7 @@ Continuously</string>
        <attribute name="title">
         <string>Power Scan</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_18" stretch="0,0,0">
+       <layout class="QVBoxLayout" name="verticalLayout_18" stretch="0,0,0,0">
         <item>
          <widget class="QGroupBox" name="groupBox_10">
           <property name="sizePolicy">
@@ -1753,7 +1701,7 @@ Continuously</string>
            <item row="2" column="0">
             <widget class="QDoubleSpinBox" name="power_scan_motorized_steps_doubleSpinBox">
              <property name="prefix">
-              <string>steps: </string>
+              <string>#datapoints: </string>
              </property>
              <property name="suffix">
               <string/>
@@ -1765,7 +1713,7 @@ Continuously</string>
               <double>1000000.000000000000000</double>
              </property>
              <property name="value">
-              <double>120.000000000000000</double>
+              <double>10.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -1789,13 +1737,13 @@ Continuously</string>
               <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
              </property>
              <property name="prefix">
-              <string>delta: </string>
+              <string>delta(steps/3200): </string>
              </property>
              <property name="suffix">
-              <string> deg</string>
+              <string> steps</string>
              </property>
              <property name="decimals">
-              <number>4</number>
+              <number>0</number>
              </property>
              <property name="minimum">
               <double>-3600.000000000000000</double>
@@ -1807,7 +1755,7 @@ Continuously</string>
               <double>1.000000000000000</double>
              </property>
              <property name="value">
-              <double>0.000000000000000</double>
+              <double>100.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -1839,6 +1787,42 @@ Continuously</string>
             <widget class="QCheckBox" name="power_scan_motorized_collect_lifetime_checkBox">
              <property name="text">
               <string>Lifetime</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QCheckBox" name="power_scan_motorized_run_zero_before_scan_checkBox">
+             <property name="text">
+              <string>set encoder to zero before scan</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_13">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>Motorized Power Scan Map Controls</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <item>
+            <widget class="QPushButton" name="power_scan_motorized_map_start_pushButton">
+             <property name="text">
+              <string>Start Motorized Power Map</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="power_scan_motorized_map_interrupt_pushButton">
+             <property name="text">
+              <string>Interrupt Motorized Power Map</string>
              </property>
             </widget>
            </item>
@@ -2098,8 +2082,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>63</width>
-             <height>18</height>
+             <width>991</width>
+             <height>923</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -2129,8 +2113,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>63</width>
-             <height>18</height>
+             <width>991</width>
+             <height>923</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>
@@ -2196,11 +2180,8 @@ Continuously</string>
   <tabstop>ple_point_scan_detector_comboBox</tabstop>
   <tabstop>ple_point_scan_start_pushButton</tabstop>
   <tabstop>ple_point_scan_stop_pushButton</tabstop>
-  <tabstop>power_wheel_start_picoharp_pushButton</tabstop>
-  <tabstop>power_wheel_interrupt_picoharp_pushButton</tabstop>
   <tabstop>trpl_map_interrupt_pushButton</tabstop>
   <tabstop>trpl_map_start_pushButton</tabstop>
-  <tabstop>trpl_map_stored_channels_doubleSpinBox</tabstop>
   <tabstop>hardware_tab_scrollArea</tabstop>
   <tabstop>scrollArea</tabstop>
   <tabstop>cx_doubleSpinBox</tabstop>

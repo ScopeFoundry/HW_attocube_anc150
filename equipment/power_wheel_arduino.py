@@ -57,6 +57,7 @@ class PowerWheelArduino(object):
         self.read_status()
         
         while(self.is_moving_to):
+            if self.debug: print 'sleep'
             time.sleep(0.050)
             self.read_status()
         
