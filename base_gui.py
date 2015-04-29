@@ -72,7 +72,7 @@ class BaseMicroscopeGUI(object):
             
             
     
-    def add_figure_plt(self,name, widget):
+    def add_figure_mpl(self,name, widget):
         """creates a matplotlib figure attaches it to the qwidget specified
         (widget needs to have a layout set (preferably verticalLayout) 
         adds a figure to self.figs"""
@@ -92,7 +92,7 @@ class BaseMicroscopeGUI(object):
             return fig
     
     def add_figure(self,name,widget):
-        return self.add_figure_pyqt(name,widget)
+        return self.add_figure_mpl(name,widget)
     
     def add_logged_quantity(self, name, **kwargs):
         lq = LoggedQuantity(name=name, **kwargs)
