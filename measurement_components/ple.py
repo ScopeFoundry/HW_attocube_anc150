@@ -19,10 +19,7 @@ class PLEPointMeasurement(Measurement):
     
     #TODO store information about the acton_spectrometer position and grating
     
-    name = "PLE Point Measurement"
-    
-    #def __init__(self, gui):
-    #    Measurement.__init__(self, gui = gui)
+    name = "PLE_Point_Measurement"
     
     def setup(self):
         print "nothing todo?"
@@ -56,23 +53,24 @@ class PLEPointMeasurement(Measurement):
         self.display_update_period = 0.100 #seconds
 
         print "running PLE"
-        PM_SAMPLE_NUMBER = 1
+        PM_SAMPLE_NUMBER = 5
         UP_AND_DOWN_SWEEP = True
         
         # Optional amount of time to wait between measurement steps to let sample relax to
         # ground state from one excitation energy to the next.  This only works if a shutter
         # is installed.  Set to 0 to disable.  Value is in seconds.
-        WAIT_TIME_BETWEEN_STEPS = 0        
-        
-        SHUTTER_ENABLE = True
+        WAIT_TIME_BETWEEN_STEPS = 0.1        
+        SHUTTER_ENABLE = False
+        COLLECT_INIT_SPEC = True
         
         
         # check the type of detector selected in GUI
         use_ccd = self.gui.ui.ple_point_scan_detector_comboBox.currentText() == "Andor CCD"
-       
+        use_picoharp = self.gui.ui.ple_point_scan_detector_comboBox.currentText() == "picoharp"
+        
         # Local objects used for measurement
         oospectrometer = self.gui.oceanoptics_spec_hc.oo_spectrometer
-        if use_ccd:
+        if use_ccd or COLLECT_INIT_SPEC:
             ccd_hc = self.gui.andor_ccd_hc
             ccd = self.gui.andor_ccd_hc.andor_ccd
         else:
@@ -80,6 +78,8 @@ class PLEPointMeasurement(Measurement):
        
         aotf = self.gui.crystaltech_aotf_hc
         power_meter = self.gui.thorlabs_powermeter_hc
+        if use_picoharp:
+            ph = self.picoharp = self.gui.picoharp_hc.picoharp
         
         # Use a shutter if it is installed; NOTE:  shutter is assumed to be after the OO
         # and PM and only opens for data acquisition.
@@ -90,15 +90,17 @@ class PLEPointMeasurement(Measurement):
             # Start with shutter closed.
             shutter.shutter_open.update_value(False)
         else:
-            use_shutter = False
-            
+            use_shutter = False    
         
         # Turn the AOTF modulation on.
         aotf.modulation_enable.update_value(True)        
 
         # CCD setup/initialization
-        if use_ccd:               
+        if use_ccd or COLLECT_INIT_SPEC:               
             ccd_hc.shutter_open.update_value(True)
+        
+        if COLLECT_INIT_SPEC:
+            apd_ccd_flip_mirror = self.gui.flip_mirror_hc
         
         # Wavelengths from the OceanOptics
         self.oo_wavelengths = oospectrometer.wavelengths
@@ -131,6 +133,10 @@ class PLEPointMeasurement(Measurement):
 
         if use_ccd:
             self.ccd_specs = np.zeros( (len(freqs), ccd.Nx_ro), dtype=int)
+        elif use_picoharp:
+            self.time_traces = np.zeros((len(freqs),2**16), dtype=int) 
+            self.elapsed_times = np.zeros((len(freqs),2**16), dtype=int)
+            self.time_array = self.picoharp.time_array*1e-3                
         else:
             self.apd_intensities = np.zeros( (len(freqs), 1), dtype=float)
 
@@ -161,34 +167,69 @@ class PLEPointMeasurement(Measurement):
             # Figure out a reasonable time to wait to recheck the acquisition
             t_acq = self.gui.andor_ccd_hc.exposure_time.val #in seconds
             wait_time = np.min(1.0,np.max(0.05*t_acq, 0.05))
+            
+            
+        if use_picoharp:
+             # Figure out a reasonable time to wait to recheck the acquisition
+            t_acq = self.gui.andor_ccd_hc.exposure_time.val #in seconds
+            wait_time = np.min(1.0,np.max(0.05*t_acq, 0.05))           
+            
         
         # Setup complete... start sweep and perform the measurement!
         #print freqs
         try:
+            
+            if COLLECT_INIT_SPEC:
+                # make sure flip mirror is on to CCD
+                apd_ccd_flip_mirror.flip_mirror_position.update_value(apd_ccd_flip_mirror.POSITION_SPEC)
+                time.sleep(1.0)
+                
+                # Shutter should be open
+                ccd.start_acquisition()
+                stat = "ACQUIRING"
+                while (stat!= "IDLE") and (not self.interrupt_measurement_called):
+                    time.sleep(wait_time)
+                    stat = ccd.get_status()
+    
+                if not self.interrupt_measurement_called:
+                    buffer_ = ccd.get_acquired_data()
+                    
+                    if do_bgsub:
+                        buffer_ = buffer_ - bg
+                         
+                    self.initial_spectrum = np.sum(buffer_, axis=0)
+                
+                # return flip mirror to APD or CCD depending on detector
+                if not use_ccd:
+                    apd_ccd_flip_mirror.flip_mirror_position.update_value(apd_ccd_flip_mirror.POSITION_APD)
+                    time.sleep(1.0)
+                
             for ii, freq in enumerate(freqs):
                 print ii, freq
                 if self.interrupt_measurement_called:
                     break
                 
+
                 # Tune the AOTF
                 aotf.freq0.update_value(freq)
                 time.sleep(0.020)
                 
                 try_count = 0
-                while True:
-                    try:
-                        if freq > 150:
-                            aotf.pwr0.update_value(2000)
-                        else:
-                            aotf.pwr0.update_value(2000)
-                        time.sleep(0.02)
-                        break
-                    except:
-                        try_count = try_count + 1 
-                        if try_count > 9:
-                            print "Failed to set AOTF power."
-                            break
-                        time.sleep(0.010)         
+                
+                #while True:
+                #    try:
+                #        if freq > 150:
+                #            aotf.pwr0.update_value(2000)
+                #        else:
+                #            aotf.pwr0.update_value(2000)
+                #        time.sleep(0.02)
+                #        break
+                #    except:
+                #        try_count = try_count + 1 
+                #        if try_count > 9:
+                #            print "Failed to set AOTF power."
+                #            break
+                #        time.sleep(0.010)         
                 
                 # Record laser spectrum from OO 
                 oospectrometer.acquire_spectrum()
@@ -202,10 +243,10 @@ class PLEPointMeasurement(Measurement):
                 
                 # Set the wavelength correction for the power meter.  Try 10 times before 
                 # finally failing.
-                power_meter.wavelength.update_value(wl)
+                #power_meter.wavelength.update_value(wl)
                 
                 # Sleep for 10 ms to let power meter finish processing
-                time.sleep(0.010)
+                #time.sleep(0.010)
                 
                 # Sample the power at least one time from the power meter.
                 samp_count = 0
@@ -253,6 +294,10 @@ class PLEPointMeasurement(Measurement):
                         
                         self.ccd_specs[ii] = spectrum
                         self.total_emission_intensity[ii] = spectrum.sum() 
+                        
+                elif use_picoharp:
+                    self.time_traces[ii,:], self.elapsed_times[ii] = self.collect_lifetime_data()
+                    
                 else: #apd
                     self.apd_intensities[ii] = apd_hc.read_count_rate()
                     self.total_emission_intensity[ii] = self.apd_intensities[ii]
@@ -261,7 +306,8 @@ class PLEPointMeasurement(Measurement):
                 if use_shutter:
                     shutter.shutter_open.update_value(False)
                 
-                if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
+                if WAIT_TIME_BETWEEN_STEPS > 0:
+                    print 'waiting...'
                     time.sleep(WAIT_TIME_BETWEEN_STEPS)
                 
                 self.aotf_modulations[ii] = aotf.modulation_enable.val
@@ -294,6 +340,13 @@ class PLEPointMeasurement(Measurement):
                                   'ccd_specs': self.ccd_specs,
                                   'do_bgsub': do_bgsub,
                                   'bg': bg                     
+                                  })
+                
+            elif use_picoharp:
+                save_dict.update({
+                                  'time_traces': self.time_traces,
+                                  'time_array': self.time_array,
+                                  'elapsed_times': self.elapsed_times                 
                                   })
             else: # APD
                 save_dict.update({
@@ -353,17 +406,32 @@ class PLEPointMeasurement(Measurement):
             #print "Failed to update figure:", err            
         finally:       
             Measurement.on_display_update_timer(self)
+            
+            
+    def collect_lifetime_data(self):
+        # collect data
+        #print "sleep_time", self.sleep_time
+        #t0 = time.time()
+        self.picoharp.start_histogram()
+        while not self.picoharp.check_done_scanning():
+            #ph.read_histogram_data()
+            time.sleep(0.1) #self.sleep_time)  
+        self.picoharp.stop_histogram()
+        self.picoharp.read_histogram_data()
+        elapsed_meas_time = self.picoharp.read_elapsed_meas_time()
+        
+        #t1 = time.time()
+        #print "time per pixel:", (t1-t0)
+        return self.picoharp.histogram_data, elapsed_meas_time
 
-
-MASK_2D_WITH_APD_MAP = True
-MASK_INT_THRESHOLD = 1.e2
 
 class PLE2DScanMeasurement(Measurement):
 
     #TODO store information about the acton_spectrometer position and grating
     
-    def __init__(self, gui):
-        Measurement.__init__(self, gui = gui, name = "ple2d")
+    name = "PLE_2D"
+    
+    def setup(self):
         
         self.display_update_period = 0.500 #seconds
         
@@ -378,11 +446,14 @@ class PLE2DScanMeasurement(Measurement):
         self.ax2d = self.fig2d.add_subplot(111)
         self.ax2d.plot([0,1])
 
-        self.ax2d.set_xlim(0, self.gui.hmax)
-        self.ax2d.set_ylim(0, self.gui.vmax)
-
+        self.ax2d.set_xlim(0, 100)
+        self.ax2d.set_ylim(0, 100)
     
     def _run(self):
+        
+        MASK_2D_WITH_APD_MAP = True
+        MASK_INT_THRESHOLD = 5.e2
+        
         #hardware 
         self.nanodrive = self.gui.nanodrive
 

@@ -1346,7 +1346,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>9</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="plot2d_tab">
        <attribute name="title">
@@ -1443,6 +1443,11 @@ Continuously</string>
              <item>
               <property name="text">
                <string>Andor CCD</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>picoharp</string>
               </property>
              </item>
              <item>
@@ -2082,8 +2087,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>991</width>
-             <height>923</height>
+             <width>63</width>
+             <height>18</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -2113,8 +2118,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>991</width>
-             <height>923</height>
+             <width>63</width>
+             <height>18</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>
