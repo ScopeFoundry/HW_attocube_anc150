@@ -12,7 +12,6 @@ except Exception as err:
     print "Cannot load required modules for arduino power wheel:", err
 
 
-PowerWheelArduinoPort = 'COM1'
 
 class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
     
@@ -38,10 +37,13 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.gui.ui.powerwheel_move_bkwd_pushButton.clicked.connect(self.move_bkwd)
 
     def connect(self):
+        
+        PowerWheelArduinoPort = 'COM22'
+        
         if self.debug: print "connecting to arduino power wheel"
         
         # Open connection to hardware
-        self.power_wheel = PowerWheelArduino(port='COM16', debug=self.debug_mode.val)
+        self.power_wheel = PowerWheelArduino(port=PowerWheelArduinoPort, debug=self.debug_mode.val)
         
         # connect logged quantities
         self.encoder_pos.hardware_set_func = \

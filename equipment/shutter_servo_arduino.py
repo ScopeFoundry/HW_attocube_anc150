@@ -11,7 +11,7 @@ class ShutterServoArduino(object):
     CLOSE_POSITION = 0
     OPEN_POSITION = 45
 
-    def __init__(self, port="COM1", debug = False):
+    def __init__(self, port="COM22", debug = False):
         self.port = port
         self.debug = debug
         
