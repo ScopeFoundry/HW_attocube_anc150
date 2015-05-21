@@ -125,9 +125,15 @@ class Base2DScan(Measurement):
                     # collect data
                     self.collect_pixel(i_h, i_v)            
     
+                T_pixel =  float(time.time() - line_time0)/self.Nh
                 print "line time:", time.time() - line_time0
-                print "pixel time:", float(time.time() - line_time0)/self.Nh
                 line_time0 = time.time()
+                
+                total_px = self.Nv*self.Nh
+                print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600,'| Nh, Nv:', self.Nh, self.Nv,
+                Time_finish = time.localtime(total_px*T_pixel+self.t_scan_start)
+                print '| scan finishes at: {}:{}'.format(Time_finish.tm_hour,Time_finish.tm_min)
+
                 
                 # read stage position every line
                 self.stage.x_position.read_from_hardware()
