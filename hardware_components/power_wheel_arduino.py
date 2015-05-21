@@ -35,6 +35,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.move_steps.connect_bidir_to_widget(self.gui.ui.powerwheel_move_steps_doubleSpinBox)
         self.gui.ui.powerwheel_move_fwd_pushButton.clicked.connect(self.move_fwd)
         self.gui.ui.powerwheel_move_bkwd_pushButton.clicked.connect(self.move_bkwd)
+        self.encoder_pos.connect_bidir_to_widget(self.gui.ui.power_wheel_encoder_pos_doubleSpinBox)
 
     def connect(self):
         
