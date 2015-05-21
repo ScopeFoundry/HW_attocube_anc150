@@ -5,7 +5,6 @@ Created on Jun 19, 2014
 '''
 import numpy as np
 import time
-import threading
 
 from .measurement import Measurement 
 from .base_2d_scan import Base2DScan
@@ -140,18 +139,25 @@ class PowerScanMotorized(Measurement):
             self.elapsed_times = np.zeros(pw_steps, dtype=float)
         
         # setup figure
-        #self.fig.clf()
+        self.fig.clf()
         
-        #self.ax_power = self.fig.add_subplot(212)
-        #if self.collect_spectrum.val:
-        #    self.ax_spec  = self.fig.add_subplot(211)
+        self.ax_power = self.fig.add_subplot(212)
+        if self.collect_spectrum.val:
+            self.ax_spec  = self.fig.add_subplot(211)
         
-        #self.power_plotline, = self.ax_power.plot([1],[1],'o-')
-        #if self.collect_spectrum.val:
-        #    self.spec_plotline, = self.ax_spec.plot(np.arange(self.ccd.Nx_ro), np.zeros(self.ccd.Nx_ro))
-        
+        self.power_plotline, = self.ax_power.plot([1],[1],'o-')
+        if self.collect_spectrum.val:
+            self.spec_plotline, = self.ax_spec.plot(np.arange(self.ccd.Nx_ro), np.zeros(self.ccd.Nx_ro))
+            
+        if self.collect_lifetime.val:
+            self.ax_time_trace = self.fig.add_subplot(211)
+            #self.time_trace_plotline, = self.ax_time_trace.semilogy([0,20],[1,2**16])
+            self.ax_time_trace.set_yscale('log')
+
+            self.ax_time_trace.set_ylim(0.1, 2**16)
+            self.ax_time_trace.set_xlim(0,20)
+            self.time_trace_plotlines = dict()
         # SCAN!!!
-        
         try:
             for ii in range(pw_steps):
                 print ii, pw_steps
@@ -190,7 +196,7 @@ class PowerScanMotorized(Measurement):
                 if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
                     time.sleep(WAIT_TIME_BETWEEN_STEPS)
 
-                 # Move power wheel
+                # Move power wheel
                 pw.write_steps_and_wait(pw_delta*self.direction[ii])
                 self.power_wheel_position[ii] = self.power_wheel.read_encoder()
                 
@@ -338,6 +344,7 @@ class PowerScanMotorized(Measurement):
         return pm_power
 
     def update_display(self):
+        #print "Asdf"
         if self.collect_apd.val:
             self.power_plotline.set_data(self.pm_powers[:self.ii], self.apd_count_rates[:self.ii])
         if self.collect_spectrum.val:
@@ -351,14 +358,28 @@ class PowerScanMotorized(Measurement):
         if self.collect_lifetime.val:
             self.power_plotline.set_data(
                         self.pm_powers_after[:self.ii],
-                        np.sum(self.time_traces[:self.ii,:],axis=1) / self.elapsed_times[:self.ii])
+                        np.sum(self.time_traces[:self.ii,:],axis=1).astype(float) / self.elapsed_times[:self.ii])
             self.ax_power.set_ylabel("kHz")
             self.ax_power.set_xlabel("Laser Power (W)")
+            #print self.picoharp.time_array.shape, self.time_traces[self.ii,:].shape
+            #self.time_trace_plotline.set_data(self.picoharp.time_array*1e-3, self.time_traces[self.ii,:])
+            #self.ax_time_trace.relim()
+            
+            if ((self.ii-1) not in self.time_trace_plotlines.keys()) and self.ii > 0:
+                print "current ii", self.ii
+                print self.picoharp.time_array[500]*1e-3
+                print self.time_traces[self.ii-1][0:10]
+                self.time_trace_plotlines[self.ii-1], = \
+                    self.ax_time_trace.plot(self.picoharp.time_array[:500]*1e-3, self.time_traces[self.ii,:500])
+                print self.time_trace_plotlines[self.ii-1]
+            self.ax_time_trace.relim()
+            self.ax_time_trace.autoscale_view(scalex=True, scaley=True)
             
         self.ax_power.relim()
         self.ax_power.autoscale_view(scalex=True, scaley=True)
 
         self.fig.canvas.draw()
+        #print "asdf"
 
 class PowerScanMotorizedMap(Base2DScan):
     name = "power_scan_motorized_map"
@@ -370,7 +391,6 @@ class PowerScanMotorizedMap(Base2DScan):
         self.stored_histogram_channels = self.add_logged_quantity(
                                       "stored_histogram_channels", 
                                      dtype=int, vmin=1, vmax=2**16, initial=4000)
-
 
         #logged Quantities
         self.power_wheel_steps = self.add_logged_quantity("power_wheel_steps", 
@@ -417,9 +437,10 @@ class PowerScanMotorizedMap(Base2DScan):
     
     def pre_scan_setup(self):
         self.setup_figure()        
-        #hardware
+        #hardware ##############################################################
         self.power_wheel = self.gui.power_wheel_arduino_hc.power_wheel
 
+        ## optional collection hardware
         if self.collect_apd.val:
             self.apd_counter_hc = self.gui.apd_counter_hc
             self.apd_count_rate = self.gui.apd_counter_hc.apd_count_rate     
@@ -454,26 +475,27 @@ class PowerScanMotorizedMap(Base2DScan):
             #raise IOError("power meter not connected")
             print "power meter not connected"
         
-
-        #create data arrays
+        #create data arrays ##############################################################
         if self.record_power:
             self.powermeter_analog_volt_map = np.zeros((self.Nv, self.Nh), dtype=float)
         
-        pw_steps = self.power_wheel_steps.val
+        self.Np = pw_steps = self.power_wheel_steps.val
         #pw_delta = self.power_wheel_delta.val
 
         if self.up_and_down_sweep.val:
             self.direction = np.ones(pw_steps*2)
             self.direction[pw_steps:] = -1
             pw_steps = 2*pw_steps
+            self.Np = pw_steps
         else:
             self.direction = np.ones(pw_steps)            
-
+            self.Np = pw_steps
 
         self.pm_powers_map =  np.zeros((self.Nv, self.Nh, pw_steps), dtype=float)
         #self.pm_powers_after_map =  np.zeros((self.Nv, self.Nh,pw_steps), dtype=float)
         self.power_wheel_position_map = np.zeros((self.Nv, self.Nh,pw_steps), dtype=float)
         
+        # optional collection arrays
         if self.collect_apd.val:
             self.apd_count_rates_map = np.zeros((self.Nv, self.Nh,pw_steps), dtype=float)
         if self.collect_lockin.val:
@@ -485,13 +507,13 @@ class PowerScanMotorizedMap(Base2DScan):
                                               np.arange(width_px), 
                                               binning=ccd.get_current_hbin())
         if self.collect_lifetime.val:
-            self.time_trace_map = np.zeros( (self.Nv, self.Nh, pw_steps, self.ph_hist_chan), dtype=int )
-            self.elapsed_times_map = np.zeros((self.Nv, self.Nh,pw_steps), dtype=float)
+            self.time_trace_map = np.zeros( (self.Nv, self.Nh, pw_steps, self.stored_histogram_channels.val), dtype=int )
+            self.elapsed_times_map = np.zeros((self.Nv, self.Nh, pw_steps), dtype=float)
             self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3  
 
         self.integrated_count_map = np.zeros((self.Nv, self.Nh), dtype=float)
         
-        #update figure
+        #update figure ##############################################################
         self.imgplot = self.aximg.imshow(self.integrated_count_map, 
                                     origin='lower',
                                    interpolation='none', 
@@ -539,7 +561,8 @@ class PowerScanMotorizedMap(Base2DScan):
                     self.spec_map[j,i,ii,:] = self.collect_spectrum_data()
                     self.integrated_count_map = np.sum(self.spec_map, axis=(2,3))                         
                 if self.collect_lifetime.val:
-                    self.time_trace_map[j,i,ii,:], self.elapsed_times_map[j,i,ii] = self.collect_lifetime_data()
+                    time_trace, self.elapsed_times_map[j,i,ii] = self.collect_lifetime_data()
+                    self.time_trace_map[j,i,ii,:] =  time_trace[0:self.stored_histogram_channels.val]
                     self.integrated_count_map = np.sum(self.time_trace_map, axis=(2,3))  
                 # CLose shutter
                 if use_shutter:
@@ -584,12 +607,10 @@ class PowerScanMotorizedMap(Base2DScan):
                      #'power_meter_power_after_map': self.pm_powers_after_map,
                      'power_wheel_position_map': self.power_wheel_position_map,
                      'integrated_count_map': self.integrated_count_map,
+                     'Np': self.Np,
                      }
         if self.record_power:
-            save_dict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map         
-
-        if self.gui.oceanoptics_spec_hc.connected.val:
-            save_dict['oo_spec'] = self.oo_spec
+            save_dict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map                
         
         if self.collect_apd.val:
             save_dict['apd_count_rates_map'] = self.apd_count_rates_map
@@ -601,7 +622,7 @@ class PowerScanMotorizedMap(Base2DScan):
             save_dict['spec_map'] = self.spec_map
             save_dict['wls'] = self.wls
         if self.collect_lifetime.val:
-            save_dict['time_traces'] = self.time_trace_map
+            save_dict['time_trace_map'] = self.time_trace_map
             save_dict['time_array' ] = self.time_array
             save_dict['elapsed_times_map'] = self.elapsed_times_map        
 
@@ -654,6 +675,7 @@ class PowerScanMotorizedMap(Base2DScan):
     
     
     def post_scan_cleanup(self):
+        pass
         # if not up and down sweep go back to initial position
 
     
@@ -735,11 +757,6 @@ class PowerScanMotorizedMap(Base2DScan):
     
         
         return pm_power
-
-
-
-
-
 
 class PowerScanContinuous(Measurement):
     
