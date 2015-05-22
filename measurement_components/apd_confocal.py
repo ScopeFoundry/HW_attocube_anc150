@@ -6,6 +6,7 @@ import random
 
 from .measurement import Measurement 
 from measurement_components.base_3d_scan import Base3DScan
+from measurement_components.base_2d_scan import Base2DScan
  
 
 class APDOptimizerMeasurement(Measurement):
@@ -103,12 +104,13 @@ class APDOptimizerMeasurement(Measurement):
         self.gui.app.processEvents()
 
         
-class APDConfocalScanMeasurement(Measurement):
+class APDConfocalScanMeasurement(Base2DScan):
     
     name = "apd_confocal"
-    
-    def setup(self):
+           
+    def scan_specific_setup(self):
         
+        self.int_time = self.gui.apd_counter_hc.int_time
         self.display_update_period = 0.1 #seconds
 
         #connect events
@@ -118,28 +120,10 @@ class APDConfocalScanMeasurement(Measurement):
         self.int_time = self.gui.apd_counter_hc.int_time
         
         # local logged quantities
-        lq_params = dict(dtype=float, vmin=-1,vmax=100, ro=False, unit='um' )
-        self.h0 = self.add_logged_quantity('h0',  initial=25, **lq_params  )
-        self.h1 = self.add_logged_quantity('h1',  initial=45, **lq_params  )
-        self.v0 = self.add_logged_quantity('v0',  initial=25, **lq_params  )
-        self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
 
-        self.dh = self.add_logged_quantity('dh', initial=1, **lq_params)
-        self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
-        
         # connect to gui
         self.gui.ui.scan_apd_start_pushButton.clicked.connect(self.start)
         self.gui.ui.scan_apd_stop_pushButton.clicked.connect(self.interrupt)
-        
-        self.h0.connect_bidir_to_widget(self.gui.ui.h0_doubleSpinBox)
-        self.h1.connect_bidir_to_widget(self.gui.ui.h1_doubleSpinBox)
-        self.v0.connect_bidir_to_widget(self.gui.ui.v0_doubleSpinBox)
-        self.v1.connect_bidir_to_widget(self.gui.ui.v1_doubleSpinBox)
-        
-        self.dh.connect_bidir_to_widget(self.gui.ui.dh_doubleSpinBox)
-        self.dv.connect_bidir_to_widget(self.gui.ui.dv_doubleSpinBox)
-        
-        
         
     def setup_figure(self):
         #2D scan area
@@ -170,30 +154,12 @@ class APDConfocalScanMeasurement(Measurement):
                 
                 stage.nanodrive.set_pos_slow(*new_pos)
                 stage.read_from_hardware()
-    
-    def _run(self):
+
+    def pre_scan_setup(self):
         #hardware 
-        self.stage = self.gui.mcl_xyz_stage_hc
-        self.nanodrive = self.stage.nanodrive
         self.apd_counter_hc = self.gui.apd_counter_hc
         self.apd_count_rate = self.gui.apd_counter_hc.apd_count_rate
 
-        #get scan parameters: #FIXME should be loggedquantities
-#         self.h0 = self.gui.ui.h0_doubleSpinBox.value()
-#         self.h1 = self.gui.ui.h1_doubleSpinBox.value()
-#         self.v0 = self.gui.ui.v0_doubleSpinBox.value()
-#         self.v1 = self.gui.ui.v1_doubleSpinBox.value()
-    
-#         self.dh = 1e-3*self.gui.ui.dh_spinBox.value()
-#         self.dv = 1e-3*self.gui.ui.dv_spinBox.value()
-
-        self.h_array = np.arange(self.h0.val, self.h1.val, self.dh.val, dtype=float)
-        self.v_array = np.arange(self.v0.val, self.v1.val, self.dv.val, dtype=float)
-        
-        self.Nh = len(self.h_array)
-        self.Nv = len(self.v_array)
-        
-        self.extent = [self.h0.val, self.h1.val, self.v0.val, self.v1.val]
 
         #scan specific setup
         
@@ -215,96 +181,25 @@ class APDConfocalScanMeasurement(Measurement):
         self.imgplot = self.ax2d.imshow(self.count_rate_map, 
                                     origin='lower',
                                     vmin=1e4, vmax=1e5, interpolation='nearest', 
-                                    extent=self.extent)
+                                    extent=self.imshow_extent)
 
         # set up experiment
         # experimental parameters already connected via LoggedQuantities
         
         # TODO Stop other timers?!
 
-        print "scanning"
-        try:
-            v_axis_id = self.stage.v_axis_id
-            h_axis_id = self.stage.h_axis_id
-            
-            # move slowly to start position
-            start_pos = [None, None,None]
-            start_pos[v_axis_id-1] = self.v_array[0]
-            start_pos[h_axis_id-1] = self.h_array[0]
-            self.nanodrive.set_pos_slow(*start_pos)
-            
-            # Scan!            
-            line_time0 = time.time()
-            
-            for i_v in range(self.Nv):
-                self.v_pos = self.v_array[i_v]
-                self.nanodrive.set_pos_ax(self.v_pos, v_axis_id)
-                #self.read_stage_position()       
+
+    def collect_pixel(self, i_h, i_v):
+        # collect data
+        self.apd_count_rate.read_from_hardware()
+                          
+        # store in arrays
+        self.count_rate_map[i_v,i_h] = self.apd_count_rate.val
     
-                if i_v % 2: #odd lines
-                    h_line_indicies = range(self.Nh)[::-1]
-                else:       #even lines -- traverse in opposite direction
-                    h_line_indicies = range(self.Nh)            
-    
-                for i_h in h_line_indicies:
-                    if self.interrupt_measurement_called:
-                        break
-    
-                    print i_h, i_v
-    
-                    self.h_pos = self.h_array[i_h]
-                    self.nanodrive.set_pos_ax(self.h_pos, h_axis_id)    
-                    
-                    # collect data
-                    self.apd_count_rate.read_from_hardware()
-                                      
-                    # store in arrays
-                    self.count_rate_map[i_v,i_h] = self.apd_count_rate.val
-    
-                print "line time:", time.time() - line_time0
-                print "pixel time:", float(time.time() - line_time0)/self.Nh
-                line_time0 = time.time()
-                
-                # read stage position every line
-                self.stage.x_position.read_from_hardware()
-                self.stage.y_position.read_from_hardware()
-                self.stage.z_position.read_from_hardware()
-                                
-        #scanning done
-        #except Exception as err:
-        #    self.interrupt()
-        #    raise err
-        finally:
-            #save  data file
-            save_dict = {
+    def scan_specific_savedict(self):
+        return {
                      'count_rate_map': self.count_rate_map,
-                     'h_array': self.h_array,
-                     'v_array': self.v_array,
-                     'Nv': self.Nv,
-                     'Nh': self.Nh,
-                     'extent': self.extent,
-                     'int_time': self.int_time.val,
-                    }               
-
-                    
-            for lqname,lq in self.gui.logged_quantities.items():
-                save_dict[lqname] = lq.val
-            
-            for hc in self.gui.hardware_components.values():
-                for lqname,lq in hc.logged_quantities.items():
-                    save_dict[hc.name + "_" + lqname] = lq.val
-            
-            for lqname,lq in self.logged_quantities.items():
-                save_dict[self.name +"_"+ lqname] = lq.val
-    
-            self.fname = "%i_apd_map.npz" % time.time()
-            np.savez_compressed(self.fname, **save_dict)
-            print "APD 2D Scan Saved", self.fname
-
-            if not self.interrupt_measurement_called:
-                self.measurement_sucessfully_completed.emit()
-            else:
-                pass
+        }               
 
 
     def update_display(self):

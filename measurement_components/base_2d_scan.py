@@ -89,6 +89,7 @@ class Base2DScan(Measurement):
         # TODO Stop other timers?!
         
         print "scanning"
+        self.t_scan_start = time.time()
         try:
             v_axis_id = self.stage.v_axis_id
             h_axis_id = self.stage.h_axis_id
