@@ -1,9 +1,9 @@
 from . import HardwareComponent
 from IPython.html.nbconvert.handlers import respond_zip
-#try:
-from equipment.NI_Daq import Adc
-#except Exception as err:
-#    print "Cannot load required modules for Thorlabs Power meter analog readout:", err
+try:
+    from equipment.NI_Daq import Adc
+except Exception as err:
+    print "Cannot load required modules for Thorlabs Power meter analog readout:", err
 
 class ThorlabsPowerMeterAnalogReadOut(HardwareComponent):
     

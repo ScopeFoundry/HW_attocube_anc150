@@ -5,7 +5,7 @@ Created on Tue Apr  1 09:25:48 2014
 @author: esbarnard
 """
 
-from PySide import QtCore, QtGui
+from PySide import QtCore, QtGui, QtUiTools
 import threading
 import time
 from logged_quantity import LoggedQuantity
@@ -38,6 +38,13 @@ class Measurement(QtCore.QObject):
 
         self.add_operation("start", self.start)
         self.add_operation("interrupt", self.interrupt)
+        self.add_operation("setup", self.setup)
+        self.add_operation("setup_figure", self.setup_figure)
+        self.add_operation("update_display", self.update_display)
+        self.add_operation('show_ui', self.show_ui)
+        
+        if hasattr(self, 'ui_filename'):
+            self.load_ui()
         
         self.setup()
         
@@ -121,7 +128,24 @@ class Measurement(QtCore.QObject):
         """
         self.operations[name] = op_func   
     
+    def load_ui(self, ui_fname=None):
+        # TODO destroy and rebuild UI if it already exists
+        if ui_fname is not None:
+            self.ui_filename = ui_fname
+        # Load Qt UI from .ui file
+        ui_loader = QtUiTools.QUiLoader()
+        ui_file = QtCore.QFile(self.ui_filename)
+        ui_file.open(QtCore.QFile.ReadOnly)
+        self.ui = ui_loader.load(ui_file)
+        ui_file.close()
 
+        self.show_ui()
+        
+    def show_ui(self):
+        self.ui.show()
+        self.ui.activateWindow()
+        #self.ui.raise() #just to be sure it's on top
+    
     def _add_control_widgets_to_measurements_tab(self):
         cwidget = self.gui.ui.measurements_tab_scrollArea_content_widget
         

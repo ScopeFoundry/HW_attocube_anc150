@@ -1,6 +1,8 @@
 import numpy as np
 import time
 from PySide import QtCore
+import pyqtgraph as pg
+import random
 
 from .measurement import Measurement 
 from measurement_components.base_3d_scan import Base3DScan
@@ -9,6 +11,8 @@ from measurement_components.base_3d_scan import Base3DScan
 class APDOptimizerMeasurement(Measurement):
 
     name = "apd_optimizer"
+
+    ui_filename = "measurement_components/apd_optimizer.ui"
 
     def setup(self):        
         self.display_update_period = 0.1 #seconds
@@ -20,30 +24,57 @@ class APDOptimizerMeasurement(Measurement):
 
         #connect events
         self.gui.ui.apd_optimize_startstop_checkBox.stateChanged.connect(self.start_stop)
-        #self.measurement_state_changed[bool].connect(self.gui.ui.apd_optimize_timer_checkBox.setChecked)
+        self.measurement_state_changed[bool].connect(self.gui.ui.apd_optimize_startstop_checkBox.setChecked)
+        
+        self.ui.start_pushButton.clicked.connect(self.start)
+        self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
+        self.gui.apd_counter_hc.int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
 
     def setup_figure(self):
         # APD Optimize Figure ########################
         self.fig_opt = self.gui.add_figure('opt', self.gui.ui.plot_optimize_widget)
+        self.fig_opt.clf()
+        
         self.ax_opt = self.fig_opt.add_subplot(111)
         
         self.optimize_ii = 0
         self.optimize_line, = self.ax_opt.plot(self.optimize_history)
         self.optimize_current_pos = self.ax_opt.axvline(self.optimize_ii, color='r')
+        
+        # ui window
+        if hasattr(self, 'graph_layout'):
+            self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
+            del self.graph_layout
+        self.graph_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
+        self.ui.plot_groupBox.layout().addWidget(self.graph_layout)
+
+
+        self.graph_layout.addLabel('Long Vertical Label', angle=-90, rowspan=3)
+        
+        ## Add 3 plots into the first row (automatic position)
+        self.p1 = self.graph_layout.addPlot(title="APD Optimizer")
+
+        self.optimize_plot_line = self.p1.plot([1,3,2,4,3,5])
+
+
 
 
     def _run(self):
+        self.display_update_period = 0.001 #seconds
+
         self.apd_counter_hc = self.gui.apd_counter_hc
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
 
 
         while not self.interrupt_measurement_called:
-            self.apd_count_rate.read_from_hardware()
-            #print "in thread:", self.apd_count_rate.val
             self.optimize_ii += 1
             self.optimize_ii %= self.OPTIMIZE_HISTORY_LEN
-            
+
+            self.apd_count_rate.read_from_hardware()            
             self.optimize_history[self.optimize_ii] = self.apd_count_rate.val    
+            # test code
+            #time.sleep(0.001)
+            #self.optimize_history[self.optimize_ii] = random.random()    
         
         #is this right place to put this?
         self.measurement_state_changed.emit(False)
@@ -52,20 +83,25 @@ class APDOptimizerMeasurement(Measurement):
         else:
             self.measurement_interrupted.emit()
     
-    @QtCore.Slot()
-    def on_display_update_timer(self):        
+
+    def update_display(self):        
         ii = self.optimize_ii
         #print "display update", ii, self.optimize_history[ii]
 
+        """
         self.optimize_line.set_ydata(self.optimize_history)
         self.optimize_current_pos.set_xdata((ii,ii))
         if (ii % 2) == 0:
             self.ax_opt.relim()
             self.ax_opt.autoscale_view(scalex=False, scaley=True)
-
-        self.fig_opt.canvas.draw()
         
-        Measurement.on_display_update_timer(self)
+        self.fig_opt.canvas.draw()
+        """
+        # pyqtgraph
+        #self.p1.plot(self.optimize_history)
+        self.optimize_plot_line.setData(self.optimize_history)
+        self.gui.app.processEvents()
+
         
 class APDConfocalScanMeasurement(Measurement):
     

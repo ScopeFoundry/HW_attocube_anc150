@@ -25,7 +25,7 @@ from measurement_components.trpl import \
 from measurement_components.apd_confocal import APDOptimizerMeasurement, APDConfocalScanMeasurement, APDConfocalScan3DMeasurement
 from measurement_components.andor_ccd_readout import AndorCCDReadout, AndorCCDReadBackground, AndorCCDReadSingle
 from measurement_components.hyperspectral import SpectrumScan2DMeasurement
-from measurement_components.power_scan import PowerScanContinuous
+#from measurement_components.power_scan import PowerScanContinuous
 from measurement_components.photocurrent_scan import \
     Photocurrent2DMeasurement, Photocurrent3DMeasurement
 from measurement_components.photocurrent_iv import PhotocurrentIVMeasurement
@@ -73,7 +73,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.andor_bg_measure = self.add_measurement_component(AndorCCDReadBackground(self))
         self.andor_single_measure = self.add_measurement_component(AndorCCDReadSingle(self))
         self.spec_map_measure = self.add_measurement_component(SpectrumScan2DMeasurement(self))
-        self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self))
+        #self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self))
         self.motorized_power_wheel_map_measure = self.add_measurement_component(PowerScanMotorizedMap(self))
         self.motorized_power_wheel_measure = self.add_measurement_component(PowerScanMotorized(self))
         self.photocurrent2D_measure = self.add_measurement_component(Photocurrent2DMeasurement(self))
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     app.setApplicationName("TRPL Microscope Control Application")
     
-    gui = TRPLMicroscopeGUI()
+    gui = TRPLMicroscopeGUI(app)
     gui.show()
     
     sys.exit(app.exec_())

@@ -22,6 +22,7 @@ from matplotlib.figure import Figure
 from logged_quantity import LoggedQuantity
 
 from equipment.image_display import ImageDisplay
+
 class BaseMicroscopeGUI(object):
     
     ui_filename = None
@@ -33,7 +34,8 @@ class BaseMicroscopeGUI(object):
         #self.ui.exec_()
         self.ui.show()
 
-    def __init__(self):
+    def __init__(self, app):
+        self.app = app
         self.logged_quantities = collections.OrderedDict()
         self.hardware_components = collections.OrderedDict()
         self.measurement_components = collections.OrderedDict()
@@ -59,9 +61,8 @@ class BaseMicroscopeGUI(object):
         """ Override to add Hardware and Measurement Components"""
         raise NotImplementedError()
     
-    
         
-    def add_figure_pyqt(self,name,widget):
+    def add_image_display(self,name,widget):
         print "---adding figure", name, widget
         if name in self.figs:
             return self.figs[name]
@@ -69,6 +70,17 @@ class BaseMicroscopeGUI(object):
             disp=ImageDisplay(name,widget)
             self.figs[name]=disp
             return disp
+        
+    def add_pg_graphics_layout(self, name, widget):
+        print "---adding pg GraphicsLayout figure", name, widget
+        if name in self.figs:
+            return self.figs[name]
+        else:
+            disp=pg.GraphicsLayoutWidget(border=(100,100,100))
+            widget.layout().addWidget(disp)
+            self.figs[name]=disp
+            return disp
+        
             
             
     
@@ -113,7 +125,7 @@ if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     app.setApplicationName("CL Microscope Control Application")
     
-    gui = CLMicroscopeGUI()
+    gui = BaseMicroscopeGUI(app)
     gui.show()
     
     sys.exit(app.exec_())

@@ -1,0 +1,14 @@
+
+* hide, show UI for measurement
+ * hide without destroying object
+* reload UI for measurement (for updating ui file 
+
+* hide, show UI for hardware
+* reload UI for hardware
+
+* progress bars for measurements
+
+* save and load loggedquantities
+
+* measurement rerun setup figure
+
