@@ -111,7 +111,7 @@ class APDConfocalScanMeasurement(Base2DScan):
     def scan_specific_setup(self):
         
         self.int_time = self.gui.apd_counter_hc.int_time
-        self.display_update_period = 0.1 #seconds
+        self.display_update_period = 0.02 #seconds
 
         #connect events
         self.gui.ui.scan_apd_start_pushButton.clicked.connect(self.start)
@@ -124,10 +124,16 @@ class APDConfocalScanMeasurement(Base2DScan):
         # connect to gui
         self.gui.ui.scan_apd_start_pushButton.clicked.connect(self.start)
         self.gui.ui.scan_apd_stop_pushButton.clicked.connect(self.interrupt)
-        
+        self.gui.ui.clearfig_pushButton.setEnabled(True)
+        self.gui.ui.clearfig_pushButton.clicked.connect(self.setup_figure)
+
     def setup_figure(self):
+        self.display_update_period = 0.02 #seconds
+        self.initial_scan_setup_plotting = False
+
         #2D scan area
-        self.fig2d = self.gui.add_figure('2d', self.gui.ui.plot2d_widget)
+        """self.fig2d = self.gui.add_figure('2d', self.gui.ui.plot2d_widget)
+        self.fig2d.clf()
         
         self.ax2d = self.fig2d.add_subplot(111)
         self.ax2d.plot([0,1])
@@ -136,7 +142,110 @@ class APDConfocalScanMeasurement(Base2DScan):
         self.ax2d.set_ylim(0, 100)
                     
         self.fig2d.canvas.mpl_connect('button_press_event', self.on_fig2d_click)
+        """
+
+        # new pyqtgraph fig
+        if hasattr(self, 'img_view'):
+            self.img_view.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
+            del self.img_view
+        #self.img_view = pg.ImageView()
+        #self.gui.ui.plot2d_widget.layout().addWidget(self.img_view)
+
+        if hasattr(self, 'graph_layout'):
+            self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
+            del self.graph_layout
+        self.graph_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
+        self.gui.ui.plot2d_widget.layout().addWidget(self.graph_layout)
         
+        
+        self.img_plot = self.graph_layout.addPlot()
+        #self.img_plot.getViewBox().setLimits(minXRange=-10, maxXRange=100, minYRange=-10, maxYRange=100)
+
+        self.img_item = pg.ImageItem()
+        self.img_plot.addItem(self.img_item)
+
+        #self.stage_pos_arrow = pg.ArrowItem() 
+        #self.img_plot.addItem(self.stage_pos_arrow)
+        
+        #self.gui.mcl_xyz_stage_hc.x_position.updated_value[float].connect(self.stage_pos_arrow.setX)
+        #self.gui.mcl_xyz_stage_hc.y_position.updated_value[float].connect(self.stage_pos_arrow.setY)
+        
+        
+        self.current_pixel_arrow = pg.ArrowItem()
+        self.current_pixel_arrow.setZValue(100)
+        self.img_plot.addItem(self.current_pixel_arrow)
+        
+        self.img_plot.showGrid(x=True, y=True)
+        self.img_plot.setAspectLocked(lock=True, ratio=1)
+        
+        
+        self.hist_lut = pg.HistogramLUTItem()
+        self.hist_lut.autoHistogramRange()
+        self.hist_lut.setImageItem(self.img_item)
+        self.graph_layout.addItem(self.hist_lut)
+
+        print "pos label"
+        self.graph_layout.nextRow()
+        self.pos_label = pg.LabelItem(justify='right')
+        self.pos_label.setText("TEST")
+        self.graph_layout.addItem(self.pos_label)
+        self.pos_label_text = "asdf"
+                
+        print self.img_plot.scene().sigMouseClicked
+        #proxy = pg.SignalProxy(self.img_plot.scene().sigMouseMoved, delay=0.1, rateLimit=10, slot=self.mouseMoved)
+        #self.img_plot.scene().sigMouseClicked.connect(self.mouse_clicked)
+        #print proxy
+        self.img_plot.scene().sigMouseMoved.connect(self.mouseMoved)
+        
+        self.scan_roi = pg.ROI([0,0],[1,1], movable=False)
+        self.h0.updated_value.connect(self.update_scan_roi)
+        self.h1.updated_value.connect(self.update_scan_roi)
+        self.v0.updated_value.connect(self.update_scan_roi)
+        self.v1.updated_value.connect(self.update_scan_roi)
+        self.dh.updated_value.connect(self.update_scan_roi)
+        self.dv.updated_value.connect(self.update_scan_roi)
+        self.update_scan_roi()
+        self.img_plot.addItem(self.scan_roi)
+
+
+    def update_scan_roi(self):
+        h0 = self.h0.val
+        v0 = self.v0.val
+        h1 = self.h1.val
+        v1 = self.v1.val
+        dh = self.dh.val
+        dv = self.dv.val
+        
+        H = np.arange(h0, h1, dh)
+        V = np.arange(v0, v1, dv)
+        
+        self.scan_roi.setPos( (H[0]-dh*0.5, V[0]-dv*0.5, 0) )
+        self.scan_roi.setSize( (dh + H[-1]-H[0], dv + V[-1]-V[0], 0))
+    
+    #@QtCore.Slot()
+    def mouseMoved(self,evt):
+        #print "asdf", evt.pos()
+        #self.pos_label.setText(str(evt.x()))
+        #if self.img_plot.sceneBoundingRect().contains(evt):
+        mousePoint = self.img_plot.vb.mapSceneToView(evt)
+        #print mousePoint
+        
+        ii = self.h_array.searchsorted(mousePoint.x()) # not quite right
+        jj = self.v_array.searchsorted(mousePoint.y()) # not quite right
+        
+        ii %= len(self.h_array)
+        jj %= len(self.v_array)
+        #print ii,jj
+        
+        self.pos_label_text = "H {:+02.2f} um [{}], V {:+02.2f} um [{}]: {:1.2e} Hz ".format(
+                                mousePoint.x(), ii, mousePoint.y(), jj,
+                                self.count_rate_map[jj,ii] 
+                                )
+        
+        if not self.is_measuring():
+            self.pos_label.setText(self.pos_label_text)
+            self.gui.app.processEvents()
+
         
     def on_fig2d_click(self, evt):
         
@@ -176,12 +285,16 @@ class APDConfocalScanMeasurement(Base2DScan):
         self.ax2d.set_ylim(0, 100)
                     
         self.fig2d.canvas.mpl_connect('button_press_event', self.on_fig2d_click)
-
-        """
         self.imgplot = self.ax2d.imshow(self.count_rate_map, 
                                     origin='lower',
                                     vmin=1e4, vmax=1e5, interpolation='nearest', 
                                     extent=self.imshow_extent)
+
+        """
+
+        # pyqt graph
+        self.initial_scan_setup_plotting = True
+
 
         # set up experiment
         # experimental parameters already connected via LoggedQuantities
@@ -195,6 +308,9 @@ class APDConfocalScanMeasurement(Base2DScan):
                           
         # store in arrays
         self.count_rate_map[i_v,i_h] = self.apd_count_rate.val
+        
+        # update graph elements
+        self.current_pixel_arrow.setPos(self.h_array[i_h], self.v_array[i_v])
     
     def scan_specific_savedict(self):
         return {
@@ -203,10 +319,22 @@ class APDConfocalScanMeasurement(Base2DScan):
 
 
     def update_display(self):
+        
+        if self.initial_scan_setup_plotting:
+            self.img_item = pg.ImageItem()
+            self.img_plot.addItem(self.img_item)
+            self.hist_lut.setImageItem(self.img_item)
+    
+            self.img_item.setImage(self.count_rate_map.T)
+            x0, x1, y0, y1 = self.imshow_extent
+            print x0, x1, y0, y1
+            self.img_item.setRect(QtCore.QRectF(x0, y0, x1-x0, y1-y0))
+            self.initial_scan_setup_plotting = False
+        
         #print "updating figure"
         im_data = self.count_rate_map #
         #im_data = np.log10(self.count_rate_map)
-        
+        """
         self.imgplot.set_data(im_data)
         try:
             count_min =  np.percentile(im_data[np.nonzero(self.count_rate_map)], 1)
@@ -215,8 +343,20 @@ class APDConfocalScanMeasurement(Base2DScan):
         count_max = np.percentile(im_data,99.)
         assert count_max > count_min
         self.imgplot.set_clim(count_min, count_max + 1)
-        self.fig2d.canvas.draw()
-
+        """
+        #self.fig2d.canvas.draw()
+        
+        # pyqtgraph
+        self.img_item.setImage(self.count_rate_map.T, autoRange=False, autoLevels=False)
+        self.hist_lut.imageChanged(autoLevel=True)
+        #self.gui.app.processEvent()
+        #self.img_plot.repaint()
+        #self.img_view.
+        #self.img_view.translate(4,4)
+        #self.img_view.setImage(img, autoRange=False, autoLevels, levels, axes, xvals, pos, scale, transform, autoHistogramRange)
+        #self.pos_label.setText(time.time())
+        self.pos_label.setText(self.pos_label_text)
+        self.gui.app.processEvents()
 
 class APDConfocalScan3DMeasurement(Base3DScan):
 
