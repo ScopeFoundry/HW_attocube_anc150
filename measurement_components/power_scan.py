@@ -5,10 +5,13 @@ Created on Jun 19, 2014
 '''
 import numpy as np
 import time
+import pyqtgraph as pg
+
 
 from .measurement import Measurement 
 from .base_2d_scan import Base2DScan
 from .andor_ccd_readout import pixel2wavelength
+
 
 
 PM_SAMPLE_NUMBER = 1
@@ -26,17 +29,20 @@ class PowerScanMotorized(Measurement):
     def setup(self):
 
         #logged Quantities
-        self.power_wheel_steps = self.add_logged_quantity("power_wheel_steps", 
+        
+        self.power_wheel_min = self.add_logged_quantity("power_wheel_min", 
                                                           dtype=int, unit='', initial=10, vmin=0, vmax=+3200, ro=False)
-        self.power_wheel_delta = self.add_logged_quantity("power_wheel_delta", 
-                                                          dtype=float, unit='', initial=100, vmin=-3200, vmax=+3200, ro=False)
-
+        self.power_wheel_max = self.add_logged_quantity("power_wheel_max", 
+                                                          dtype=int, unit='', initial=10, vmin=0, vmax=+3200, ro=False)
+        self.power_wheel_ndatapoints = self.add_logged_quantity("power_wheel_ndatapoints", 
+                                                          dtype=int, unit='', initial=100, vmin=-3200, vmax=+3200, ro=False)
+        
         self.collect_apd      = self.add_logged_quantity("collect_apd",      dtype=bool, initial=True)
         self.collect_lockin   = self.add_logged_quantity("collect_lockin",   dtype=bool, initial=False)
         self.collect_spectrum = self.add_logged_quantity("collect_spectrum", dtype=bool, initial=False)
         self.collect_lifetime = self.add_logged_quantity("collect_lifetime", dtype=bool, initial=True)
         
-        self.run_zero_before_scan = self.add_logged_quantity("run_zero_before_scan", dtype=bool, initial=True)
+        
         self.use_shutter          = self.add_logged_quantity("use_shutter", dtype=bool, initial=False)
         self.up_and_down_sweep    = self.add_logged_quantity("up_and_down_sweep",dtype=bool, initial=True)
 
@@ -44,28 +50,129 @@ class PowerScanMotorized(Measurement):
         self.gui.ui.power_scan_motorized_start_pushButton.clicked.connect(self.start)
         self.gui.ui.power_scan_motorized_interrupt_pushButton.clicked.connect(self.interrupt)
 
-        self.power_wheel_steps.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_steps_doubleSpinBox)
-        self.power_wheel_delta.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_delta_doubleSpinBox)
-                
+        self.power_wheel_ndatapoints.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_ndatapoints_doubleSpinBox)
+        self.power_wheel_min.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_min_doubleSpinBox)
+        self.power_wheel_max.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_max_doubleSpinBox)
+                        
         self.collect_apd.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_collect_apd_checkBox)
         self.collect_lockin.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_collect_lockin_checkBox)
         self.collect_spectrum.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_collect_spectrum_checkBox)
         self.collect_lifetime.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_collect_lifetime_checkBox)
         
-        self.run_zero_before_scan.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_run_zero_before_scan_checkBox)
         self.use_shutter.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_use_shutter_checkBox)
         self.up_and_down_sweep.connect_bidir_to_widget(self.gui.ui.power_scan_motorized_up_and_down_sweep_checkBox)
 
     def setup_figure(self):
-        self.fig = self.gui.add_figure('power_scan', self.gui.ui.power_scan_plot_widget)
-        pass
+        #self.fig = self.gui.add_figure('power_scan', self.gui.ui.power_scan_plot_widget)
+        if hasattr(self, 'graph_layout'):
+            self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
+            del self.graph_layout
+        
+        self.power_scan_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
+        self.gui.ui.power_scan_plot_widget.layout().addWidget(self.power_scan_layout)
+        
+
+        self.power_dependence_plot = self.power_scan_layout.addPlot()
+        self.power_dependence_plot_line= self.power_dependence_plot.plot([1,3,2,4,3,5])
+        self.power_dependence_plot.setLogMode(x=True, y=True)
+        self.power_dependence_plot.enableAutoRange()      
+         
+        self.power_scan_layout.nextCol()
+        self.power_dependence_help_plot = self.power_scan_layout.addPlot()
+        self.power_dependence_help_plot_line= self.power_dependence_help_plot.plot([1,3,2,4,3,5])        
+        self.power_dependence_help_plot.enableAutoRange()
+        
+        
+        # Setup plot for map (not used for maps in thise measuremnet but will 
+        # be referenced in PowerScanMotorizedMap)
+                
+        self.power_scan_layout.nextRow()
+        self.power_scan_img_plot = self.power_scan_layout.addPlot(colspan=2)
+        self.power_scan_img_plot.showGrid(x=True,y=True)
+        self.power_scan_img_plot.setAspectLocked(lock=True,ratio=1)
+        self.power_scan_img_item = pg.ImageItem()
+        self.power_scan_img_plot.addItem(self.power_scan_img_item)
+        
+        self.hist_lut = pg.HistogramLUTItem()
+        self.hist_lut.autoHistogramRange()
+        self.hist_lut.setImageItem(self.power_scan_img_item)
+        self.power_scan_layout.addItem(self.hist_lut)
 
 
 
+
+    def save_dict_(self):
+        save_dict = {
+                     'power_meter_power': self.pm_powers,
+                     'power_meter_powers_after': self.pm_powers_after,
+                     'Np': self.Np,
+                     'power_wheel_position': self.power_wheel_position,
+                     }
+        
+        if self.gui.oceanoptics_spec_hc.connected.val:
+            save_dict['oo_spec'] = self.oo_spec
+        
+        if self.collect_apd.val:
+            save_dict['apd_count_rates'] = self.apd_count_rates
+            pass
+        if self.collect_lockin.val:
+            save_dict['chopped_current'] = self.chopped_current
+        
+        if self.collect_spectrum.val:
+            save_dict['spectra'] = self.spectra
+            
+        if self.collect_lifetime.val:
+            save_dict['time_traces'] = self.time_traces
+            save_dict['time_array' ] = self.picoharp.time_array*1e6
+            save_dict['elapsed_times'] = self.elapsed_times
+        
+                     
+        for lqname,lq in self.gui.logged_quantities.items():
+            save_dict[lqname] = lq.val
+        
+        for hc in self.gui.hardware_components.values():
+            for lqname,lq in hc.logged_quantities.items():
+                save_dict[hc.name + "_" + lqname] = lq.val
+        
+        for lqname,lq in self.logged_quantities.items():
+            save_dict[self.name +"_"+ lqname] = lq.val
+
+        self.fname = "%i_%s.npz" % (time.time(), self.name)
+        np.savez_compressed(self.fname, **save_dict)
+        print "Motorized Power Scan Saved", self.fname
+
+        if not self.interrupt_measurement_called:
+            self.measurement_sucessfully_completed.emit()
+        else:
+            pass        
+    
     def _run(self):
-        # Connect to hardware
+        print 'run'
 
-        pw = self.power_wheel = self.gui.power_wheel_arduino_hc.power_wheel
+        self.pre_measure_single_pixel()
+        
+        # SCAN!!!
+        try:
+            self.measure_single_pixel()            
+        finally:
+            self.save_dict_()
+
+    def move_to_min_pos(self):
+        self.power_wheel.read_status()
+        
+        stiep= self.power_wheel_min.val - self.power_wheel.encoder_pos
+        if stiep != 0:
+            #print 'moving to min pos'
+            self.power_wheel.write_steps_and_wait(stiep)
+            #print 'done moving to min pos'        
+
+
+    def pre_measure_single_pixel(self):
+
+        self.power_wheel = self.gui.power_wheel_arduino_hc.power_wheel
+        
+        self.move_to_min_pos()
+
 
         if self.collect_apd.val:
             self.apd_counter_hc = self.gui.apd_counter_hc
@@ -81,7 +188,10 @@ class PowerScanMotorized(Measurement):
             self.ccd_do_bgsub = bool(self.gui.ui.andor_ccd_bgsub_checkBox.checkState())
             if self.ccd_do_bgsub:
                 self.ccd_do_bgsub = self.gui.andor_ccd_hc.is_background_valid()
-            
+                          
+            self.wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val,
+                                              np.arange(ccd_width_px), 
+                                              binning=ccd.get_current_hbin())
             if self.ccd_do_bgsub:
                 self.ccd_bg = self.gui.andor_ccd_hc.background
             else:
@@ -93,14 +203,15 @@ class PowerScanMotorized(Measurement):
             
         # Use a shutter if it is installed; NOTE:  shutter is assumed to be after the OO
         # and PM and only opens for data acquisition.
+        self.shutter = self.gui.shutter_servo_hc
         if self.gui.shutter_servo_hc.connected.val and self.use_shutter.val:
-            use_shutter = True
-            shutter = self.gui.shutter_servo_hc
+            self.use_shutter_ = True
+
             #USE_SHUTTER =False
             # Start with shutter closed.
-            shutter.shutter_open.update_value(False)
+            self.shutter.shutter_open.update_value(False)
         else:
-            use_shutter = False
+            self.use_shutter_ = False
             
         
         #Record ocean optics spectrum if the spectrometer is connected
@@ -111,149 +222,95 @@ class PowerScanMotorized(Measurement):
             self.oo_spec = oospectrometer.spectrum.copy()
         
         # Data arrays
-        pw_steps = self.power_wheel_steps.val
-        pw_delta = self.power_wheel_delta.val
+        self.Np = Np = self.power_wheel_ndatapoints.val
+        self.step_size = int( (self.power_wheel_max.val-self.power_wheel_min.val)/Np )
         
     
         if self.up_and_down_sweep.val:
-            self.direction = np.ones(pw_steps*2)
-            self.direction[pw_steps:] = -1
-            pw_steps = 2*pw_steps
+            self.direction = np.ones(Np*2)
+            self.direction[Np:] = -1
+            Np = self.Np = 2*Np
         else:
-            self.direction = np.ones(pw_steps)
+            self.direction = np.ones(Np)
     
         # Create Data Arrays    
-        self.power_wheel_position = np.zeros(pw_steps)      
+        self.power_wheel_position = np.zeros(Np)      
         
-        self.pm_powers = np.zeros(pw_steps, dtype=float)
-        self.pm_powers_after = np.zeros(pw_steps, dtype=float)
+        self.pm_powers = np.zeros(Np, dtype=float)
+        self.pm_powers_after = np.zeros(Np, dtype=float)
 
         if self.collect_apd.val:
-            self.apd_count_rates = np.zeros(pw_steps, dtype=float)
+            self.apd_count_rates = np.zeros(Np, dtype=float)
         if self.collect_lockin.val:
-            self.chopped_current = np.zeros(pw_steps, dtype=float)
+            self.chopped_current = np.zeros(Np, dtype=float)
         if self.collect_spectrum.val:
-            self.spectra = np.zeros( (pw_steps, ccd_width_px), dtype=float )
+            self.spectra = np.zeros( (Np, ccd_width_px), dtype=float )
         if self.collect_lifetime.val:
-            self.time_traces = np.zeros( (pw_steps, self.ph_hist_chan), dtype=int )
-            self.elapsed_times = np.zeros(pw_steps, dtype=float)
-        
-        # setup figure
-        self.fig.clf()
-        
-        self.ax_power = self.fig.add_subplot(212)
-        if self.collect_spectrum.val:
-            self.ax_spec  = self.fig.add_subplot(211)
-        
-        self.power_plotline, = self.ax_power.plot([1],[1],'o-')
-        if self.collect_spectrum.val:
-            self.spec_plotline, = self.ax_spec.plot(np.arange(self.ccd.Nx_ro), np.zeros(self.ccd.Nx_ro))
+            self.time_traces = np.zeros( (Np, self.ph_hist_chan), dtype=int )
+            self.elapsed_times = np.zeros(Np, dtype=float)       
+        pass
+
+
+
+    def measure_single_pixel(self):
+
+        for ii in range(self.Np):
+            self.ii = ii
+           
+            print ii
+            # NJB (5/29/15) - moved to top to step first;  this way, the value in 
+            # 'power_wheel_position' corresponds to the 'pm_powers' position.
+            # Move power wheel
+
+            self.power_wheel.write_steps_and_wait(self.step_size*self.direction[ii])
+            self.power_wheel_position[ii] = self.power_wheel.read_encoder()
+            time.sleep(2.0)
             
-        if self.collect_lifetime.val:
-            self.ax_time_trace = self.fig.add_subplot(211)
-            #self.time_trace_plotline, = self.ax_time_trace.semilogy([0,20],[1,2**16])
-            self.ax_time_trace.set_yscale('log')
 
-            self.ax_time_trace.set_ylim(0.1, 2**16)
-            self.ax_time_trace.set_xlim(0,20)
-            self.time_trace_plotlines = dict()
-        # SCAN!!!
-        try:
-            for ii in range(pw_steps):
-                print ii, pw_steps
-                
-                self.ii = ii
-                if self.interrupt_measurement_called: break
+            if self.interrupt_measurement_called: break
 
-                
-                # collect power meter value
-                self.pm_powers[ii]=self.collect_pm_power_data()
-                
-                # Open shutter
-                if use_shutter:
-                    shutter.shutter_open.update_value(True)
-                    time.sleep(1.0) # wait for shutter to open
-                
-                # Collect Data from detectors
-                if self.collect_apd.val:
-                    self.apd_count_rates[ii] = self.collect_apd_data()
-                if self.collect_lockin.val:
-                    #FIXME
-                    self.chopped_current[ii] = self.collect_lifetime_data()
-                if self.collect_spectrum.val:
-                    self.spectra[ii,:] = self.collect_spectrum_data()
-                if self.collect_lifetime.val:
-                    self.time_traces[ii,:], self.elapsed_times[ii] = self.collect_lifetime_data()
-                    
-                # CLose shutter
-                if use_shutter:
-                    shutter.shutter_open.update_value(False)
-                
-                self.pm_powers_after[ii]=self.collect_pm_power_data()
-                
-        
-                # Wait between steps if desired
-                if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
-                    time.sleep(WAIT_TIME_BETWEEN_STEPS)
-
-                # Move power wheel
-                pw.write_steps_and_wait(pw_delta*self.direction[ii])
-                self.power_wheel_position[ii] = self.power_wheel.read_encoder()
-                
-                time.sleep(2.0)
-                
-                #print self.name, 'measured ',  self.chopped_current[ii], 'at phi=', self.pw_phi[ii]
-
-
-            if not self.up_and_down_sweep.val:
-                total_steps = int(-self.power_wheel_delta.val*self.power_wheel_steps.val)
-                self.power_wheel.write_steps_and_wait(total_steps)
-
-        finally:
-            #save data file
-            save_dict = {
-                         'power_meter_power': self.pm_powers,
-                         'power_meter_powers_after': self.pm_powers_after,
-                         'power_wheel_position': self.power_wheel_position,
-                         }
             
-            if self.gui.oceanoptics_spec_hc.connected.val:
-                save_dict['oo_spec'] = self.oo_spec
+            # collect power meter value
+            self.pm_powers[ii]=self.collect_pm_power_data()
             
+            # Open shutter
+  
+            if self.use_shutter_:
+
+                self.shutter.shutter_open.update_value(True)
+                time.sleep(1.0) # wait for shutter to open
+            
+            # Collect Data from detectors
             if self.collect_apd.val:
-                save_dict['apd_count_rates'] = self.apd_count_rates
-                pass
+                self.apd_count_rates[ii] = self.collect_apd_data()
             if self.collect_lockin.val:
-                save_dict['chopped_current'] = self.chopped_current
-            
+                #FIXME
+                self.chopped_currents[ii] = 0
             if self.collect_spectrum.val:
-                save_dict['spectra'] = self.spectra
-                
+                self.spectra[ii,:] = self.collect_spectrum_data()
             if self.collect_lifetime.val:
-                save_dict['time_traces'] = self.time_traces
-                save_dict['time_array' ] = self.picoharp.time_array
-                save_dict['elapsed_times'] = self.elapsed_times
+                self.time_traces[ii,:], self.elapsed_times[ii] = self.collect_lifetime_data()
+                
+            # CLose shutter
+            if self.use_shutter_:
+                self.shutter.shutter_open.update_value(False)
             
-                         
-            for lqname,lq in self.gui.logged_quantities.items():
-                save_dict[lqname] = lq.val
+            self.pm_powers_after[ii]=self.collect_pm_power_data()
             
-            for hc in self.gui.hardware_components.values():
-                for lqname,lq in hc.logged_quantities.items():
-                    save_dict[hc.name + "_" + lqname] = lq.val
-            
-            for lqname,lq in self.logged_quantities.items():
-                save_dict[self.name +"_"+ lqname] = lq.val
+    
+            # Wait between steps if desired
+            if self.use_shutter_ and WAIT_TIME_BETWEEN_STEPS > 0:
+                time.sleep(WAIT_TIME_BETWEEN_STEPS)
 
-            self.fname = "%i_%s.npz" % (time.time(), self.name)
-            np.savez_compressed(self.fname, **save_dict)
-            print "Motorized Power Scan Saved", self.fname
+            
+            
+            #print self.name, 'measured ',  self.chopped_current[ii], 'at phi=', self.pw_phi[ii]
 
-            if not self.interrupt_measurement_called:
-                self.measurement_sucessfully_completed.emit()
-            else:
-                pass
-        
+
+        if not self.up_and_down_sweep.val:
+            self.move_to_min_pos()
+
+
     
     def collect_apd_data(self):
         apd = self.apd_counter_hc
@@ -305,7 +362,7 @@ class PowerScanMotorized(Measurement):
             time.sleep(0.1) #self.sleep_time)  
         self.picoharp.stop_histogram()
         self.picoharp.read_histogram_data()
-        elapsed_meas_time = self.picoharp.read_elapsed_meas_time()
+        elapsed_meas_time = self.picoharp.read_elapsed_meas_time()*1.0/1000 # convert to sec
         
         t1 = time.time()
         #print "time per pixel:", (t1-t0)
@@ -344,43 +401,179 @@ class PowerScanMotorized(Measurement):
         return pm_power
 
     def update_display(self):
-        #print "Asdf"
         if self.collect_apd.val:
-            self.power_plotline.set_data(self.pm_powers[:self.ii], self.apd_count_rates[:self.ii])
+            self.power_dependence_plot_line.setData(self.pm_powers[:self.ii], self.apd_count_rates[:self.ii])
         if self.collect_spectrum.val:
-            self.power_plotline.set_data(self.pm_powers[:self.ii], np.sum(self.spectra[:self.ii,:],axis=1))
-            #self.spec_plotline, = self.ax_spec.plot(np.arange(512), np.zeros(512))
-            self.spec_plotline.set_ydata(self.spectra[self.ii,:])
-            self.ax_spec.relim()
-            self.ax_spec.autoscale_view(scalex=True, scaley=True)
+            self.power_dependence_plot_line.setData(self.pm_powers[:self.ii], np.sum(self.spectra[:self.ii,:],axis=1))
+            self.power_dependence_help_plot_line.setData(x=self.wls,
+                                                         y=self.spectra[self.ii,:])
+            self.power_dependence_help_plot.setLabel('bottom',"wls (nm)")
+            self.power_dependence_help_plot.setLabel('right',"counts")
+            
         if self.collect_lockin.val:
-            self.power_plotline.set_data(self.pm_powers[:,self.ii], self.chopped_current[:self.ii])
+            self.power_dependence_plot_line.setData(self.pm_powers[:,self.ii], self.chopped_current[:self.ii])
         if self.collect_lifetime.val:
-            self.power_plotline.set_data(
-                        self.pm_powers_after[:self.ii],
-                        np.sum(self.time_traces[:self.ii,:],axis=1).astype(float) / self.elapsed_times[:self.ii])
-            self.ax_power.set_ylabel("kHz")
-            self.ax_power.set_xlabel("Laser Power (W)")
-            #print self.picoharp.time_array.shape, self.time_traces[self.ii,:].shape
-            #self.time_trace_plotline.set_data(self.picoharp.time_array*1e-3, self.time_traces[self.ii,:])
-            #self.ax_time_trace.relim()
+            self.power_dependence_plot_line.setData(
+                        x = self.pm_powers_after[:self.ii],
+                        y = np.sum(self.time_traces[:self.ii,:],axis=1).astype(float) / self.elapsed_times[:self.ii]
+                        )
             
-            if ((self.ii-1) not in self.time_trace_plotlines.keys()) and self.ii > 0:
-                print "current ii", self.ii
-                print self.picoharp.time_array[500]*1e-3
-                print self.time_traces[self.ii-1][0:10]
-                self.time_trace_plotlines[self.ii-1], = \
-                    self.ax_time_trace.plot(self.picoharp.time_array[:500]*1e-3, self.time_traces[self.ii,:500])
-                print self.time_trace_plotlines[self.ii-1]
-            self.ax_time_trace.relim()
-            self.ax_time_trace.autoscale_view(scalex=True, scaley=True)
+            self.power_dependence_help_plot.setLabel('bottom',"time ns")
+            self.power_dependence_help_plot.setLabel('right',"counts")
+            self.power_dependence_help_plot_line.setData(self.picoharp.time_array*1e-3, self.time_traces[self.ii-1,:])
+
+class PowerScanMotorizedMap(Base2DScan):
+    name = "power_scan_motorized_map"
+    
+    #def __init__(self,MeasurementComponent):
+    #    self.sP = MeasurementComponent
+        #super(PowerScanMotorized,self).__init__()
+        #Base2DScan.__init__(self,self.gui)
+
+    
+
+
+
+    def scan_specific_setup(self):
+        
+        self.sP = self.gui.motorized_power_wheel_measure
+        
+        self.gui.ui.power_scan_motorized_map_start_pushButton.clicked.connect(self.start)
+        self.gui.ui.power_scan_motorized_map_interrupt_pushButton.clicked.connect(self.interrupt)        
+
+    
+    def setup_figure(self):
+        pass
+
+    
+    def pre_scan_setup(self):
+        
+        self.sP.pre_measure_single_pixel()
+        
+        self.record_power = False
+        #create data arrays ##############################################################
+        #if self.record_power:
+        #    self.powermeter_analog_volt_map = np.zeros((self.Nv, self.Nh), dtype=float)
+        self.Np = self.sP.Np
+        self.pm_powers_map =  np.zeros((self.Nv, self.Nh, self.Np), dtype=float)
+        #self.pm_powers_after_map =  np.zeros((self.Nv, self.Nh,pw_steps), dtype=float)
+        self.power_wheel_position_map = np.zeros((self.Nv, self.Nh, self.sP.Np), dtype=float)
+        
+        # optional collection arrays
+        
+        if self.sP.collect_apd.val:
+            self.apd_count_rates_map = np.zeros((self.Nv, self.Nh, self.sP.Np), dtype=float)
+        if self.sP.collect_lockin.val:
+            self.chopped_current_map = np.zeros((self.Nv, self.Nh, self.sP.Np), dtype=float)
+        if self.sP.collect_spectrum.val:
+            width_px = self.sP.ccd.Nx_ro 
+            self.spec_map = np.zeros( (self.Nv, self.Nh, self.sP.Np, width_px), dtype=float )
+
+        if self.sP.collect_lifetime.val:
+            self.time_trace_map = np.zeros( (self.Nv, self.Nh, self.sP.Np, 
+                                             self.sP.ph_hist_chan
+                                             ), dtype=int )
+            self.elapsed_times_map = np.zeros((self.Nv, self.Nh, self.Np), dtype=float)
+            self.time_array = self.sP.picoharp.time_array[0:self.sP.ph_hist_chan]*1e-3  
+
+        self.integrated_count_map = np.zeros((self.Nv, self.Nh), dtype=float)
+        
+    def collect_pixel(self, i, j):
+        t0 = time.time()
+        print 'collecting pixel', i,j,' of ',self.Nh, self.Nv
+        try:
             
-        self.ax_power.relim()
-        self.ax_power.autoscale_view(scalex=True, scaley=True)
+            self.sP.interrupt_measurement_called = self.interrupt_measurement_called
+            self.sP.measure_single_pixel()
+            
+            self.pm_powers_map[j,i,:]=self.sP.pm_powers
+            
 
-        self.fig.canvas.draw()
-        #print "asdf"
+            # Collect Data
+            if self.sP.collect_apd.val:
+                self.apd_count_rates_map[j,i,:] = self.sP.apd_count_rates
+                self.integrated_count_map = np.sum(self.apd_count_rates_map, axis=2)
+            if self.sP.collect_lockin.val:
+                self.chopped_current_map[j,i,:] = self.sP.chopped_currents
+                self.integrated_count_map = np.sum(self.chopped_current_map, axis=2) 
+            if self.sP.collect_spectrum.val:
+                self.spec_map[j,i,:,:] = self.sP.spectra
+                self.integrated_count_map = np.sum(self.spec_map, axis=(2,3))                         
+            if self.sP.collect_lifetime.val:
+                self.elapsed_times_map[j,i,:] = self.sP.elapsed_times
+                self.time_trace_map[j,i,:,:] =  self.sP.time_traces
+                self.integrated_count_map = np.sum(self.time_trace_map, axis=(2,3))  
+                
+            self.i, self.j = i,j
+        
+        
+        finally:
+            if True:
+                t1 = time.time()
+                T_pixel=(t1-t0)
+                total_px = self.Nv*self.Nh
+                print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600,'| Nh, Nv:', self.Nh, self.Nv,
+                t_scan_end = time.localtime(total_px*T_pixel+self.t_scan_start)
+                print '| scan finishes at: {}:{}'.format(t_scan_end.tm_hour,t_scan_end.tm_min)
+                
+                
+            
 
+ 
+
+    def scan_specific_savedict(self):
+        save_dict = {
+                     'power_meter_power_map': self.pm_powers_map,
+                     #'power_meter_power_after_map': self.pm_powers_after_map,
+                     #'power_wheel_position_map': self.power_wheel_position_map,
+                     'integrated_count_map': self.integrated_count_map,
+                     'Np': self.Np,
+                     }
+        #if self.sP.record_power:
+        #    save_dict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map                
+        
+        if self.sP.collect_apd.val:
+            save_dict['apd_count_rates_map'] = self.apd_count_rates_map
+            pass
+        if self.sP.collect_lockin.val:
+            save_dict['chopped_current_map'] = self.chopped_current_map
+        
+        if self.sP.collect_spectrum.val:
+            save_dict['spec_map'] = self.spec_map
+            save_dict['wls'] = self.sP.wls
+        if self.sP.collect_lifetime.val:
+            save_dict['time_trace_map'] = self.time_trace_map
+            save_dict['time_array' ] = self.time_array*1e6
+            save_dict['elapsed_times_map'] = self.elapsed_times_map        
+
+        return save_dict
+    
+    def update_display(self):
+        self.sP.update_display()
+
+
+
+                
+        C = self.integrated_count_map
+        
+        #self.sP.power_scan_img_item.setData(C)
+        self.sP.power_scan_img_item.setImage(self.integrated_count_map.T, autoRange=False, autoLevels=False)
+        self.sP.hist_lut.imageChanged(autoLevel=True)
+        
+        #self.imgplot.set_data(C)         
+        #try:
+        #    count_min =  np.min(C[np.nonzero(C)])
+        #except Exception:
+        #    count_min = 0
+        #count_max = np.max(C)
+        #self.imgplot.set_clim(count_min, count_max + 1)
+            
+        
+        #self.fig.canvas.draw()
+                
+        
+        
+'''
 class PowerScanMotorizedMap(Base2DScan):
     name = "power_scan_motorized_map"
     
@@ -425,7 +618,7 @@ class PowerScanMotorizedMap(Base2DScan):
         
     
     def setup_figure(self):
-           
+        
         self.fig = self.gui.add_figure('power_scan_motorized', self.gui.ui.power_scan_plot_widget)
         
         self.ax_power = self.fig.add_subplot(121)
@@ -434,7 +627,10 @@ class PowerScanMotorizedMap(Base2DScan):
         self.aximg = self.fig.add_subplot(122)
         self.aximg.set_xlim(0, 100)
         self.aximg.set_ylim(0, 100)
-    
+        
+        
+        
+        
     def pre_scan_setup(self):
         self.setup_figure()        
         #hardware ##############################################################
@@ -524,143 +720,7 @@ class PowerScanMotorizedMap(Base2DScan):
             self.power_wheel.write_zero_encoder()
         self.t_scan_start = time.time()
 
-    def collect_pixel(self, i, j):
-        t0 = time.time()
-        pw_delta = self.power_wheel_delta.val
-        use_shutter = self.use_shutter.val
-        print 'collecting pixel', i,j,' of ',self.Nh, self.Nv
-        print np.sum(self.direction)
-        try:
-            for ii in range(len(self.direction)):
-                print i,j, ii, len(self.direction)
 
-                self.ii = ii
-                if self.interrupt_measurement_called: break
-                            
-                #Record wheel position 
-                self.power_wheel_position_map[j,i,ii] = self.power_wheel.read_encoder()  
-                           
-                
-                # collect power meter value
-                self.pm_powers_map[j,i,ii]=self.collect_pm_power_data()
-                
-                # Open shutter
-                if use_shutter:
-                    self.shutter.shutter_open.update_value(True)
-                    time.sleep(1.0) # wait for shutter to open
-                
-                # Collect Data from detectors
-                if self.collect_apd.val:
-                    self.apd_count_rates_map[j,i,ii] = self.collect_apd_data()
-                    self.integrated_count_map = np.sum(self.apd_count_rates_map, axis=2)
-                if self.collect_lockin.val:
-                    #FIXME
-                    self.chopped_current_map[j,i,ii] = self.collect_lifetime_data()
-                    self.integrated_count_map = np.sum(self.chopped_current_map, axis=2) 
-                if self.collect_spectrum.val:
-                    self.spec_map[j,i,ii,:] = self.collect_spectrum_data()
-                    self.integrated_count_map = np.sum(self.spec_map, axis=(2,3))                         
-                if self.collect_lifetime.val:
-                    time_trace, self.elapsed_times_map[j,i,ii] = self.collect_lifetime_data()
-                    self.time_trace_map[j,i,ii,:] =  time_trace[0:self.stored_histogram_channels.val]
-                    self.integrated_count_map = np.sum(self.time_trace_map, axis=(2,3))  
-                # CLose shutter
-                if use_shutter:
-                    self.shutter.shutter_open.update_value(False)
-                
-                #self.pm_powers_after_map[j,i,ii]=self.collect_pm_power_data()
-                
-                
-                # Wait between steps if desired
-                if use_shutter and WAIT_TIME_BETWEEN_STEPS > 0:
-                    time.sleep(WAIT_TIME_BETWEEN_STEPS)
-                    
-                # Move power wheel
-                self.power_wheel.write_steps_and_wait(pw_delta*self.direction[ii])
-                # Sleep to give the powerwheel time to complete rotation
-  
-                    
-                    
-                self.i, self.j = i,j
-        
-        
-            if not self.up_and_down_sweep.val:
-                total_steps = int(-self.power_wheel_delta.val*self.power_wheel_steps.val)
-                self.power_wheel.write_steps_and_wait(total_steps)
-
-
-
-        finally:
-            if True:
-                t1 = time.time()
-                T_pixel=(t1-t0)
-                total_px = self.Nv*self.Nh
-                print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600,'| Nh, Nv:', self.Nh, self.Nv,
-                t_scan_end = time.localtime(total_px*T_pixel+self.t_scan_start)
-                print '| scan finishes at: {}:{}'.format(t_scan_end.tm_hour,t_scan_end.tm_min)
-
- 
-
-    def scan_specific_savedict(self):
-        save_dict = {
-                     'power_meter_power_map': self.pm_powers_map,
-                     #'power_meter_power_after_map': self.pm_powers_after_map,
-                     'power_wheel_position_map': self.power_wheel_position_map,
-                     'integrated_count_map': self.integrated_count_map,
-                     'Np': self.Np,
-                     }
-        if self.record_power:
-            save_dict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map                
-        
-        if self.collect_apd.val:
-            save_dict['apd_count_rates_map'] = self.apd_count_rates_map
-            pass
-        if self.collect_lockin.val:
-            save_dict['chopped_current_map'] = self.chopped_current_map
-        
-        if self.collect_spectrum.val:
-            save_dict['spec_map'] = self.spec_map
-            save_dict['wls'] = self.wls
-        if self.collect_lifetime.val:
-            save_dict['time_trace_map'] = self.time_trace_map
-            save_dict['time_array' ] = self.time_array
-            save_dict['elapsed_times_map'] = self.elapsed_times_map        
-
-        return save_dict
-    
-    def update_display(self):
-        if self.collect_apd.val:
-            self.power_plotline.set_data(self.pm_powers_map[self.i,self.j,:self.ii], self.apd_count_rates_map[self.i,self.j,:self.ii])
-        if self.collect_spectrum.val:
-            self.power_plotline.set_data(self.pm_powers_map[self.i,self.j,:self.ii], np.sum(self.spec_map[self.i,self.j,:self.ii,:],axis=1))
-            #self.spec_plotline, = self.ax_spec.plot(np.arange(512), np.zeros(512))
-            #self.spec_plotline.set_ydata(self.spectra[self.i,self.j,self.ii,:])
-        if self.collect_lockin.val:
-            self.power_plotline.set_data(self.pm_powers_map[self.i,self.j,:,self.ii], self.chopped_current[self.i,self.j,:self.ii])
-        if self.collect_lifetime.val:
-            self.power_plotline.set_data(
-                        self.pm_powers_map[self.i,self.j,:self.ii],
-                        np.sum(self.time_trace_map[self.i,self.j,:self.ii,:],axis=1) / self.elapsed_times[self.i,self.j,:self.ii])
-            self.ax_power.set_ylabel("kHz")
-            self.ax_power.set_xlabel("Laser Power (W)")
-            
-        self.ax_power.relim()
-        self.ax_power.autoscale_view(scalex=True, scaley=True)
-
-
-                
-        C = self.integrated_count_map
-        
-        self.imgplot.set_data(C)         
-        try:
-            count_min =  np.min(C[np.nonzero(C)])
-        except Exception:
-            count_min = 0
-        count_max = np.max(C)
-        self.imgplot.set_clim(count_min, count_max + 1)
-            
-        
-        self.fig.canvas.draw()
 
     def collect_apd_data(self):
         apd = self.apd_counter_hc
@@ -757,6 +817,7 @@ class PowerScanMotorizedMap(Base2DScan):
     
         
         return pm_power
+'''
 
 class PowerScanContinuous(Measurement):
     

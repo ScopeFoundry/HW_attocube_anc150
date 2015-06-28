@@ -75,9 +75,13 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.andor_bg_measure = self.add_measurement_component(AndorCCDReadBackground(self))
         self.andor_single_measure = self.add_measurement_component(AndorCCDReadSingle(self))
         self.spec_map_measure = self.add_measurement_component(SpectrumScan2DMeasurement(self))
-        #self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self))
-        self.motorized_power_wheel_map_measure = self.add_measurement_component(PowerScanMotorizedMap(self))
+        #self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self)
+        
         self.motorized_power_wheel_measure = self.add_measurement_component(PowerScanMotorized(self))
+        self.motorized_power_wheel_map_measure = self.add_measurement_component(PowerScanMotorizedMap(self))
+        
+        #self.motorized_power_wheel_map_measure = self.add_measurement_component(PowerScanMotorizedMap(self.motorized_power_wheel_measure))
+        
         self.photocurrent2D_measure = self.add_measurement_component(Photocurrent2DMeasurement(self))
         self.photocurrent3D_measure = self.add_measurement_component(Photocurrent3DMeasurement(self))
         self.photocurrent_iv_measure = self.add_measurement_component(PhotocurrentIVMeasurement(self))        
