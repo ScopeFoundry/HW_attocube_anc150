@@ -23,7 +23,7 @@ from measurement_components.trpl import \
     PicoHarpMeasurement, PicoHarpTTTR, \
     TRPLScanMeasurement, TRPLScan3DMeasurement
 from measurement_components.apd_confocal import APDOptimizerMeasurement, APDConfocalScanMeasurement, APDConfocalScan3DMeasurement
-from measurement_components.andor_ccd_readout import AndorCCDReadout, AndorCCDReadBackground, AndorCCDReadSingle
+from measurement_components.andor_ccd_readout import AndorCCDReadout #, AndorCCDReadBackground, AndorCCDReadSingle
 from measurement_components.hyperspectral import SpectrumScan2DMeasurement
 #from measurement_components.power_scan import PowerScanContinuous
 from measurement_components.photocurrent_scan import \
@@ -72,8 +72,8 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.trpl_scan_measure = self.add_measurement_component(TRPLScanMeasurement(self))
         self.trpl_scan3d_measure = self.add_measurement_component(TRPLScan3DMeasurement(self))
         self.andor_ro_measure = self.add_measurement_component(AndorCCDReadout(self))
-        self.andor_bg_measure = self.add_measurement_component(AndorCCDReadBackground(self))
-        self.andor_single_measure = self.add_measurement_component(AndorCCDReadSingle(self))
+        #self.andor_bg_measure = self.add_measurement_component(AndorCCDReadBackground(self))
+        #self.andor_single_measure = self.add_measurement_component(AndorCCDReadSingle(self))
         self.spec_map_measure = self.add_measurement_component(SpectrumScan2DMeasurement(self))
         #self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self)
         
