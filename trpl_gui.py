@@ -34,6 +34,7 @@ from measurement_components.oo_spec import OOSpecLive
 from measurement_components.kinetic_spectra import KineticSpectra
 from measurement_components.powermeter_optimizer import PowerMeterOptimizerMeasurement
 from measurement_components.laser_power_feedback_control import LaserPowerFeedbackControl
+from measurement_components.single_particle_blink import SingleParticleBlink, SingleParticleBlinkSet
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -83,6 +84,10 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.oo_spec_live_measure = self.add_measurement_component(OOSpecLive(self))
         self.kinetic_spectra_measure = self.add_measurement_component(KineticSpectra(self))
         self.laser_power_feedback_control = self.add_measurement_component(LaserPowerFeedbackControl(self))
+        
+        self.single_particle_blink_measure = self.add_measurement_component(SingleParticleBlink(self))
+        self.single_particle_blink_set_measure = self.add_measurement_component(SingleParticleBlinkSet(self))
+        
         #Add additional logged quantities
 
         # Connect to custom gui
