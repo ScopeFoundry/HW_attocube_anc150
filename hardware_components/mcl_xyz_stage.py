@@ -82,6 +82,15 @@ class MclXYZStage(HardwareComponent):
         self.y_target.updated_value[()].connect(self.read_pos)
         self.z_target.updated_value[()].connect(self.read_pos)
     
+    def move_pos_slow(self, x=None,y=None,z=None):
+        # move slowly to new position
+        new_pos = [None, None,None]
+        new_pos[self.MCL_AXIS_ID['X']-1] = x
+        new_pos[self.MCL_AXIS_ID['Y']-1] = y
+        new_pos[self.MCL_AXIS_ID['Z']-1] = z
+        self.nanodrive.set_pos_slow(*new_pos)
+
+        self.read_pos()
     
     @QtCore.Slot()
     def read_pos(self):
