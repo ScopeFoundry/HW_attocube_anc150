@@ -227,9 +227,9 @@ class APDConfocalScanMeasurement(Base2DScan):
                 
         print self.img_plot.scene().sigMouseClicked
         #proxy = pg.SignalProxy(self.img_plot.scene().sigMouseMoved, delay=0.1, rateLimit=10, slot=self.mouseMoved)
-        #self.img_plot.scene().sigMouseClicked.connect(self.mouse_clicked)
+        self.img_plot.scene().sigMouseClicked.connect(self.mouse_clicked)
         #print proxy
-        self.img_plot.scene().sigMouseMoved.connect(self.mouseMoved)
+        #self.img_plot.scene().sigMouseMoved.connect(self.mouseMoved)
         
         self.scan_roi = pg.ROI([0,0],[1,1], movable=False)
         self.h0.updated_value.connect(self.update_scan_roi)
@@ -255,6 +255,15 @@ class APDConfocalScanMeasurement(Base2DScan):
         
         self.scan_roi.setPos( (H[0]-dh*0.5, V[0]-dv*0.5, 0) )
         self.scan_roi.setSize( (dh + H[-1]-H[0], dv + V[-1]-V[0], 0))
+    
+    
+    def mouse_clicked(self,evt):
+        #print evt
+        #print evt.pos()
+        #print evt.scenePos()
+        mousePoint = self.img_plot.vb.mapSceneToView(evt.scenePos())
+        x,y = mousePoint.x(), mousePoint.y()
+        print "({} ,{}, None),".format(x,y)
     
     #@QtCore.Slot()
     def mouseMoved(self,evt):
@@ -333,8 +342,13 @@ class APDConfocalScanMeasurement(Base2DScan):
         # set up experiment
         # experimental parameters already connected via LoggedQuantities
         
-        # TODO Stop other timers?!
+        # open shutter 
+        self.gui.shutter_servo_hc.shutter_open.update_value(True)
+        time.sleep(0.5)
 
+    def post_scan_cleanup(self):
+        # close shutter 
+        self.gui.shutter_servo_hc.shutter_open.update_value(False)
 
     def collect_pixel(self, i_h, i_v):
         # collect data
@@ -354,6 +368,8 @@ class APDConfocalScanMeasurement(Base2DScan):
 
     def update_display(self):
         
+        #self.img_plot.scene().sigMouseClicked.connect(self.mouse_clicked)
+        #self.img_plot.scene().sigMouseClicked.connect(self.mouse_clicked)
         if self.initial_scan_setup_plotting:
             self.img_item = pg.ImageItem()
             self.img_plot.addItem(self.img_item)
