@@ -59,10 +59,11 @@ class PLEPointMeasurement(Measurement):
         # Optional amount of time to wait between measurement steps to let sample relax to
         # ground state from one excitation energy to the next.  This only works if a shutter
         # is installed.  Set to 0 to disable.  Value is in seconds.
-        WAIT_TIME_BETWEEN_STEPS = 0.1        
-        SHUTTER_ENABLE = False
-        COLLECT_INIT_SPEC = True
-        
+        WAIT_TIME_BETWEEN_STEPS = 0.01       
+        SHUTTER_ENABLE          = False
+        COLLECT_INIT_SPEC       = False
+        MOVE_OBJECTIVE          = True
+        SAVE_STAGE_POS          = True       
         
         # check the type of detector selected in GUI
         use_ccd = self.gui.ui.ple_point_scan_detector_comboBox.currentText() == "Andor CCD"
@@ -101,7 +102,7 @@ class PLEPointMeasurement(Measurement):
         
         if COLLECT_INIT_SPEC:
             apd_ccd_flip_mirror = self.gui.flip_mirror_hc
-        
+               
         # Wavelengths from the OceanOptics
         self.oo_wavelengths = oospectrometer.wavelengths
 
@@ -130,7 +131,20 @@ class PLEPointMeasurement(Measurement):
         self.pm_powers = np.ones( len(freqs), dtype=float)*1e-9
         self.total_emission_intensity = np.zeros( len(freqs), dtype=int)
         self.aotf_modulations = np.zeros(len(freqs), dtype=int)
-
+        
+        if SAVE_STAGE_POS or MOVE_OBJECTIVE:
+            nanodrive = self.gui.mcl_xyz_stage_hc.nanodrive
+            nanodrive_hc = self.gui.mcl_xyz_stage_hc
+        
+        if MOVE_OBJECTIVE:
+            dz_objective_func = np.array([[90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 158],
+                                         [0, -0.105, -0.21, -0.31, -0.406, -0.4713, -0.499, -0.502, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]]) 
+            z_axis_id = nanodrive_hc.z_axis_id
+            
+            # Assuming that we are starting at 90 MHz!
+            self.z_positions = nanodrive.get_pos_ax(z_axis_id) + np.interp(freqs, dz_objective_func[0], dz_objective_func[1])
+            print self.z_positions
+            
         if use_ccd:
             self.ccd_specs = np.zeros( (len(freqs), ccd.Nx_ro), dtype=int)
         elif use_picoharp:
@@ -272,6 +286,11 @@ class PLEPointMeasurement(Measurement):
                     pm_power = 10000.    
                 self.pm_powers[ii] = pm_power
                 
+                if MOVE_OBJECTIVE:
+                    #nanodrive_hc.z_position.update_value(self.z_positions[ii])
+                    nanodrive.set_pos_ax(self.z_positions[ii], z_axis_id)
+                    #print 'step stage %f' % self.z_positions[ii] 
+                
                 # Open the shutter
                 if use_shutter:
                     shutter.shutter_open.update_value(True)
@@ -352,7 +371,11 @@ class PLEPointMeasurement(Measurement):
                 save_dict.update({
                                   'apd_intensities':self.apd_intensities,
                                   })
-                        
+            
+            if SAVE_STAGE_POS:
+                save_dict.update({'stage_x_pos':nanodrive_hc.x_position.val,
+                                  'stage_y_pos':nanodrive_hc.y_position.val})
+            
             for lqname,lq in self.gui.logged_quantities.items():
                 save_dict[lqname] = lq.val
                 
@@ -438,7 +461,7 @@ class PLE2DScanMeasurement(Measurement):
         self.gui.ui.ple2d_start_pushButton.clicked.connect(self.start)
         self.gui.ui.ple2d_stop_pushButton.clicked.connect(self.interrupt)
     
-            
+    
     def setup_figure(self):
         # AOTF Point Scan Figure ####
         self.fig2d = self.gui.add_figure('ple2d', self.gui.ui.ple2d_plot_groupBox)
@@ -452,10 +475,11 @@ class PLE2DScanMeasurement(Measurement):
     def _run(self):
         
         MASK_2D_WITH_APD_MAP = True
-        MASK_INT_THRESHOLD = 5.e2
+        MASK_INT_THRESHOLD = 2.5e3
         
         #hardware 
-        self.nanodrive = self.gui.nanodrive
+        self.nanodrive = self.gui.mcl_xyz_stage_hc.nanodrive
+        self.nanodrive_hc = self.gui.mcl_xyz_stage_hc
 
         #get scan parameters:
         self.h0 = self.gui.ui.h0_doubleSpinBox.value()
@@ -463,8 +487,8 @@ class PLE2DScanMeasurement(Measurement):
         self.v0 = self.gui.ui.v0_doubleSpinBox.value()
         self.v1 = self.gui.ui.v1_doubleSpinBox.value()
     
-        self.dh = 1e-3*self.gui.ui.dh_spinBox.value()
-        self.dv = 1e-3*self.gui.ui.dv_spinBox.value()
+        self.dh = self.gui.ui.dh_doubleSpinBox.value()
+        self.dv = self.gui.ui.dv_doubleSpinBox.value()
 
         self.h_array = np.arange(self.h0, self.h1, self.dh, dtype=float)
         self.v_array = np.arange(self.v0, self.v1, self.dv, dtype=float)
@@ -475,7 +499,7 @@ class PLE2DScanMeasurement(Measurement):
         self.extent = [self.h0, self.h1, self.v0, self.v1]
 
         #scan specific setup
-        
+        print self.Nh, self.Nv
         
         # create data arrays
         self.visual_map = np.zeros((self.Nv, self.Nh), dtype=float)
@@ -492,15 +516,20 @@ class PLE2DScanMeasurement(Measurement):
             apd_h_array = self.gui.apd_scan_measure.h_array
             apd_v_array = self.gui.apd_scan_measure.v_array
             apd_map = self.gui.apd_scan_measure.count_rate_map
-            apd_extent = self.gui.apd_scan_measure.extent
+            apd_extent = self.gui.apd_scan_measure.range_extent
             # 2D interpolation function is confusing.  Must have everything as x-y,
             apd_map_interp_func = interpolate.interp2d(apd_h_array, apd_v_array, apd_map)
 
         print "scanning PLE 2D"
         try:
+            v_axis_id = self.nanodrive_hc.v_axis_id
+            h_axis_id = self.nanodrive_hc.h_axis_id
+            
+            
+            
             start_pos = [None, None,None]
-            start_pos[self.gui.VAXIS_ID-1] = self.v_array[0]
-            start_pos[self.gui.HAXIS_ID-1] = self.h_array[0]
+            start_pos[v_axis_id-1] = self.v_array[0]
+            start_pos[h_axis_id-1] = self.h_array[0]
             
             self.nanodrive.set_pos_slow(*start_pos)
             
@@ -509,9 +538,8 @@ class PLE2DScanMeasurement(Measurement):
             
             for i_v in range(self.Nv):
                 self.v_pos = self.v_array[i_v]
-                self.nanodrive.set_pos_ax(self.v_pos, self.gui.VAXIS_ID)
+                self.nanodrive.set_pos_ax(self.v_pos, v_axis_id)
                 #self.read_stage_position()       
-    
                 if i_v % 2: #odd lines
                     h_line_indicies = range(self.Nh)[::-1]
                 else:       #even lines -- traverse in opposite direction
@@ -524,7 +552,7 @@ class PLE2DScanMeasurement(Measurement):
                     print i_h, i_v
     
                     self.h_pos = self.h_array[i_h]
-                    self.nanodrive.set_pos_ax(self.h_pos, self.gui.HAXIS_ID)    
+                    self.nanodrive.set_pos_ax(self.h_pos, h_axis_id)    
                     
                     # Determine whether or not to collect data at this poision
                     if MASK_2D_WITH_APD_MAP:
