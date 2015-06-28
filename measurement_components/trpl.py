@@ -7,6 +7,7 @@ Created on Tue Apr  1 09:21:07 2014
 import numpy as np
 import time
 from PySide import QtCore
+import h5py
 
 from .measurement import Measurement 
 from .base_3d_scan import Base3DScan
@@ -44,7 +45,8 @@ class PicoHarpMeasurement(Measurement):
         ph = self.picoharp = self.gui.picoharp_hc.picoharp
         #: type: ph: PicoHarp300
         
-        self.plotline.set_xdata(ph.time_array*1e-3)
+        #FIXME
+        #self.plotline.set_xdata(ph.time_array*1e-3)
         sleep_time = np.min((np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100)) # check every 1/10 of Tacq with limits of 10ms and 100ms
         print "sleep_time", sleep_time, np.max(0.1*ph.Tacq*1e-3, 0.010)
         
@@ -57,7 +59,8 @@ class PicoHarpMeasurement(Measurement):
 
         ph.stop_histogram()
         ph.read_histogram_data()
-        self.plotline.set_ydata(ph.histogram_data)
+        #FIXME
+        #self.plotline.set_ydata(ph.histogram_data)
 
         #print "elasped_meas_time (final):", ph.read_elapsed_meas_time()
         
@@ -97,20 +100,88 @@ class PicoHarpMeasurement(Measurement):
     def on_display_update_timer(self):
         try:
             ph = self.picoharp
-            self.plotline.set_ydata(ph.histogram_data)
+            self.plotline.set_data(ph.time_array*1e-3, ph.histogram_data)
             self.fig.canvas.draw()
         finally:
             Measurement.on_display_update_timer(self)
         
         
         
+class PicoHarpTTTR(Measurement):
+
+    name = "picoharp_tttr"
+
+    def setup(self):
+        self.display_update_period = 0.1 #seconds
+
+        #logged quantities
+
+        #connect events
+
+    def setup_figure(self):
+        pass
+
+    def _run(self):
+        ph = self.picoharp = self.gui.picoharp_hc.picoharp
+
+        # create data array
+        self.records = np.zeros(60*1024*1024, dtype=np.uint32)
+        self.record_i = 0
+
+        try:
+            self.fname = "%i_%s.h5" % (time.time(), self.name)
+            self.dat_file = h5py.File(self.fname)
+    
+            meas_group = self.dat_file.create_group(self.name)
+            h5_records = meas_group.create_dataset("records", shape=(ph.TTREADMAX,), maxshape=(None,), dtype=np.uint32)
+    
+            gui_group = self.dat_file.create_group("gui")
+            for lqname,lq in self.gui.logged_quantities.items():
+                gui_group.attrs[lqname] = lq.val
+    
+            hardware_group = self.dat_file.create_group("hardware")
+            for hc in self.gui.hardware_components.values(): 
+                hc_group = hardware_group.create_group(hc.name)   
+                for lqname,lq in hc.logged_quantities.items():
+                    hc_group.attrs[lqname] = lq.val
+    
+            for lqname,lq in self.logged_quantities.items():
+                meas_group.attrs[lqname] = lq.val
+                
+            self.dat_file.flush()
+            
+            ph.start_measure()
+            while not ph.check_done_scanning():
+                print "tttr"
+                if self.interrupt_measurement_called:
+                    break
+                N, fifo_buffer = ph.read_fifo()
+                self.records[self.record_i:self.record_i+N] = fifo_buffer[0:N]
+                h5_records.resize( (self.record_i + N,) )
+                h5_records[self.record_i:self.record_i+N] = fifo_buffer[0:N]
+                
+                self.record_i += N
+                time.sleep(0.01)            
+            
+        finally:
+            ph.stop_measure()
+
+            # close data file
+            self.dat_file.close()
+            
+            print self.name, "done:", self.fname
+
+            if not self.interrupt_measurement_called:
+                self.measurement_sucessfully_completed.emit()
+            else:
+                pass
+
 
 class TRPLScanMeasurement(Base2DScan):
     
     name = "trpl_scan"
 
     def scan_specific_setup(self):
-        
         self.display_update_period = 0.1 #seconds
         
         self.stored_histogram_channels = self.add_logged_quantity(
@@ -221,6 +292,8 @@ class TRPLScanMeasurement(Base2DScan):
         if self.record_power:
             self.powermeter_analog_volt_map[j,i] = self.pm_power_v
         self.elapsed_time_array[j,i] = ph.read_elapsed_meas_time()
+        
+        self.current_index = (i,j)
 
     def scan_specific_savedict(self):
         savedict = dict( integrated_count_map=self.integrated_count_map,
@@ -239,9 +312,11 @@ class TRPLScanMeasurement(Base2DScan):
         #self.ax_time.axhline(2**16)
         
         self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val])
+        #i,j = self.current_index
+        #self.time_trace_plotline.set_ydata(1+self.time_trace_map[j,i-1:])
         
         # integrated map
-        if False:
+        if True:
             C = (self.integrated_count_map)
             self.imgplot.set_data(C)         
             try:
@@ -252,7 +327,7 @@ class TRPLScanMeasurement(Base2DScan):
             self.imgplot.set_clim(count_min, count_max + 1)
             
         # lifetime 
-        if True:
+        else:
             x=1-0.36787944117
             kk_bg_max = 100/2
             kk_start = kk_bg_max+50/2
@@ -263,7 +338,7 @@ class TRPLScanMeasurement(Base2DScan):
             C = self.time_array[np.argmin(np.abs(np.cumsum(t, axis=2)/np.sum(t, axis=2).reshape(self.Nv*1,self.Nh*1,1)-x), axis=2)]
             # 
             self.imgplot.set_data(C)
-            self.imgplot.set_clim(0,1.8)
+            self.imgplot.set_clim(1,2.2)
             #self.imgplot.colorbar()
         self.fig.canvas.draw()
         
@@ -366,7 +441,7 @@ class TRPLScan3DMeasurement(Base3DScan):
         self.fig = self.gui.trpl_scan_measure.fig
         self.time_trace_plotline = self.gui.trpl_scan_measure.time_trace_plotline
         
-        self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:500]) # FIXME
+        self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val]) # FIXME
         
         visual_slice = [np.s_[:], np.s_[:], np.s_[:]]
         visual_slice[self.slow_axis_id] = self.ijk[self.slow_axis_id]
@@ -374,7 +449,7 @@ class TRPLScan3DMeasurement(Base3DScan):
         
         #integrated count map
         if False:
-            #C = np.log10(self.integrated_count_map[visual_slice[::-1]])
+            #CT= np.log10(self.integrated_count_map[visual_slice[::-1]])
             C = (self.integrated_count_map[visual_slice[::-1]])
             self.imgplot.set_data(C)
             
@@ -405,7 +480,7 @@ class TRPLScan3DMeasurement(Base3DScan):
             C = self.time_array[np.argmin(np.abs(np.cumsum(t, axis=3)/np.sum(t, axis=3).reshape(self.Nz,self.Ny, self.Nx,1)-x), axis=3)]
             # 
             self.imgplot.set_data(C[visual_slice[::-1]])
-            self.imgplot.set_clim(0,2)
+            self.imgplot.set_clim(0,4)
 
         
         

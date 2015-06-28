@@ -20,7 +20,7 @@ from hardware_components.shutter_servo_arduino import ShutterServoHardwareCompon
 
 from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
 from measurement_components.trpl import \
-    PicoHarpMeasurement, \
+    PicoHarpMeasurement, PicoHarpTTTR, \
     TRPLScanMeasurement, TRPLScan3DMeasurement
 from measurement_components.apd_confocal import APDOptimizerMeasurement, APDConfocalScanMeasurement, APDConfocalScan3DMeasurement
 from measurement_components.andor_ccd_readout import AndorCCDReadout, AndorCCDReadBackground, AndorCCDReadSingle
@@ -68,6 +68,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.ple_point_measure = self.add_measurement_component(PLEPointMeasurement(self))
         self.ple2d_measure = self.add_measurement_component(PLE2DScanMeasurement(self))
         self.picoharp_measure = self.add_measurement_component(PicoHarpMeasurement(self))
+        self.picoharp_tttr_measure = self.add_measurement_component(PicoHarpTTTR(self))
         self.trpl_scan_measure = self.add_measurement_component(TRPLScanMeasurement(self))
         self.trpl_scan3d_measure = self.add_measurement_component(TRPLScan3DMeasurement(self))
         self.andor_ro_measure = self.add_measurement_component(AndorCCDReadout(self))
