@@ -66,6 +66,12 @@ class APDOptimizerMeasurement(Measurement):
         self.apd_counter_hc = self.gui.apd_counter_hc
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
 
+        self.SAVE_DATA = True # TODO convert to LoggedQuantity
+
+        if self.SAVE_DATA:
+            self.full_optimize_history = []
+            self.full_optimize_history_time = []
+            self.t0 = time.time()
 
         while not self.interrupt_measurement_called:
             self.optimize_ii += 1
@@ -73,9 +79,37 @@ class APDOptimizerMeasurement(Measurement):
 
             self.apd_count_rate.read_from_hardware()            
             self.optimize_history[self.optimize_ii] = self.apd_count_rate.val    
+            
+            if self.SAVE_DATA:
+                self.full_optimize_history.append(self.apd_count_rate.val  )
+                self.full_optimize_history_time.append(time.time() - self.t0)
             # test code
             #time.sleep(0.001)
             #self.optimize_history[self.optimize_ii] = random.random()    
+        
+        #save data afterwards
+        if self.SAVE_DATA:
+            #save  data file
+            save_dict = {
+                     'optimize_history': self.full_optimize_history,
+                     'optimize_history_time': self.full_optimize_history_time,
+                        }               
+                    
+            for lqname,lq in self.gui.logged_quantities.items():
+                save_dict[lqname] = lq.val
+            
+            for hc in self.gui.hardware_components.values():
+                for lqname,lq in hc.logged_quantities.items():
+                    save_dict[hc.name + "_" + lqname] = lq.val
+            
+            for lqname,lq in self.logged_quantities.items():
+                save_dict[self.name +"_"+ lqname] = lq.val
+    
+            self.fname = "%i_%s.npz" % (time.time(), self.name)
+            np.savez_compressed(self.fname, **save_dict)
+            print self.name, "saved:", self.fname
+            
+            
         
         #is this right place to put this?
         self.measurement_state_changed.emit(False)
