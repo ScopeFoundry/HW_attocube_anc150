@@ -60,12 +60,24 @@ class SpectrumScan2DMeasurement(Base2DScan):
         
 
     def pre_scan_setup(self):
+        
+  
+
+        
+        
         # hypserspectral scan specific setup
         self.display_update_period = 0.10 #seconds
 
         #hardware
         self.andor_ccd_hc = self.gui.andor_ccd_hc
-        self.andor_ccd = self.andor_ccd_hc.andor_ccd
+        ccd = self.andor_ccd = self.andor_ccd_hc.andor_ccd
+ 
+        width_px = ccd.Nx_ro
+        height_px = ccd.Ny_ro
+ 
+        self.wls  = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, 
+                      np.arange(width_px), binning=ccd.get_current_hbin())
+
         
         self.N_spec = self.andor_ccd.Nx_ro
 
@@ -151,23 +163,27 @@ class SpectrumScan2DMeasurement(Base2DScan):
                      'integrated_count_map': self.integrated_count_map,
                      'background_data': self.background_data,
                      'bg_sub': self.bg_sub,
-                     'N_spec': self.N_spec,                     
+                     #'N_spec': self.N_spec,
+                     'wls': self.wls,                     
                      }
         return save_dict
 
     def update_display(self):     
-        wls = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, np.arange(self.N_spec))
 
-        self.spec_plotline.set_xdata(wls)
+        self.spec_plotline.set_xdata(self.wls)
         self.spec_plotline.set_ydata(self.spectra_data)
         
-        self.ax_spec.set_xlim(wls[0], wls[-1])
+        self.ax_spec.set_xlim(self.wls[0], self.wls[-1])
         #self.ax_spec.relim()
         #self.ax_spec.autoscale_view(scalex=False, scaley=True)
         
         C = self.integrated_count_map
         #C = np.argmax(self.spec_map, axis=2)
         #self.imgplot.set_data(np.ma.array(C, mask=C==0))
+
+        def wl_i(wl):
+            return np.searchsorted(self.wls,wl)
+        #C = np.sum(self.spec_map[:,:,wl_i(560):wl_i(800)], axis=2)#/np.sum(self.spec_map[:,:,wl_i(650):wl_i(700)], axis=2)
         self.imgplot.set_data(C)
         
         try:
