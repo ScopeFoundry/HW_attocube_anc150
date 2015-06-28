@@ -25,7 +25,9 @@ class FlipMirrorHardwareComponent(HardwareComponent):
                                                                         ("Spectrometer", 0),
                                                                         ("APD", 1)]
                                                              )
-
+        self.POSITION_SPEC = False
+        self.POSITION_APD = True
+        
         # connect GUI
         self.flip_mirror_position.connect_bidir_to_widget(self.gui.ui.flip_mirror_checkBox)
         
