@@ -43,7 +43,8 @@ class Base2DScan(Measurement):
         
     def setup_figure(self):
         #2D scan area
-        raise NotImplementedError()
+        #raise NotImplementedError()
+        pass
     
     def pre_scan_setup(self):
         raise NotImplementedError()
