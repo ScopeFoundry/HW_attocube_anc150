@@ -31,6 +31,8 @@ class Measurement(QtCore.QObject):
         self.display_update_timer.timeout.connect(self.on_display_update_timer)
         self.acq_thread = None
         
+        self.interrupt_measurement_called = False
+        
         self.logged_quantities = OrderedDict()
         self.operations = OrderedDict()
         
