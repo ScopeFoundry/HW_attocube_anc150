@@ -68,7 +68,8 @@ class LaserPowerFeedbackControl(Measurement):
             # move
             move_delta_steps = int(move_delta_steps)
             self.power_wheel.write_steps(move_delta_steps)
-            sleep_time = abs(move_delta_steps*1.0/self.power_wheel_hc.speed.val)
+            #sleep_time = abs(move_delta_steps*1.0/self.power_wheel_hc.speed.val)
+            sleep_time = abs(move_delta_steps*1.0/100)
             time.sleep(sleep_time)
             self.power_wheel.read_status()
             while(self.power_wheel.is_moving_to):
