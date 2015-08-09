@@ -36,6 +36,7 @@ from measurement_components.powermeter_optimizer import PowerMeterOptimizerMeasu
 from measurement_components.laser_power_feedback_control import LaserPowerFeedbackControl
 from measurement_components.single_particle_blink import SingleParticleBlink, SingleParticleBlinkSet
 from measurement_components.monochromator_sweep import MonochromatorSweep
+from measurement_components.laser_line_writer import LaserLineWriter
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -93,6 +94,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.single_particle_blink_set_measure = self.add_measurement_component(SingleParticleBlinkSet(self))
         
         self.monochromator_sweep_measure = self.add_measurement_component(MonochromatorSweep(self))
+        self.laser_line_writer_measure = self.add_measurement_component(LaserLineWriter(self))
         #Add additional logged quantities
 
         # Connect to custom gui
