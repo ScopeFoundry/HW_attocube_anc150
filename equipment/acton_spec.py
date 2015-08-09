@@ -35,7 +35,13 @@ class ActonSpectrometer(object):
     def write_wl(self, wl, waittime=1.0):
         wl = float(wl)
         resp = self.write_command("%0.3f NM" % wl,waittime=waittime)
-        pass
+        if self.debug: print "write_wl", wl, resp
+        
+    def write_wl_fast(self, wl, waittime=1.0):
+        wl = float(wl)
+        resp = self.write_command("%0.3f GOTO" % wl,waittime=waittime)
+        if self.debug: print "write_wl_fast", wl, resp
+        
 
     def write_wl_nonblock(self, wl):
         wl = float(wl)
@@ -105,8 +111,7 @@ class ActonSpectrometer(object):
     def write_exit_mirror(self, pos):
         pos = pos.upper()
         assert pos in ['FRONT', 'SIDE']
-        "EXIT-MIRROR %s" % pos
-        pass
+        self.write_command("EXIT-MIRROR %s" % pos)
         
     def read_entrance_slit(self):
         resp = self.write_command("SIDE-ENT-SLIT ?MICRONS")
