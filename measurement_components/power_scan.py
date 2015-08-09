@@ -123,7 +123,7 @@ class PowerScanMotorized(Measurement):
             
         if self.collect_lifetime.val:
             save_dict['time_traces'] = self.time_traces
-            save_dict['time_array' ] = self.picoharp.time_array*1e6
+            save_dict['time_array' ] = self.picoharp.time_array*1e-3
             save_dict['elapsed_times'] = self.elapsed_times
         
                      
@@ -415,12 +415,12 @@ class PowerScanMotorized(Measurement):
         if self.collect_lifetime.val:
             self.power_dependence_plot_line.setData(
                         x = self.pm_powers_after[:self.ii],
-                        y = np.sum(self.time_traces[:self.ii,:],axis=1).astype(float) / self.elapsed_times[:self.ii]
+                        y = np.sum(self.time_traces[:self.ii,:],axis=1).astype(float) / self.elapsed_times[:self.ii]+1
                         )
             
             self.power_dependence_help_plot.setLabel('bottom',"time ns")
             self.power_dependence_help_plot.setLabel('right',"counts")
-            self.power_dependence_help_plot_line.setData(self.picoharp.time_array*1e-3, self.time_traces[self.ii-1,:])
+            self.power_dependence_help_plot_line.setData(self.picoharp.time_array*1e-3, 1+self.time_traces[self.ii-1,:])
 
 class PowerScanMotorizedMap(Base2DScan):
     name = "power_scan_motorized_map"
