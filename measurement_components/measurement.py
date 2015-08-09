@@ -99,7 +99,10 @@ class Measurement(QtCore.QObject):
 
         
     def is_measuring(self):
-        return self.acq_thread.is_alive()
+        if self.acq_thread is None:
+            return False
+        else:
+            return self.acq_thread.is_alive()
         
     
     def update_display(self):
