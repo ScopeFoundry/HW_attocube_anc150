@@ -35,6 +35,7 @@ from measurement_components.kinetic_spectra import KineticSpectra
 from measurement_components.powermeter_optimizer import PowerMeterOptimizerMeasurement
 from measurement_components.laser_power_feedback_control import LaserPowerFeedbackControl
 from measurement_components.single_particle_blink import SingleParticleBlink, SingleParticleBlinkSet
+from measurement_components.monochromator_sweep import MonochromatorSweep
 
 class TRPLMicroscopeGUI(BaseMicroscopeGUI):
     
@@ -72,8 +73,6 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.trpl_scan_measure = self.add_measurement_component(TRPLScanMeasurement(self))
         self.trpl_scan3d_measure = self.add_measurement_component(TRPLScan3DMeasurement(self))
         self.andor_ro_measure = self.add_measurement_component(AndorCCDReadout(self))
-        #self.andor_bg_measure = self.add_measurement_component(AndorCCDReadBackground(self))
-        #self.andor_single_measure = self.add_measurement_component(AndorCCDReadSingle(self))
         self.spec_map_measure = self.add_measurement_component(SpectrumScan2DMeasurement(self))
         #self.power_scan_measure = self.add_measurement_component(PowerScanContinuous(self)
         
@@ -93,6 +92,7 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         self.single_particle_blink_measure = self.add_measurement_component(SingleParticleBlink(self))
         self.single_particle_blink_set_measure = self.add_measurement_component(SingleParticleBlinkSet(self))
         
+        self.monochromator_sweep_measure = self.add_measurement_component(MonochromatorSweep(self))
         #Add additional logged quantities
 
         # Connect to custom gui
