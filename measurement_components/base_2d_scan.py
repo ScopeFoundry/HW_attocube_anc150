@@ -22,7 +22,9 @@ class Base2DScan(Measurement):
         self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
 
         self.dh = self.add_logged_quantity('dh', initial=1, **lq_params)
+        self.dh.spinbox_decimals = 3
         self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
+        self.dv.spinbox_decimals = 3
         
         # connect to gui        
         self.h0.connect_bidir_to_widget(self.gui.ui.h0_doubleSpinBox)

@@ -28,6 +28,12 @@ class LoggedQuantity(QtCore.QObject):
         self.choices = choices # must be tuple [ ('name', val) ... ]
         self.ro = ro # Read-Only?
         
+        if self.dtype == int:
+            self.spinbox_decimals = 0
+        else:
+            self.spinbox_decimals = 2
+        self.reread_from_hardware_after_write = False
+        
         self.oldval = None
         
     def read_from_hardware(self, send_signal=True):
@@ -44,17 +50,25 @@ class LoggedQuantity(QtCore.QObject):
     @QtCore.Slot(int)
     @QtCore.Slot(bool)
     @QtCore.Slot()
-    def update_value(self, new_val=None, update_hardware=True, send_signal=True, reread_hardware=False):
-        self.oldval = self.val
-        #print "called update_value", self.name, new_val, reread_hardware
+    def update_value(self, new_val=None, update_hardware=True, send_signal=True, reread_hardware=None):
+        #print "LQ update_value", self.name, self.val, "-->",  new_val
         if new_val == None:
             new_val = self.sender().text()
+
+        if (self.val == new_val):
+            return
+        
+        if reread_hardware is None:
+            reread_hardware = self.reread_from_hardware_after_write
+        
+        self.oldval = self.val
+        #print "called update_value", self.name, new_val, reread_hardware
         self.val = self.dtype(new_val)
         if update_hardware and self.hardware_set_func:
             self.hardware_set_func(self.val)
             if reread_hardware:
                 #print "rereading"
-                self.read_from_hardware(send_signal=send_signal)
+                self.read_from_hardware(send_signal=False) # changed send_signal to false (ESB 2015-08-05)
         if send_signal:
             self.send_display_updates()
             
@@ -69,8 +83,10 @@ class LoggedQuantity(QtCore.QObject):
             else:
                 self.updated_value[str].emit( self.fmt % self.val )
                 self.updated_text_value.emit( self.fmt % self.val )
+                
             self.updated_value[float].emit(self.val)
-            self.updated_value[int].emit(self.val)
+            if self.dtype != float:
+                self.updated_value[int].emit(self.val)
             self.updated_value[bool].emit(self.val)
             self.updated_value[()].emit()
             
@@ -104,6 +120,7 @@ class LoggedQuantity(QtCore.QObject):
             if self.ro:
                 widget.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
                 widget.setReadOnly(True)
+            widget.setDecimals(self.spinbox_decimals)
             widget.setValue(self.val)
             #events
             self.updated_value[float].connect(widget.setValue)
@@ -160,6 +177,7 @@ class LoggedQuantity(QtCore.QObject):
                 widget.setEnabled(False)
                 widget.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
                 widget.setReadOnly(True)
+            widget.setDecimals(self.spinbox_decimals)
             self.updated_value[float].connect(widget.setValue)
             if not self.ro:
                 #widget.valueChanged[float].connect(self.update_value)
