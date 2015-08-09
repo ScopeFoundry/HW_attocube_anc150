@@ -125,7 +125,7 @@ class PicoHarpTTTR(Measurement):
         ph = self.picoharp = self.gui.picoharp_hc.picoharp
 
         # create data array
-        self.records = np.zeros(60*1024*1024, dtype=np.uint32)
+        self.records = np.zeros(60*1024*1024, dtype=np.uint32) #FIXME this should not be a fixed size
         self.record_i = 0
 
         try:
@@ -214,6 +214,11 @@ class TRPLScanMeasurement(Base2DScan):
 
         #self.fig.canvas.draw()
 
+    def post_scan_cleanup(self):
+        if self.record_power:
+            self.gui.thorlabs_powermeter_hc.power.read_from_hardware()
+            self.powermeter_final_power = self.gui.thorlabs_powermeter_hc.power.val
+    
     
     def pre_scan_setup(self):
         
@@ -225,6 +230,8 @@ class TRPLScanMeasurement(Base2DScan):
             self.record_power = True
             self.pm_analog_readout = self.gui.thorlabs_powermeter_analog_readout_hc
             self.gui.thorlabs_powermeter_hc.read_from_hardware()
+            self.powermeter_initial_power = self.gui.thorlabs_powermeter_hc.power.val
+            
         else:
             #raise IOError("power meter not connected")
             print "power meter not connected"
@@ -244,14 +251,7 @@ class TRPLScanMeasurement(Base2DScan):
         self.time_array = ph.time_array[0:self.stored_histogram_channels.val]*1e-3
         self.elapsed_time_array = np.zeros((self.Nv, self.Nh), dtype=float)
         
-        #update figure
-        self.time_trace_plotline.set_xdata(self.time_array)
-        
-        self.imgplot = self.aximg.imshow(self.integrated_count_map, 
-                                    origin='lower',
-                                    vmin=1e4, vmax=1e5, interpolation='nearest', 
-                                    extent=self.imshow_extent)
-
+        self.initial_scan_setup_plotting = True
         
         self.t_scan_start = time.time()
 
@@ -273,7 +273,10 @@ class TRPLScanMeasurement(Base2DScan):
         #print "pixel time", 1000*(time.time() - t0)
 
         if self.record_power:
-            self.pm_power_v = self.pm_analog_readout.voltage.read_from_hardware()
+            if self.gui.laser_power_feedback_control.is_measuring():
+                self.pm_power_v = self.pm_analog_readout.voltage.val
+            else:
+                self.pm_power_v = self.pm_analog_readout.voltage.read_from_hardware()
         
         #print total time
         if True:
@@ -302,10 +305,23 @@ class TRPLScanMeasurement(Base2DScan):
                      elapsed_time_array = self.elapsed_time_array,
                      )
         if self.record_power:
-            savedict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map         
+            savedict['powermeter_analog_volt_map'] = self.powermeter_analog_volt_map 
+            savedict['powermeter_initial_power'] = self.powermeter_initial_power
+            savedict['powermeter_final_power'] = self.powermeter_final_power
         return savedict
     
     def update_display(self):
+        
+        if self.initial_scan_setup_plotting:
+            #update figure
+            self.time_trace_plotline.set_xdata(self.time_array)
+            
+            self.imgplot = self.aximg.imshow(self.integrated_count_map, 
+                                        origin='lower',
+                                        vmin=1e4, vmax=1e5, interpolation='nearest', 
+                                        extent=self.imshow_extent)
+
+            self.initial_scan_setup_plotting = False
         #if self.record_power:
         #    print "power_meter analog voltage", self.pm_power_v
         
