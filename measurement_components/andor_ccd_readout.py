@@ -133,7 +133,7 @@ class AndorCCDReadout(Measurement):
                 if stat == 'IDLE':
                     # grab data
                     t1 = time.time()
-                    print "acq time", (t1-t0)
+                    #print "acq time", (t1-t0)
                     t0 = t1
                 
                 
@@ -161,6 +161,8 @@ class AndorCCDReadout(Measurement):
                 else:
                     #sleep(wait_time)
                     sleep(0.01)
+        except Exception as err:
+            print self.name, "error:", err
         finally:            
             # while-loop is complete
             self.gui.andor_ccd_hc.interrupt_acquisition()
