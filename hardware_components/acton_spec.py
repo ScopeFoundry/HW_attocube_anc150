@@ -54,6 +54,8 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
         # connect to gui
         
         self.center_wl.connect_bidir_to_widget(self.gui.ui.acton_spec_center_wl_doubleSpinBox)
+        self.exit_mirror.connect_bidir_to_widget(self.gui.ui.acton_spec_exitmirror_comboBox)
+
 
     def connect(self):
         if self.debug: print "connecting to acton_spectrometer"
