@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1395</width>
-    <height>1028</height>
+    <width>1396</width>
+    <height>1136</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1">
+   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,1">
     <item>
      <widget class="QScrollArea" name="scrollArea_2">
       <property name="sizePolicy">
@@ -28,7 +28,7 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>400</width>
+        <width>250</width>
         <height>0</height>
        </size>
       </property>
@@ -40,8 +40,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>381</width>
-         <height>1043</height>
+         <width>337</width>
+         <height>1075</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_25">
@@ -736,7 +736,7 @@ Continuously</string>
             <widget class="QComboBox" name="acton_spec_exitmirror_comboBox">
              <item>
               <property name="text">
-               <string>EXIT SLIT</string>
+               <string>EXIT MIRROR</string>
               </property>
              </item>
             </widget>
@@ -1391,6 +1391,36 @@ Continuously</string>
      </widget>
     </item>
     <item>
+     <widget class="QGroupBox" name="groupBox_6">
+      <property name="title">
+       <string>Logged Quantities</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QSplitter" name="splitter">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <widget class="QTreeWidget" name="hardware_treeWidget">
+          <column>
+           <property name="text">
+            <string>Hardware</string>
+           </property>
+          </column>
+         </widget>
+         <widget class="QTreeWidget" name="measurements_treeWidget">
+          <column>
+           <property name="text">
+            <string>Measurements</string>
+           </property>
+          </column>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1402,7 +1432,7 @@ Continuously</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="plot2d_tab">
        <attribute name="title">
@@ -2100,8 +2130,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>928</width>
-             <height>923</height>
+             <width>708</width>
+             <height>1031</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -2131,8 +2161,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>928</width>
-             <height>923</height>
+             <width>708</width>
+             <height>1031</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>
@@ -2150,7 +2180,7 @@ Continuously</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1395</width>
+     <width>1396</width>
      <height>21</height>
     </rect>
    </property>

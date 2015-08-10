@@ -34,6 +34,7 @@ class HardwareComponent(QtCore.QObject):
         self.setup()
         
         self._add_control_widgets_to_hardware_tab()
+        self._add_control_widgets_to_hardware_tree()
         
         self.has_been_connected_once = False
         
@@ -90,7 +91,55 @@ class HardwareComponent(QtCore.QObject):
         self.read_from_hardware_button = QtGui.QPushButton("Read From Hardware")
         self.read_from_hardware_button.clicked.connect(self.read_from_hardware)
         self.controls_formLayout.addRow("Logged Quantities:", self.read_from_hardware_button)
+    
+    def _add_control_widgets_to_hardware_tree(self):
+        tree = self.gui.ui.hardware_treeWidget
+        #tree = QTreeWidget()
+        tree.setColumnCount(2)
+        tree.setHeaderLabels(["Hardware", "Value"])
+
+        self.tree_item = QtGui.QTreeWidgetItem(tree, [self.name, "="*10])
+        tree.insertTopLevelItem(0, self.tree_item)
+        self.tree_item.setFirstColumnSpanned(True)
         
+        for lqname, lq in self.logged_quantities.items():
+            #: :type lq: LoggedQuantity
+            if lq.choices is not None:
+                widget = QtGui.QComboBox()
+            elif lq.dtype in [int, float]:
+                if lq.si:
+                    widget = pg.SpinBox()
+                else:
+                    widget = QtGui.QDoubleSpinBox()
+            elif lq.dtype in [bool]:
+                widget = QtGui.QCheckBox()  
+            elif lq.dtype in [str]:
+                widget = QtGui.QLineEdit()
+            lq.connect_bidir_to_widget(widget)
+
+            # Add to formlayout
+            #self.controls_formLayout.addRow(lqname, widget)
+            lq_tree_item = QtGui.QTreeWidgetItem(self.tree_item, [lqname, ""])
+            self.tree_item.addChild(lq_tree_item)
+            lq.hardware_tree_widget = widget
+            tree.setItemWidget(lq_tree_item, 1, lq.hardware_tree_widget)
+            #self.control_widgets[lqname] = widget
+                
+        self.op_buttons = OrderedDict()
+        for op_name, op_func in self.operations.items(): 
+            op_button = QtGui.QPushButton(op_name)
+            op_button.clicked.connect(op_func)
+            self.op_buttons[op_name] = op_button
+            #self.controls_formLayout.addRow(op_name, op_button)
+            op_tree_item = QtGui.QTreeWidgetItem(self.tree_item, [op_name, ""])
+            tree.setItemWidget(op_tree_item, 1, op_button)
+
+        self.tree_read_from_hardware_button = QtGui.QPushButton("Read From\nHardware")
+        self.tree_read_from_hardware_button.clicked.connect(self.read_from_hardware)
+        #self.controls_formLayout.addRow("Logged Quantities:", self.read_from_hardware_button)
+        self.read_from_hardware_button_tree_item = QtGui.QTreeWidgetItem(self.tree_item, ["Logged Quantities:", ""])
+        self.tree_item.addChild(self.read_from_hardware_button_tree_item)
+        tree.setItemWidget(self.read_from_hardware_button_tree_item, 1, self.tree_read_from_hardware_button)
 
     @QtCore.Slot()    
     def read_from_hardware(self):
