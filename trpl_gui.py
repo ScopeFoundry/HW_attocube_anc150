@@ -98,7 +98,8 @@ class TRPLMicroscopeGUI(BaseMicroscopeGUI):
         #Add additional logged quantities
 
         # Connect to custom gui
-
+        self.ui.settings_autosave_pushButton.clicked.connect(self.settings_auto_save)
+        self.ui.settings_load_last_pushButton.clicked.connect(self.settings_load_last)
 
 
 if __name__ == '__main__':
