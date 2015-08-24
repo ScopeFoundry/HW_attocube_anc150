@@ -92,6 +92,9 @@ class MonochromatorSweep(Measurement):
                 time.sleep(1.0) # wait for shutter to open
 
             for ii in range(N):
+                if self.interrupt_measurement_called:
+                    break
+                
                 print ii, self.set_wavelengths[ii]
                 self.spec_hc.center_wl.update_value(self.set_wavelengths[ii])
                 self.wavelengths[ii] = self.spec_hc.center_wl.val
@@ -100,6 +103,7 @@ class MonochromatorSweep(Measurement):
                 if self.collect_apd.val:
                     self.apd_count_rates[ii] = self.collect_apd_data()
                 if self.collect_lifetime.val:
+                    print self.picoharp.read_count_rate(0)/1e6, self.picoharp.read_count_rate(1)/1e3
                     time_trace, self.elapsed_times[ii] = self.collect_lifetime_data()
                     self.time_traces[ii,:] = time_trace[:self.stored_histogram_channels.val]
 
