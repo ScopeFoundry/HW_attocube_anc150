@@ -2,6 +2,7 @@ import numpy as np
 import time
 from PySide import QtCore
 
+import h5_io
 from .measurement import Measurement 
  
         
@@ -86,6 +87,22 @@ class Base2DScan(Measurement):
                               self.v_array[ 0] - 0.5*self.dv.val,
                               self.v_array[-1] + 0.5*self.dv.val]
         
+        # h5 data file setup
+        self.t0 = time.time()
+        self.h5_file = h5_io.h5_base_file(self.gui, "%i_%s.h5" % (self.t0, self.name) )
+        self.h5_file.attrs['time_id'] = self.t0
+        self.h5_meas_group = self.h5_file.create_group(self.name)
+        #h5_io.h5_save_measurement(self, self.h5_meas_group)
+        h5_io.h5_save_measurement(self, self.h5_file['/'])
+        
+        self.h5_meas_group.create_dataset(name='h_array', data=self.h_array, compression='gzip', shuffle=True)
+        self.h5_meas_group.create_dataset(name='v_array', data=self.v_array, compression='gzip', shuffle=True)
+        self.h5_meas_group.attrs['Nv'] = self.Nv
+        self.h5_meas_group.attrs['Nh'] = self.Nh
+        self.h5_meas_group.attrs['range_extent'] = self.range_extent
+        self.h5_meas_group.attrs['corners'] = self.corners
+        self.h5_meas_group.attrs['imshow_extent'] = self.imshow_extent
+
         #scan specific setup
         self.pre_scan_setup()
                 
@@ -136,13 +153,11 @@ class Base2DScan(Measurement):
                 total_px = self.Nv*self.Nh
                 print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600,'| Nh, Nv:', self.Nh, self.Nv,
                 Time_finish = time.localtime(total_px*T_pixel+self.t_scan_start)
-                print '| scan finishes at: {}:{}'.format(Time_finish.tm_hour,Time_finish.tm_min)
+                print '| scan finishes at: {:02d}:{:02d}'.format(Time_finish.tm_hour,Time_finish.tm_min)
 
                 
                 # read stage position every line
-                self.stage.x_position.read_from_hardware()
-                self.stage.y_position.read_from_hardware()
-                self.stage.z_position.read_from_hardware()
+                self.stage.read_pos()
                 
                             
             #scanning done
@@ -174,9 +189,12 @@ class Base2DScan(Measurement):
             for lqname,lq in self.logged_quantities.items():
                 save_dict[self.name +"_"+ lqname] = lq.val
     
-            self.fname = "%i_%s.npz" % (time.time(), self.name)
+            self.fname = "%i_%s.npz" % (self.t0, self.name)
             np.savez_compressed(self.fname, **save_dict)
             print self.name, "saved:", self.fname
+            
+            #h5 file
+            self.h5_file.close()
 
             if not self.interrupt_measurement_called:
                 self.measurement_sucessfully_completed.emit()

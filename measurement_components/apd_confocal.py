@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from PySide import QtCore
+from PySide import QtCore, QtGui
 import pyqtgraph as pg
 import random
 
@@ -318,6 +318,7 @@ class APDConfocalScanMeasurement(Base2DScan):
         
         # create data arrays
         self.count_rate_map = np.zeros((self.Nv, self.Nh), dtype=float)
+        self.count_rate_map_h5 = self.h5_meas_group.create_dataset('count_rate_map', shape=(self.Nv, self.Nh), dtype=float, compression='gzip')
         #update figure
         
         """self.fig2d.clf()
@@ -356,6 +357,7 @@ class APDConfocalScanMeasurement(Base2DScan):
                           
         # store in arrays
         self.count_rate_map[i_v,i_h] = self.apd_count_rate.val
+        self.count_rate_map_h5[i_v,i_h] = self.apd_count_rate.val
         
         # update graph elements
         self.current_pixel_arrow.setPos(self.h_array[i_h], self.v_array[i_v])
@@ -428,6 +430,9 @@ class APDConfocalScan3DMeasurement(Base3DScan):
         
         # create data arrays
         self.count_rate_map = np.zeros((self.Nz, self.Ny, self.Nx), dtype=float)
+        self.count_rate_map_h5 = self.h5_meas_group.create_dataset('count_rate_map', 
+                                shape=(self.Nz, self.Ny, self.Nx), dtype=float, compression='gzip', shuffle=True)
+
         #update figure
     
     def collect_pixel(self, i, j, k):
@@ -436,6 +441,8 @@ class APDConfocalScan3DMeasurement(Base3DScan):
                           
         # store in arrays
         self.count_rate_map[k,j,i] = self.apd_count_rate.val
+        self.count_rate_map_h5[k,j,i] = self.apd_count_rate.val
+        
     
     def scan_specific_savedict(self):
         return {'count_rate_map': self.count_rate_map}
