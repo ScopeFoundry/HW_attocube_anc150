@@ -48,11 +48,13 @@ class LaserLineWriter(Measurement):
             moves += self.digit(10+(ii-10)*10, 30,  w=5, h=10, N=ii)
 
         # corner cross and labeling
-        moves = self.labeled_cross(35, 35, 10, N=4)
+        #moves = self.labeled_cross(35, 35, 10, N=1)
 
 
         #moves = self.v_arrow(xtip=35, ytip=20, w=20, h=+50)
+        moves = self.v_arrow(xtip=35, ytip=10, w=20, h=+50)
 
+        #moves = self.h_arrow(10, 35, 50, 20)
 
         # close shutter
         shutter_lq.update_value(False)
@@ -181,6 +183,33 @@ class LaserLineWriter(Measurement):
                  (xtip, y1, True),
                  ]
         return moves
+        
+    def h_arrow(self, xtip, ytip, w, h):
+        # w > 0 left point arrow
+        # w < 0 right pointing arrow
+        
+        x1 = xtip + w
+        xhead = xtip + 0.25*w
+        y0 = ytip - 0.5*h
+        y1 = ytip + 0.5*h
+        
+        moves = [
+                 (xtip, ytip, False),
+                 (xhead,   y0, True),
+                 (xhead,   y1, True),
+                 (xtip, ytip, True),
+                 (x1, ytip, True),
+                 ]
+        return moves
+        
+                
+        
+        
+        
+        
+        
+        
+        
         
         
         
