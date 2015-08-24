@@ -34,7 +34,10 @@ class APDCounterHardwareComponent(HardwareComponent):
         if self.debug: print "Connecting to APD Counter"
         
         # Open connection to hardware
-        self.ni_counter = NI_FreqCounter(debug = self.debug, mode='high_freq')
+        
+        # Normal APD:  "/Dev1/PFI0"
+        # APD on monochromator: "/Dev1/PFI2"
+        self.ni_counter = NI_FreqCounter(debug = self.debug, mode='high_freq', input_terminal = "/Dev1/PFI0")
 
         # connect logged quantities
         self.apd_count_rate.hardware_read_func = self.read_count_rate
