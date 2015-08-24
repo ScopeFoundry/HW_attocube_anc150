@@ -319,6 +319,9 @@ class APDConfocalScanMeasurement(Base2DScan):
         # create data arrays
         self.count_rate_map = np.zeros((self.Nv, self.Nh), dtype=float)
         self.count_rate_map_h5 = self.h5_meas_group.create_dataset('count_rate_map', shape=(self.Nv, self.Nh), dtype=float, compression='gzip')
+        
+        self.gui.settings_auto_save()
+        
         #update figure
         
         """self.fig2d.clf()
