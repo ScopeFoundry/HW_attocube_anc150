@@ -11,3 +11,4 @@ doc/_build/
 image_window.ui.oA7156
 .idea/
 *.h5
+log.out
