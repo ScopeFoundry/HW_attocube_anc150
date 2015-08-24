@@ -24,6 +24,9 @@ class SingleParticleBlink(Measurement):
         self.save_dict = dict()
         
         try:
+             ## measure power
+            self.gui.thorlabs_powermeter_hc.power_meter.measure_power()
+
             # Collect Spectrum
             print "spectrum_before"
             ## Flip mirror to Spec
@@ -44,7 +47,10 @@ class SingleParticleBlink(Measurement):
             self.flip_to_apd()
             ## Open shutter
             self.open_shutter()
+            
+
             ## acquire picoharp
+            
             self.gui.picoharp_tttr_measure._run()
            # self.save_dict['ph_time_histogram_before'] = self.gui.picoharp_hc.picoharp.histogram_data.copy() # Make sure it copies!
             #self.save_dict['ph_time_array_before'] = self.gui.picoharp_hc.picoharp.time_array.copy() # Make sure it copies!
@@ -77,6 +83,7 @@ class SingleParticleBlink(Measurement):
             #print "apd_trace done"
             
             # Collect Spectrum
+            
             print "spectrum_after"
             ## Flip mirror to Spec
             self.flip_to_spec()
