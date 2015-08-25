@@ -27,7 +27,7 @@ import h5_io
 
 class BaseMicroscopeGUI(object):
     
-    ui_filename = None
+    ui_filename = "base_gui.ui"
     
     def __del__ ( self ): 
         self.ui = None
@@ -53,6 +53,9 @@ class BaseMicroscopeGUI(object):
         # Run the subclass setup function
         self.setup()
 
+        self.ui.hardware_treeWidget.setColumnWidth(0,175)
+        self.ui.measurements_treeWidget.setColumnWidth(0,175)
+
         # Setup the figures         
         for name, measure in self.measurement_components.items():
             print "setting up figures for", name, "measurement", measure.name
@@ -61,7 +64,7 @@ class BaseMicroscopeGUI(object):
 
     def setup(self):
         """ Override to add Hardware and Measurement Components"""
-        raise NotImplementedError()
+        #raise NotImplementedError()
     
         
     def add_image_display(self,name,widget):
