@@ -18,24 +18,20 @@ class APDOptimizerMeasurement(Measurement):
         self.optimize_ii = 0
 
         #connect events
-        self.gui.ui.apd_optimize_startstop_checkBox.stateChanged.connect(self.start_stop)
-        self.measurement_state_changed[bool].connect(self.gui.ui.apd_optimize_startstop_checkBox.setChecked)
-        
+        try:
+            self.gui.ui.apd_optimize_startstop_checkBox.stateChanged.connect(self.start_stop)
+            self.measurement_state_changed[bool].connect(self.gui.ui.apd_optimize_startstop_checkBox.setChecked)
+        except Exception as err:
+            print "APDOptimizerMeasurement: could not connect to custom main GUI", err
+
+        self.gui.hardware_components['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
+
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
-        self.gui.apd_counter_hc.int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
 
     def setup_figure(self):
-        # APD Optimize Figure ########################
-        self.fig_opt = self.gui.add_figure('opt', self.gui.ui.plot_optimize_widget)
-        self.fig_opt.clf()
-        
-        self.ax_opt = self.fig_opt.add_subplot(111)
-        
         self.optimize_ii = 0
-        self.optimize_line, = self.ax_opt.plot(self.optimize_history)
-        self.optimize_current_pos = self.ax_opt.axvline(self.optimize_ii, color='r')
-        
+
         # ui window
         if hasattr(self, 'graph_layout'):
             self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
@@ -57,7 +53,7 @@ class APDOptimizerMeasurement(Measurement):
     def _run(self):
         self.display_update_period = 0.001 #seconds
 
-        self.apd_counter_hc = self.gui.apd_counter_hc
+        self.apd_counter_hc = self.gui.hardware_components['apd_counter']
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
 
         self.SAVE_DATA = True # TODO convert to LoggedQuantity
