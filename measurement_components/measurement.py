@@ -50,8 +50,15 @@ class Measurement(QtCore.QObject):
         
         self.setup()
         
-        self._add_control_widgets_to_measurements_tab()
-        self._add_control_widgets_to_measurements_tree()
+        try:
+            self._add_control_widgets_to_measurements_tab()
+        except Exception as err:
+            print "MeasurementComponent: could not add to measurement tab", self.name,  err
+        try:
+            self._add_control_widgets_to_measurements_tree()
+        except Exception as err:
+            print "MeasurementComponent: could not add to measurement tree", self.name,  err
+
 
     def setup(self):
         "Override this to set up logged quantites and gui connections"
