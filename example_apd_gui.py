@@ -7,9 +7,9 @@ from base_gui import BaseMicroscopeGUI
 from hardware_components.apd_counter import APDCounterHardwareComponent
 
 # Import Measurement Components
-from measurement_components.apd_optimizer import APDOptimizerMeasurement
+from measurement_components.apd_optimizer_simple import APDOptimizerMeasurement
 
-class ExampleMicroscopeGUI(BaseMicroscopeGUI):
+class ExampleAPDMicroscopeGUI(BaseMicroscopeGUI):
 
     ui_filename = "base_gui.ui"
 
@@ -21,9 +21,10 @@ class ExampleMicroscopeGUI(BaseMicroscopeGUI):
 
         #Add measurement components
         print "Create Measurement objects"
-        self.apd_optimizer_measure = self.add_measurement_component(APDOptimizerMeasurement(self))
+        self.add_measurement_component(APDOptimizerMeasurement(self))
 
-
+        
+        #set some default logged quantities
         self.hardware_components['apd_counter'].debug_mode.update_value(True)
         self.hardware_components['apd_counter'].dummy_mode.update_value(True)
         self.hardware_components['apd_counter'].connected.update_value(True)
@@ -36,10 +37,9 @@ class ExampleMicroscopeGUI(BaseMicroscopeGUI):
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    app.setApplicationName("Example Foundry Scope App")
+    app.setApplicationName("Example APD App")
 
-    gui = ExampleMicroscopeGUI(app)
+    gui = ExampleAPDMicroscopeGUI(app)
     gui.show()
 
     sys.exit(app.exec_())
-    

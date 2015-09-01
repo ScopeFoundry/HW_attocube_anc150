@@ -12,6 +12,7 @@ class APDOptimizerMeasurement(Measurement):
     def setup(self):        
         self.display_update_period = 0.1 #seconds
 
+        # create data array
         self.OPTIMIZE_HISTORY_LEN = 500
 
         self.optimize_history = np.zeros(self.OPTIMIZE_HISTORY_LEN, dtype=np.float)        
@@ -46,9 +47,6 @@ class APDOptimizerMeasurement(Measurement):
         self.p1 = self.graph_layout.addPlot(title="APD Optimizer")
 
         self.optimize_plot_line = self.p1.plot([1,3,2,4,3,5])
-
-
-
 
     def _run(self):
         self.display_update_period = 0.001 #seconds
@@ -113,15 +111,6 @@ class APDOptimizerMeasurement(Measurement):
         ii = self.optimize_ii
         #print "display update", ii, self.optimize_history[ii]
 
-        """
-        self.optimize_line.set_ydata(self.optimize_history)
-        self.optimize_current_pos.set_xdata((ii,ii))
-        if (ii % 2) == 0:
-            self.ax_opt.relim()
-            self.ax_opt.autoscale_view(scalex=False, scaley=True)
-        
-        self.fig_opt.canvas.draw()
-        """
         # pyqtgraph
         #self.p1.plot(self.optimize_history)
         self.optimize_plot_line.setData(self.optimize_history)
