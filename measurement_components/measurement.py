@@ -17,6 +17,7 @@ class Measurement(QtCore.QObject):
     measurement_sucessfully_completed = QtCore.Signal(()) # signal sent when full measurement is complete
     measurement_interrupted = QtCore.Signal(()) # signal sent when  measurement is complete due to an interruption
     measurement_state_changed = QtCore.Signal(bool) # signal sent when measurement started or stopped
+    progress_updated = QtCore.Signal(int) # signal sent when progress percentage has been updated 
     
     def __init__(self, gui):
         """type gui: MicroscopeGUI
@@ -37,6 +38,7 @@ class Measurement(QtCore.QObject):
         self.operations = OrderedDict()
         
         #TODO Add running logged quantity
+        #self.progress = self.add_logged_quantity('progress')
 
         self.add_operation("start", self.start)
         self.add_operation("interrupt", self.interrupt)
@@ -207,9 +209,12 @@ class Measurement(QtCore.QObject):
         tree.setColumnCount(2)
         tree.setHeaderLabels(["Measurements", "Value"])
 
-        self.tree_item = QtGui.QTreeWidgetItem(tree, [self.name, "="*10])
+        self.tree_item = QtGui.QTreeWidgetItem(tree, [self.name, ""])
         tree.insertTopLevelItem(0, self.tree_item)
-        self.tree_item.setFirstColumnSpanned(True)
+        #self.tree_item.setFirstColumnSpanned(True)
+        self.tree_progressBar = QtGui.QProgressBar()
+        tree.setItemWidget(self.tree_item, 1, self.tree_progressBar)
+        self.progress_updated.connect(self.tree_progressBar.setValue)
 
         for lqname, lq in self.logged_quantities.items():
             #: :type lq: LoggedQuantity

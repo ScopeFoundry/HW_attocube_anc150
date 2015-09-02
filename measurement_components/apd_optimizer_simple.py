@@ -39,7 +39,7 @@ class APDOptimizerMeasurement(Measurement):
         self.opt_plot.addItem(self.vLine, ignoreBounds=True)
 
     def _run(self):
-
+        self.progress_updated.emit(50)
         self.apd_counter_hc = self.gui.hardware_components['apd_counter']
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
 
@@ -51,12 +51,16 @@ class APDOptimizerMeasurement(Measurement):
         while not self.interrupt_measurement_called:
             self.optimize_ii += 1
             self.optimize_ii %= self.OPTIMIZE_HISTORY_LEN
+            
+            progress_pct = int(100. * self.optimize_ii/self.OPTIMIZE_HISTORY_LEN)
+            self.progress_updated.emit(progress_pct)
 
             self.apd_count_rate.read_from_hardware()            
             self.optimize_history[self.optimize_ii] = self.apd_count_rate.val
             
             self.full_optimize_history.append(self.apd_count_rate.val  )
             self.full_optimize_history_time.append(time.time() - self.t0)
+        self.progress_updated.emit(0)
 
     def update_display(self):
         ii = self.optimize_ii
@@ -64,5 +68,3 @@ class APDOptimizerMeasurement(Measurement):
         self.vLine.setPos(ii)
         self.optimize_plot_line.setData(self.optimize_history)
         self.gui.app.processEvents()
-
-        
