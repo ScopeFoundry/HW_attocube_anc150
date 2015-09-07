@@ -11,6 +11,7 @@ import collections
 
 from PySide import QtCore, QtGui, QtUiTools
 import pyqtgraph as pg
+import pyqtgraph.console
 
 import matplotlib
 matplotlib.rcParams['backend.qt4'] = 'PySide'
@@ -61,6 +62,10 @@ class BaseMicroscopeGUI(object):
             print "setting up figures for", name, "measurement", measure.name
             measure.setup_figure()
 
+        # Console 
+        self.console_widget = pyqtgraph.console.ConsoleWidget(namespace={'gui':self, 'pg':pg, 'np':np}, text="ScopeFoundry GUI console")
+        self.ui.console_pushButton.clicked.connect(self.console_widget.show)
+        self.ui.console_pushButton.clicked.connect(self.console_widget.activateWindow)
 
     def setup(self):
         """ Override to add Hardware and Measurement Components"""

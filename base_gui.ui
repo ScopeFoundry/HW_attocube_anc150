@@ -51,6 +51,13 @@
           <string>Settings</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
+          <item row="1" column="0">
+           <widget class="QPushButton" name="settings_load_last_pushButton">
+            <property name="text">
+             <string>Load Last</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QPushButton" name="settings_autosave_pushButton">
             <property name="text">
@@ -72,10 +79,10 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QPushButton" name="settings_load_last_pushButton">
+          <item row="2" column="1">
+           <widget class="QPushButton" name="console_pushButton">
             <property name="text">
-             <string>Load Last</string>
+             <string>Console...</string>
             </property>
            </widget>
           </item>
