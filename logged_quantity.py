@@ -36,6 +36,8 @@ class LoggedQuantity(QtCore.QObject):
         
         self.oldval = None
         
+        self._in_reread_loop = False # flag to prevent reread from hardware loops
+        
     def read_from_hardware(self, send_signal=True):
         if self.hardware_read_func:
             self.oldval = self.val
@@ -56,6 +58,7 @@ class LoggedQuantity(QtCore.QObject):
             new_val = self.sender().text()
 
         if (self.val == new_val):
+            self._in_reread_loop = False #once value has settled in the event loop, re-enable reading from hardware
             return
         
         if reread_hardware is None:
@@ -64,10 +67,14 @@ class LoggedQuantity(QtCore.QObject):
         self.oldval = self.val
         #print "called update_value", self.name, new_val, reread_hardware
         self.val = self.dtype(new_val)
-        if update_hardware and self.hardware_set_func:
+        if update_hardware and self.hardware_set_func and not self._in_reread_loop:
             self.hardware_set_func(self.val)
             if reread_hardware:
-                #print "rereading"
+                # re-reading from hardware can set off a loop of setting 
+                # and re-reading from hardware if hardware readout is not
+                # exactly the requested value. temporarily disable rereading
+                # from hardware until value in LoggedQuantity has settled
+                self._in_reread_loop = True 
                 self.read_from_hardware(send_signal=False) # changed send_signal to false (ESB 2015-08-05)
         if send_signal:
             self.send_display_updates()
