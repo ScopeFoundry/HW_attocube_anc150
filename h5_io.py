@@ -96,3 +96,108 @@ def h5_save_measurement(measurement, h5_meas_group):
     h5_meas_group.attrs['ScopeFoundry_type'] = "Measurement"
     settings_group = h5_meas_group.create_group("settings")
     h5_save_lqs_to_attrs(measurement.logged_quantities, settings_group)
+    
+    
+def h5_create_emd_dataset(name, h5parent, shape=None, data = None, maxshape = None, 
+                          dim_arrays = None, dim_names= None, dim_units = None,  **kwargs):
+    """
+    create an EMD dataset v0.2 inside h5parent
+    returns an h5 group emd_grp
+    
+    to access N-dim dataset:    emd_grp['data']
+    to access a specific dimension array: emd_grp['dim1']
+
+    HDF5 Hierarchy:
+    ---------------
+    * h5parent
+        * name [emd_grp] (<--returned)
+            - emd_group_type = 1
+            D data [shape = shape] 
+            D dim1 [shape = shape[0]]
+                - name
+                - units
+            ...
+            D dimN [shape = shape[-1]]      
+
+    Parameters
+    ----------
+    
+    h5parent : parent HDF5 group 
+    
+    shape : Dataset shape of N dimensions.  Required if "data" isn't provided.
+
+    data : Provide data to initialize the dataset.  If used, you can omit
+            shape and dtype arguments.
+    
+    Keyword Args:
+    
+    dtype : Numpy dtype or string.  If omitted, dtype('f') will be used.
+            Required if "data" isn't provided; otherwise, overrides data
+            array's dtype.
+            
+    dim_arrays : optional, a list of N dimension arrays
+    
+    dim_names : optional, a list of N strings naming the dataset dimensions 
+    
+    dim_units : optional, a list of N strings specifying units of dataset dimensions
+    
+    Other keyword arguments follow from h5py.File.create_dataset
+    
+    Returns
+    -------
+    emd_grp : h5 group containing dataset and dimension arrays, see hierarchy below
+    
+    """
+    #set the emd version tag at root of h5 file
+    h5parent.file['/'].attrs['version_major'] = 0
+    h5parent.file['/'].attrs['version_minor'] = 2
+    
+    from matplotlib import pyplot
+    pyplot.acorr
+    
+    # create the EMD data group
+    emd_grp = h5parent.create_group(name)
+    emd_grp.attrs['emd_group_type'] = 1
+    
+    if data is not None:
+        shape = data.shape
+    
+    # data set where the N-dim data is stored
+    data_dset = emd_grp.create_dataset("data", shape=shape, maxshape=maxshape, data=data, **kwargs)
+    
+    if dim_arrays is not None: assert len(dim_arrays) == len(shape)
+    if dim_names  is not None: assert len(dim_names)  == len(shape)
+    if dim_units  is not None: assert len(dim_units)  == len(shape)
+    if maxshape   is not None: assert len(maxshape)   == len(shape)
+    
+    # Create the dimension array datasets
+    for ii in range(len(shape)):
+        if dim_arrays is not None:
+            dim_array = dim_arrays[ii]
+            dim_dtype =  dim_array.dtype            
+        else:
+            dim_array = None
+            dim_dtype = float
+        if dim_names is not None:
+            dim_name = dim_names[ii]
+        else:
+            dim_name = "dim" + str(ii+1)
+        if dim_units is not None:
+            dim_unit = dim_units[ii]
+        else:
+            dim_unit = None
+        if maxshape is not None:
+            dim_maxshape = (maxshape[ii],)
+        else:
+            dim_maxshape = None
+        
+        # create dimension array dataset
+        dim_dset = emd_grp.create_dataset("dim" + str(ii+1), shape=(shape[ii],), 
+                                           dtype=dim_dtype, data=dim_array, 
+                                           maxshape=dim_maxshape)
+        dim_dset.attrs['name'] = dim_name
+        if dim_unit is not None:
+            dim_dset.attrs['unit'] = dim_unit
+            
+    return emd_grp
+    
