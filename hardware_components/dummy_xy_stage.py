@@ -1,29 +1,38 @@
 from . import HardwareComponent
-
+import random
 
 class DummmyXYStageEquipment(object):
     
-    def __init__(self):
+    def __init__(self, debug=False):
         self.x = 0
         self.y = 0
+        self.debug=debug
         # communicate with hardware here
     
     def read_x(self):
         self.x = self.x + self.noise()
+        if self.debug: print "read_x", self.x
         return self.x
 
     def read_y(self):
         self.y = self.y + self.noise()
+        if self.debug: print "read_y", self.y
         return self.y
     
     def write_x(self, x):
         self.x = x
+        if self.debug: print "write_x", self.x
+        
 
     def write_y(self, y):
         self.y = y
+        if self.debug: print "write_y", self.y
     
     def close(self):
         print "dummy_xy_stage_equipment close"
+        
+    def noise(self):
+        return (random.random()-0.5)*10e-3
 
 class DummyXYStage(HardwareComponent):
     
@@ -49,12 +58,14 @@ class DummyXYStage(HardwareComponent):
         if self.debug_mode.val: print "connecting to dummy_xy_stage"
 
         # Open connection to hardware
-        self.stage_equip = DummmyXYStageEquipment()
+        self.stage_equip = DummmyXYStageEquipment(debug=True)
 
         # connect logged quantities
         self.x_position.hardware_read_func = self.stage_equip.read_x
         self.y_position.hardware_read_func = self.stage_equip.read_y
         
+        self.x_position.hardware_set_func  = self.stage_equip.write_x
+        self.y_position.hardware_set_func  = self.stage_equip.write_y
 
     def disconnect(self):
         if self.debug_mode.val: print "disconnecting to dummy_xy_stage"
