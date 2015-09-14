@@ -102,12 +102,8 @@ class APDConfocalScanMeasurement(Base2DScan):
         #self.img_plot.scene().sigMouseMoved.connect(self.mouseMoved)
         
         self.scan_roi = pg.ROI([0,0],[1,1], movable=False)
-        self.h0.updated_value.connect(self.update_scan_roi)
-        self.h1.updated_value.connect(self.update_scan_roi)
-        self.v0.updated_value.connect(self.update_scan_roi)
-        self.v1.updated_value.connect(self.update_scan_roi)
-        self.dh.updated_value.connect(self.update_scan_roi)
-        self.dv.updated_value.connect(self.update_scan_roi)
+        for lqname in 'h0 h1 v0 v1 dh dv'.split():
+            self.logged_quantities[lqname].updated_value.connect(self.update_scan_roi)
         self.update_scan_roi()
         self.img_plot.addItem(self.scan_roi)
 
