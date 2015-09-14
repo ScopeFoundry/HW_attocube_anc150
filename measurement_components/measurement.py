@@ -100,7 +100,7 @@ class Measurement(QtCore.QObject):
             if self.interrupt_measurement_called:
                 self.measurement_interrupted.emit()
             else:
-                self.measurement_sucessfully_completed()
+                self.measurement_sucessfully_completed.emit()
 
     def set_progress(self, pct):
         self.progress.update_value(pct)
