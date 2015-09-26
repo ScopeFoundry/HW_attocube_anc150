@@ -1,4 +1,5 @@
 import h5py
+import time
 
 """
 recommended HDF5 file format for ScopeFoundry
@@ -47,6 +48,9 @@ def h5_base_file(gui, fname):
     h5_file = h5py.File(fname)
     root = h5_file['/']
     root.attrs["ScopeFoundry_version"] = 100
+    t0 = time.time()
+    root.attrs['time_id'] = t0
+
     h5_save_gui_lq(gui, root)
     h5_save_hardware_lq(gui, root)
     return h5_file
@@ -88,10 +92,10 @@ def h5_save_lqs_to_attrs(logged_quantities, h5group):
 
 def h5_create_measurement_group(measurement, h5group):
     h5_meas_group = h5group.create_group('measurement/' + measurement.name)
-    h5_save_measurement(measurement, h5_meas_group)
+    h5_save_measurement_settings(measurement, h5_meas_group)
     return h5_meas_group
 
-def h5_save_measurement(measurement, h5_meas_group):
+def h5_save_measurement_settings(measurement, h5_meas_group):
     h5_meas_group.attrs['name'] = measurement.name
     h5_meas_group.attrs['ScopeFoundry_type'] = "Measurement"
     settings_group = h5_meas_group.create_group("settings")
