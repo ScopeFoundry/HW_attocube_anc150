@@ -1392,6 +1392,12 @@ Continuously</string>
     </item>
     <item>
      <widget class="QGroupBox" name="lq_trees_groupBox">
+      <property name="minimumSize">
+       <size>
+        <width>325</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="title">
        <string>Logged Quantities</string>
       </property>
@@ -1448,6 +1454,13 @@ Continuously</string>
            <widget class="QPushButton" name="settings_load_last_pushButton">
             <property name="text">
              <string>Load Last</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="console_pushButton">
+            <property name="text">
+             <string>Console...</string>
             </property>
            </widget>
           </item>
@@ -2167,8 +2180,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>708</width>
-             <height>1031</height>
+             <width>63</width>
+             <height>18</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -2198,8 +2211,8 @@ Continuously</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>708</width>
-             <height>1031</height>
+             <width>63</width>
+             <height>18</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_13"/>
