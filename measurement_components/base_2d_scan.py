@@ -93,7 +93,7 @@ class Base2DScan(Measurement):
         self.h5_file.attrs['time_id'] = self.t0
         self.h5_meas_group = self.h5_file.create_group(self.name)
         #h5_io.h5_save_measurement(self, self.h5_meas_group)
-        h5_io.h5_save_measurement(self, self.h5_file['/'])
+        h5_io.h5_save_measurement_settings(self, self.h5_file['/'])
         
         self.h5_meas_group.create_dataset(name='h_array', data=self.h_array, compression='gzip', shuffle=True)
         self.h5_meas_group.create_dataset(name='v_array', data=self.v_array, compression='gzip', shuffle=True)
