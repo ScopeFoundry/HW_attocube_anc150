@@ -22,7 +22,8 @@ from measurement_components.ple import PLEPointMeasurement, PLE2DScanMeasurement
 from measurement_components.trpl import \
     PicoHarpMeasurement, PicoHarpTTTR, \
     TRPLScanMeasurement, TRPLScan3DMeasurement
-from measurement_components.apd_confocal import APDOptimizerMeasurement, APDConfocalScanMeasurement, APDConfocalScan3DMeasurement
+from measurement_components.apd_optimizer import APDOptimizerMeasurement
+from measurement_components.apd_confocal import APDConfocalScanMeasurement, APDConfocalScan3DMeasurement
 from measurement_components.andor_ccd_readout import AndorCCDReadout #, AndorCCDReadBackground, AndorCCDReadSingle
 from measurement_components.hyperspectral import SpectrumScan2DMeasurement
 #from measurement_components.power_scan import PowerScanContinuous
