@@ -8,7 +8,8 @@ from .measurement import Measurement
 
 import matplotlib.gridspec as gridspec 
 from time import sleep
-from statsmodels.formula.api import wls
+
+import h5_io
 
 ROW0 = 240
 ROW1 = 271
@@ -220,3 +221,111 @@ class AndorCCDReadout(Measurement):
         self.spec_plot_line.setData(self.wls, self.spectra_data)
 
 
+class AndorCCDStepAndGlue(Measurement):
+
+    name = "andor_ccd_step_and_glue"
+    
+    def setup(self):
+        
+        self.display_update_period = 0.050 #seconds
+
+        
+        #local logged quantities
+        self.bg_subtract = self.add_logged_quantity('bg_subtract', dtype=bool, initial=False, ro=False)
+        
+
+        self.center_wl_start = self.add_logged_quantity('center_wl_start', dtype=float, initial=400, ro=False)
+        self.center_wl_stop  = self.add_logged_quantity('center_wl_stop', dtype=float, initial=1100, ro=False)
+        self.center_wl_step = self.add_logged_quantity('center_wl_step', dtype=float, initial=50, ro=False)
+
+        
+        #connect events
+        self.bg_subtract.connect_bidir_to_widget(self.gui.ui.andor_ccd_bgsub_checkBox)
+        
+
+
+    def _run(self):
+
+        # Hardware
+        ccd = self.gui.andor_ccd_hc.andor_ccd
+        acton_spec_hc = self.gui.acton_spec_hc
+    
+        width_px = ccd.Nx_ro
+        height_px = ccd.Ny_ro
+        
+        #ccd_shape=(self.Ny_ro, self.Nx_ro)
+
+        # h5 data file setup
+        self.t0 = time.time()
+        self.h5_file = h5_io.h5_base_file(self.gui, "%i_%s.h5" % (self.t0, self.name) )
+        self.h5_file.attrs['time_id'] = self.t0
+        h5m = self.h5_meas_group = self.h5_file.create_group(self.name)
+        
+        h5m.attrs['time_id'] = self.t0
+        h5_io.h5_save_measurement_settings(self, h5m)
+
+
+        #setup data arrays (in h5 file)
+        
+        # center wl array contains start and stop centers         
+        self.center_wl_array = np.arange(self.center_wl_start.val, 
+                                         self.center_wl_stop.val + self.center_wl_step.val,
+                                         self.center_wl_step.val)
+        num_specs = len(self.center_wl_array)
+        self.center_wl_array = h5m.create_dataset('center_wl_array', data=self.center_wl_array)
+        self.center_wl_actual = h5m.create_dataset('center_wl_actual', shape=self.center_wl_array.shape)
+        
+        self.wls = h5m.create_dataset('wls', (num_specs, width_px), dtype=float)
+        self.spectra_data = h5m.create_dataset('spectra_data', 
+                                               shape=(num_specs, height_px, width_px,),
+                                               dtype=np.int32, compression='gzip')
+        
+        if self.bg_subtract.val:
+            bg = self.bg = self.gui.andor_ccd_hc.background
+            if bg is not None and bg.shape == ccd.buffer.shape:
+                h5m['andor_ccd_bg'] = self.bg
+            else:
+                print "Background not avail or the correct shape", ccd.buffer.shape#,# bg#bg.shape
+                self.bg_subtract.update_value(False)
+        try:
+            for ii, center_wl in enumerate(self.center_wl_array):
+                if self.interrupt_measurement_called:
+                    break
+                
+                #TODO add progress update
+
+                # move to center wl
+                acton_spec_hc.center_wl.update_value(center_wl)
+                self.center_wl_actual[ii] = acton_spec_hc.center_wl.val 
+                
+                self.wls[ii,:]  = pixel2wavelength(acton_spec_hc.center_wl.val, 
+                                             np.arange(width_px), binning=ccd.get_current_hbin())
+
+                print "starting ccd acq"
+                ccd.start_acquisition()
+                
+                # wait until ccd is done acquiring
+                while True:
+                    if self.interrupt_measurement_called:
+                        break
+                    stat = ccd.get_status()
+                    if stat == 'IDLE':
+                        self.ccd_buffer = ccd.get_acquired_data()
+    
+                        if self.bg_subtract.val:
+                            self.ccd_buffer = self.ccd_buffer - self.bg
+                            print self.bg.shape
+                            print self.ccd_buffer.shape
+                            
+
+                        self.spectra_data[ii,:,:] = self.ccd_buffer
+                        break
+                    else:
+                        sleep(0.01) # wait for a while before polling
+                self.h5_file.flush()
+                        
+        except Exception as err:
+            print self.name, "error:", err
+        finally:            
+            self.gui.andor_ccd_hc.interrupt_acquisition()
+            self.h5_file.close()
