@@ -197,10 +197,12 @@ class TRPLScanMeasurement(Base2DScan):
         
         self.stored_histogram_channels.update_value(1000)
 
+        self.initial_scan_setup_plotting = False
     
     def setup_figure(self):
         print "TRPLSCan figure"
         self.fig = self.gui.add_figure("trpl_map", self.gui.ui.trpl_map_plot_widget)
+        self.fig.clf()
         self.ax_time = self.fig.add_subplot(211)
         self.ax_time.set_xlabel("Time (ns)")
         self.time_trace_plotline, = self.ax_time.semilogy([0,20], [0,65535])
@@ -332,7 +334,7 @@ class TRPLScanMeasurement(Base2DScan):
         #self.time_trace_plotline.set_ydata(1+self.time_trace_map[j,i-1:])
         
         # integrated map
-        if True:
+        if False:
             C = (self.integrated_count_map)
             self.imgplot.set_data(C)         
             try:
@@ -345,16 +347,20 @@ class TRPLScanMeasurement(Base2DScan):
         # lifetime 
         else:
             x=1-0.36787944117
-            kk_bg_max = 100/2
-            kk_start = kk_bg_max+50/2
-            kk_final = 800/2
+            #kk_start = 10#kk_bg_max+50/2
+            kk_start = self.time_trace_map[0,0,:].argmax()
+            kk_bg_max = int(0.80*kk_start) #100/2
+            kk_final = self.stored_histogram_channels.val
             bg_slice = slice(0,kk_bg_max)
             bg = np.average(self.time_trace_map[:,:,bg_slice], axis=2).reshape(self.Nv*1,self.Nh*1,1)
             t  = self.time_trace_map[:,:,kk_start:kk_final]-bg
             C = self.time_array[np.argmin(np.abs(np.cumsum(t, axis=2)/np.sum(t, axis=2).reshape(self.Nv*1,self.Nh*1,1)-x), axis=2)]
             # 
             self.imgplot.set_data(C)
-            self.imgplot.set_clim(1,2.2)
+            c0,c1 = np.percentile(C,1), np.percentile(C,99)
+            self.imgplot.set_clim(c0, c1)
+            self.imgplot.set_cmap('hot')
+            self.aximg.set_title("color range: {} -> {} ns".format(c0,c1))
             #self.imgplot.colorbar()
         self.fig.canvas.draw()
         
@@ -380,6 +386,7 @@ class TRPLScan3DMeasurement(Base3DScan):
             self.pm_analog_readout = self.gui.thorlabs_powermeter_analog_readout_hc
             self.gui.thorlabs_powermeter_hc.read_from_hardware()
         else:
+            print self.gui.thorlabs_powermeter_analog_readout_hc.connected.val, self.gui.thorlabs_powermeter_hc.connected.val
             raise IOError("power meter not connected")
         
         # TRPL scan specific setup
@@ -464,10 +471,11 @@ class TRPLScan3DMeasurement(Base3DScan):
 
         
         #integrated count map
-        if False:
+        if True:
             #CT= np.log10(self.integrated_count_map[visual_slice[::-1]])
             C = (self.integrated_count_map[visual_slice[::-1]])
             self.imgplot.set_data(C)
+            #self.imgplot.set_cmap('hot')
             
             #print self.fast_imshow_extent
             
@@ -480,7 +488,7 @@ class TRPLScan3DMeasurement(Base3DScan):
         
         
         # lifetime 
-        if True:
+        if False:
             x=1-0.36787944117
             kk_bg_max = 50
             kk_start = kk_bg_max+25
