@@ -12,3 +12,6 @@ image_window.ui.oA7156
 .idea/
 *.h5
 log.out
+build
+dist
+*.autosave

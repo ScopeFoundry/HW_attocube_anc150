@@ -37,6 +37,7 @@ class Measurement(QtCore.QObject):
         self.operations = OrderedDict()
         
         #TODO Add running logged quantity
+        self.progress = self.add_logged_quantity('progress', dtype=float, unit="%", si=False, ro=True)
 
         self.add_operation("start", self.start)
         self.add_operation("interrupt", self.interrupt)
@@ -50,8 +51,15 @@ class Measurement(QtCore.QObject):
         
         self.setup()
         
-        self._add_control_widgets_to_measurements_tab()
-        self._add_control_widgets_to_measurements_tree()
+        try:
+            self._add_control_widgets_to_measurements_tab()
+        except Exception as err:
+            print "MeasurementComponent: could not add to measurement tab", self.name,  err
+        try:
+            self._add_control_widgets_to_measurements_tree()
+        except Exception as err:
+            print "MeasurementComponent: could not add to measurement tree", self.name,  err
+
 
     def setup(self):
         "Override this to set up logged quantites and gui connections"
@@ -63,26 +71,40 @@ class Measurement(QtCore.QObject):
         print "Empty setup_figure called"
         pass
     
-    def _run(self):
-        raise NotImplementedError("Measurement _run not defined")
-    
     @QtCore.Slot()
     def start(self):
         print "measurement", self.name, "start"
         self.interrupt_measurement_called = False
         if (self.acq_thread is not None) and self.is_measuring():
             raise RuntimeError("Cannot start a new measurement while still measuring")
-        self.acq_thread = threading.Thread(target=self._run)
-        # TODO Stop Display Timers
-        #try:
-        #    self.gui.stop_display_timers()
-        #except Exception as err:
-        #    print "failed to stop_display_timers", err
+        self.acq_thread = threading.Thread(target=self._thread_run)
         self.measurement_state_changed.emit(True)
         self.acq_thread.start()
         self.t_start = time.time()
         self.display_update_timer.start(self.display_update_period*1000)
+
+    def _run(self):
+        raise NotImplementedError("Measurement {}._run() not defined".format(self.name))
     
+    def _thread_run(self):
+        #self.progress_updated.emit(50) # set progress bars to default run position at 50%
+        self.set_progress(50)
+        try:
+            self._run()
+        except Exception as err:
+            self.interrupt_measurement_called = True
+            raise err
+        finally:
+            self.set_progress(0)  # set progress bars back to zero
+            self.measurement_state_changed.emit(False)
+            if self.interrupt_measurement_called:
+                self.measurement_interrupted.emit()
+            else:
+                self.measurement_sucessfully_completed.emit()
+
+    def set_progress(self, pct):
+        self.progress.update_value(pct)
+                
     @QtCore.Slot()
     def interrupt(self):
         print "measurement", self.name, "interrupt"
@@ -90,13 +112,13 @@ class Measurement(QtCore.QObject):
         #Make sure display is up to date        
         #self.on_display_update_timer()
 
+
     def start_stop(self, start):
         print self.name, "start_stop", start
         if start:
             self.start()
         else:
             self.interrupt()
-
 
         
     def is_measuring(self):
@@ -110,13 +132,12 @@ class Measurement(QtCore.QObject):
         "Override this function to provide figure updates when the display timer runs"
         pass
     
+    
     @QtCore.Slot()
     def on_display_update_timer(self):
-#         pass
-        #update figure
         try:
             self.update_display()
-        except Exception, err:
+        except Exception as err:
             pass
             print self.name, "Failed to update figure:", err            
         finally:
@@ -160,11 +181,7 @@ class Measurement(QtCore.QObject):
         self.controls_groupBox.setLayout(self.controls_formLayout)
         
         cwidget.layout().addWidget(self.controls_groupBox)
-        
-        #self.start_measurement_checkBox = QtGui.QCheckBox("Connect to Hardware")
-        #self.controls_formLayout.addRow("Connect", self.connect_hardware_checkBox)
-        
-        
+                
         self.control_widgets = OrderedDict()
         for lqname, lq in self.logged_quantities.items():
             #: :type lq: LoggedQuantity
@@ -200,10 +217,14 @@ class Measurement(QtCore.QObject):
         tree.setColumnCount(2)
         tree.setHeaderLabels(["Measurements", "Value"])
 
-        self.tree_item = QtGui.QTreeWidgetItem(tree, [self.name, "="*10])
+        self.tree_item = QtGui.QTreeWidgetItem(tree, [self.name, ""])
         tree.insertTopLevelItem(0, self.tree_item)
-        self.tree_item.setFirstColumnSpanned(True)
+        #self.tree_item.setFirstColumnSpanned(True)
+        self.tree_progressBar = QtGui.QProgressBar()
+        tree.setItemWidget(self.tree_item, 1, self.tree_progressBar)
+        self.progress.updated_value.connect(self.tree_progressBar.setValue)
 
+        # Add logged quantities to tree
         for lqname, lq in self.logged_quantities.items():
             #: :type lq: LoggedQuantity
             if lq.choices is not None:
@@ -219,14 +240,13 @@ class Measurement(QtCore.QObject):
                 widget = QtGui.QLineEdit()
             lq.connect_bidir_to_widget(widget)
 
-            # Add to formlayout
-            #self.controls_formLayout.addRow(lqname, widget)
             lq_tree_item = QtGui.QTreeWidgetItem(self.tree_item, [lqname, ""])
             self.tree_item.addChild(lq_tree_item)
             lq.hardware_tree_widget = widget
             tree.setItemWidget(lq_tree_item, 1, lq.hardware_tree_widget)
             #self.control_widgets[lqname] = widget
                 
+        # Add operation buttons to tree
         self.op_buttons = OrderedDict()
         for op_name, op_func in self.operations.items(): 
             op_button = QtGui.QPushButton(op_name)

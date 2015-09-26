@@ -32,10 +32,16 @@ class HardwareComponent(QtCore.QObject):
         self.debug_mode = self.add_logged_quantity("debug_mode", dtype=bool, initial=debug)
         
         self.setup()
-        
-        self._add_control_widgets_to_hardware_tab()
-        self._add_control_widgets_to_hardware_tree()
-        
+
+        try:
+            self._add_control_widgets_to_hardware_tab()
+        except Exception as err:
+            print "HardwareComponent: could not add to hardware tab", self.name,  err
+        try:
+            self._add_control_widgets_to_hardware_tree()
+        except Exception as err:
+            print "HardwareComponent: could not add to hardware tree", self.name,  err
+
         self.has_been_connected_once = False
         
         self.is_connected = False
