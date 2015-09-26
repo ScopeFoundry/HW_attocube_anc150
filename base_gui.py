@@ -67,8 +67,9 @@ class BaseMicroscopeGUI(object):
 
         # Console 
         self.console_widget = pyqtgraph.console.ConsoleWidget(namespace={'gui':self, 'pg':pg, 'np':np}, text="ScopeFoundry GUI console")
-        self.ui.console_pushButton.clicked.connect(self.console_widget.show)
-        self.ui.console_pushButton.clicked.connect(self.console_widget.activateWindow)
+        if hasattr(self.ui, 'console_pushButton'):
+            self.ui.console_pushButton.clicked.connect(self.console_widget.show)
+            self.ui.console_pushButton.clicked.connect(self.console_widget.activateWindow)
 
     def setup(self):
         """ Override to add Hardware and Measurement Components"""
