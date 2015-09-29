@@ -70,6 +70,17 @@ class BaseMicroscopeGUI(object):
         if hasattr(self.ui, 'console_pushButton'):
             self.ui.console_pushButton.clicked.connect(self.console_widget.show)
             self.ui.console_pushButton.clicked.connect(self.console_widget.activateWindow)
+        
+        #settings events
+        if hasattr(self.ui, "settings_autosave_pushButton"):
+            self.ui.settings_autosave_pushButton.clicked.connect(self.settings_auto_save)
+        if hasattr(self.ui, "settings_load_last_pushButton"):
+            self.ui.settings_load_last_pushButton.clicked.connect(self.settings_load_last)
+        if hasattr(self.ui, "settings_save_pushButton"):
+            self.ui.settings_save_pushButton.clicked.connect(self.settings_save_dialog)
+        if hasattr(self.ui, "settings_load_pushButton"):
+            self.ui.settings_load_pushButton.clicked.connect(self.settings_load_dialog)
+        
 
     def setup(self):
         """ Override to add Hardware and Measurement Components"""
@@ -143,23 +154,28 @@ class BaseMicroscopeGUI(object):
                 h5_io.h5_create_measurement_group(measurement, h5_file)
             print "settings saved to", h5_file.filename
             
-    def settings_save_ini(self, fname):
+    def settings_save_ini(self, fname, save_ro=True, save_gui=True, save_hardware=True, save_measurements=True):
         import ConfigParser
         config = ConfigParser.ConfigParser()
         config.optionxform = str
-        config.add_section('gui')
-        for lqname, lq in self.logged_quantities.items():
-            config.set('gui', lqname, lq.val)
-        for hc_name, hc in self.hardware_components.items():
-            section_name = 'hardware/'+hc_name            
-            config.add_section(section_name)
-            for lqname, lq in hc.logged_quantities.items():
-                config.set(section_name, lqname, lq.val)
-        for meas_name, measurement in self.measurement_components.items():
-            section_name = 'measurement/'+meas_name            
-            config.add_section(section_name)
-            for lqname, lq in measurement.logged_quantities.items():
-                config.set(section_name, lqname, lq.val)
+        if save_gui:
+            config.add_section('gui')
+            for lqname, lq in self.logged_quantities.items():
+                config.set('gui', lqname, lq.val)
+        if save_hardware:
+            for hc_name, hc in self.hardware_components.items():
+                section_name = 'hardware/'+hc_name            
+                config.add_section(section_name)
+                for lqname, lq in hc.logged_quantities.items():
+                    if not lq.ro or save_ro:
+                        config.set(section_name, lqname, lq.val)
+        if save_measurements:
+            for meas_name, measurement in self.measurement_components.items():
+                section_name = 'measurement/'+meas_name            
+                config.add_section(section_name)
+                for lqname, lq in measurement.logged_quantities.items():
+                    if not lq.ro or save_ro:
+                        config.set(section_name, lqname, lq.val)
         with open(fname, 'wb') as configfile:
             config.write(configfile)
         
@@ -231,10 +247,13 @@ class BaseMicroscopeGUI(object):
     
     
     def settings_save_dialog(self):
-        pass
+        fname, selectedFilter = QtGui.QFileDialog.getSaveFileName(self.ui, "Save Settings file", "", "Settings File (*.ini)")
+        if fname:
+            self.settings_save_ini(fname)
     
     def settings_load_dialog(self):
-        pass
+        fname, selectedFilter = QtGui.QFileDialog.getOpenFileName(self.ui,"Open Settings file", "", "Settings File (*.ini *.h5)")
+        self.settings_load_ini(fname)
     
 class CloseEventEater(QtCore.QObject):
     def eventFilter(self, obj, event):
