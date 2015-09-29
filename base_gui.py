@@ -11,7 +11,9 @@ import collections
 
 from PySide import QtCore, QtGui, QtUiTools
 import pyqtgraph as pg
-import pyqtgraph.console
+#import pyqtgraph.console
+from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
+from IPython.qt.inprocess import QtInProcessKernelManager
 
 import matplotlib
 matplotlib.rcParams['backend.qt4'] = 'PySide'
@@ -66,7 +68,24 @@ class BaseMicroscopeGUI(object):
             measure.setup_figure()
 
         # Console 
-        self.console_widget = pyqtgraph.console.ConsoleWidget(namespace={'gui':self, 'pg':pg, 'np':np}, text="ScopeFoundry GUI console")
+        #self.console_widget = pyqtgraph.console.ConsoleWidget(namespace={'gui':self, 'pg':pg, 'np':np}, text="ScopeFoundry GUI console")
+        # https://github.com/ipython/ipython-in-depth/blob/master/examples/Embedding/inprocess_qtconsole.py
+        self.kernel_manager = QtInProcessKernelManager()
+        self.kernel_manager.start_kernel()
+        self.kernel = self.kernel_manager.kernel
+        self.kernel.gui = 'qt4'
+        self.kernel.shell.push({'np': np, 'gui': self})
+
+        self.kernel_client = self.kernel_manager.client()
+        self.kernel_client.start_channels()
+
+        self.console_widget = RichIPythonWidget()
+        self.console_widget.setWindowTitle("ScopeFoundry IPython Console")
+        self.console_widget.kernel_manager = self.kernel_manager
+        self.console_widget.kernel_client = self.kernel_client
+        #self.console_widget.exit_requested.connect(stop)
+        self.console_widget.show()
+
         if hasattr(self.ui, 'console_pushButton'):
             self.ui.console_pushButton.clicked.connect(self.console_widget.show)
             self.ui.console_pushButton.clicked.connect(self.console_widget.activateWindow)
