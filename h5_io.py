@@ -16,6 +16,8 @@ D = data_set
         - ...
     * hardware
         * hardware_component_1
+            - ScopeFoundry_Type = Hardware
+            - name = hardware_component_1
             - log_quant_1
             - log_quant_1_unit
             - ...
@@ -23,6 +25,8 @@ D = data_set
                 - log_quant_1 = '[n_m]'
         * ...
     * measurement_1
+        - ScopeFoundry_Type = Measurement
+        - name = measurement_1
         - log_quant_1
         - ...
         * units
