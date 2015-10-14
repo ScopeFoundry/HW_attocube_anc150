@@ -13,7 +13,7 @@ class SeriesMeasurement(Measurement,em_gui):
 
     name = "em_series"
 
-    ui_filename = "measurement_components/mainwindow.ui"
+    ui_filename = "measurement_components/em_window.ui"
     def __init__(self,gui):
         Measurement.__init__(self,gui)
         em_gui.__init__(self,gui)
