@@ -23,9 +23,9 @@ class ScopeWrapper(object):
         if self.debug: print("Connected to microscope")
         self.TIA = win32com.client.Dispatch("ESVision.Application")
         if self.debug: print("Connected to TIA")  
-        self.Acq = self.m_temScripting.Acquisition
-        self.Proj = self.m_temScripting.Projection
-        self.Ill = self.m_temScripting.Illumination      
+        self.Acq = self.Scope.Acquisition
+        self.Proj = self.Scope.Projection
+        self.Ill = self.Scope.Illumination      
 
         self.ACQIMAGECORRECTION_DEFAULT         = win32com.client.constants.AcqImageCorrection_Default
         self.ACQIMAGECORRECTION_UNPROCESSED     = win32com.client.constants.AcqImageCorrection_Unprocessed
@@ -50,7 +50,7 @@ class ScopeWrapper(object):
     def STEMMODE(self):
         self.Acq.RemoveAllAcqDevices()
         self.Det = self.Acq.Detectors(0)
-        self.m_temScripting.Acquisition.AddAcqDevice(self.detector0)
+        self.Acq.AddAcqDevice(self.Det)
         if self.debug: print("Scope is STEM Mode")  
     
     #---------------------------------------------------------------------------
