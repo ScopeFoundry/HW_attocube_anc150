@@ -44,25 +44,34 @@ class EMHardwareComponent(HardwareComponent):
             self.current_binning.connect_bidir_to_widget(self.gui.ui.inBin)
         except Exception as err:
             print "EMHardwareComponent: could not connect to custom GUI", err
-
+        self.connect()
     def connect(self):        
         if not self.dummy_mode.val:
             if self.debug_mode.val: print "Connecting to Scope (Dummy Mode)"
             self.wrapper = NCEMscope.ScopeWrapper(debug = self.debug_mode.val, mode='STEM')
             self.wrapper.Connect()
             self.Scope = self.wrapper.Scope
+            self.TIA = self.wrapper.TIA
+            self.Acq = self.wrapper.Acq
+            self.Ill = self.wrapper.Ill
+            self.Proj = self.wrapper.Proj
         else:
             if self.debug_mode.val: print "Connecting to Scope (Dummy Mode)"
 
         # connect logged quantities
-        self.apd_count_rate.hardware_read_func = self.read_count_rate
 
-        try:
-            self.apd_count_rate.updated_text_value.connect(
-                                           self.gui.ui.apd_counter_output_lineEdit.setText)
-        except Exception as err:
-            print "missing gui", err
-
+    def setup4Stem(self):
+        self.Acq.RemoveAllAcqDevices() #just to be sure....      
+        self.detector0 = self.Acq.Detectors(0)
+        self.Acq.AddAcqDevice(self.detector0)
+        print '-----set up for stem-----'
+    def setup4Tem(self):
+        self.Acq.RemoveAllAcqDevices() #just to be sure....      
+        self.camera0 = self.Acq.Cameras(0)
+        self.Acq.AddAcqDevice(self.camera0)
+        self.xPIX = self.camera0.Info.Width
+        self.yPIX = self.camera0.Info.Height  
+        print '-----set up for tem-----'
     def disconnect(self):
         #disconnect logged quantities from hardware
         for lq in self.logged_quantities.values():
