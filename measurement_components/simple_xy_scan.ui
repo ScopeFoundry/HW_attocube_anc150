@@ -23,82 +23,19 @@
       <property name="title">
        <string>Simple XY Scan Control</string>
       </property>
-      <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0,0,1">
-       <item row="4" column="3">
-        <widget class="QLabel" name="dv_label">
-         <property name="text">
-          <string>dh</string>
-         </property>
-        </widget>
-       </item>
+      <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0,0,0,1">
        <item row="4" column="2">
         <widget class="QDoubleSpinBox" name="h1_doubleSpinBox"/>
-       </item>
-       <item row="0" column="2">
-        <widget class="QDoubleSpinBox" name="int_time_doubleSpinBox"/>
        </item>
        <item row="2" column="2">
         <widget class="QDoubleSpinBox" name="y_doubleSpinBox"/>
        </item>
-       <item row="0" column="5">
-        <widget class="QPushButton" name="interrupt_pushButton">
+       <item row="5" column="3">
+        <widget class="QLabel" name="dv_label_2">
          <property name="text">
-          <string>Interrupt</string>
+          <string>dv</string>
          </property>
         </widget>
-       </item>
-       <item row="1" column="2">
-        <widget class="QLabel" name="y_label">
-         <property name="text">
-          <string>current Y</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="2">
-        <widget class="QDoubleSpinBox" name="v1_doubleSpinBox"/>
-       </item>
-       <item row="5" column="1">
-        <widget class="QDoubleSpinBox" name="v0_doubleSpinBox"/>
-       </item>
-       <item row="4" column="1">
-        <widget class="QDoubleSpinBox" name="h0_doubleSpinBox"/>
-       </item>
-       <item row="0" column="4">
-        <widget class="QPushButton" name="start_pushButton">
-         <property name="text">
-          <string>Start</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0" colspan="6">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QDoubleSpinBox" name="x_doubleSpinBox"/>
-       </item>
-       <item row="2" column="5">
-        <widget class="QDoubleSpinBox" name="progress_doubleSpinBox"/>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="h_label">
-         <property name="text">
-          <string>H</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="v_label_2">
-         <property name="text">
-          <string>V</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="4">
-        <widget class="QDoubleSpinBox" name="dh_doubleSpinBox"/>
        </item>
        <item row="1" column="1">
         <widget class="QLabel" name="x_label">
@@ -107,9 +44,6 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="4">
-        <widget class="QDoubleSpinBox" name="dv_doubleSpinBox"/>
-       </item>
        <item row="0" column="0" colspan="2">
         <widget class="QLabel" name="int_time_label">
          <property name="text">
@@ -117,12 +51,18 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="3">
-        <widget class="QLabel" name="dv_label_2">
+       <item row="5" column="4">
+        <widget class="QDoubleSpinBox" name="dv_doubleSpinBox"/>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="y_label">
          <property name="text">
-          <string>dv</string>
+          <string>current Y</string>
          </property>
         </widget>
+       </item>
+       <item row="4" column="4">
+        <widget class="QDoubleSpinBox" name="dh_doubleSpinBox"/>
        </item>
        <item row="2" column="4">
         <widget class="QLabel" name="progres_label">
@@ -134,7 +74,57 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="2">
+        <widget class="QDoubleSpinBox" name="int_time_doubleSpinBox"/>
+       </item>
+       <item row="0" column="6">
+        <widget class="QPushButton" name="interrupt_pushButton">
+         <property name="text">
+          <string>Interrupt</string>
+         </property>
+        </widget>
+       </item>
        <item row="2" column="6">
+        <widget class="QDoubleSpinBox" name="progress_doubleSpinBox"/>
+       </item>
+       <item row="5" column="2">
+        <widget class="QDoubleSpinBox" name="v1_doubleSpinBox"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="v_label_2">
+         <property name="text">
+          <string>V</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="h_label">
+         <property name="text">
+          <string>H</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QDoubleSpinBox" name="x_doubleSpinBox"/>
+       </item>
+       <item row="0" column="4">
+        <widget class="QPushButton" name="start_pushButton">
+         <property name="text">
+          <string>Start</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QDoubleSpinBox" name="h0_doubleSpinBox"/>
+       </item>
+       <item row="3" column="0" colspan="7">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="7">
         <widget class="QLabel" name="label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -144,6 +134,36 @@
          </property>
          <property name="text">
           <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="6">
+        <widget class="QDoubleSpinBox" name="Nh_doubleSpinBox"/>
+       </item>
+       <item row="5" column="6">
+        <widget class="QDoubleSpinBox" name="Nv_doubleSpinBox"/>
+       </item>
+       <item row="5" column="1">
+        <widget class="QDoubleSpinBox" name="v0_doubleSpinBox"/>
+       </item>
+       <item row="4" column="3">
+        <widget class="QLabel" name="dv_label">
+         <property name="text">
+          <string>dh</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="5">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Nh</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="5">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Nv</string>
          </property>
         </widget>
        </item>
