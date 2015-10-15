@@ -11,12 +11,14 @@ class ScopeWrapper(object):
     #---------------------------------------------------------------------------
     def __init__(self,debug=False,mode='STEM'):
         
-        self.debug                  = True    
+        self.debug                  = debug  
+        self.mode                   = mode  
         self.Scope                  = None
         self.Acq                    = None
         self.Cam                    = None
         self.Det                    = None
         
+
     #---------------------------------------------------------------------------
     def Connect(self):
         self.Scope = win32com.client.gencache.EnsureDispatch('TEMScripting.Instrument')
@@ -25,8 +27,12 @@ class ScopeWrapper(object):
         if self.debug: print("Connected to TIA")  
         self.Acq = self.Scope.Acquisition
         self.Proj = self.Scope.Projection
-        self.Ill = self.Scope.Illumination      
-
+        self.Ill = self.Scope.Illumination 
+        
+        if self.mode == 'STEM': self.STEMMODE()
+        if self.mode == 'TEM': self.TEMMODE()     
+        
+        #Get the default state values
         self.ACQIMAGECORRECTION_DEFAULT         = win32com.client.constants.AcqImageCorrection_Default
         self.ACQIMAGECORRECTION_UNPROCESSED     = win32com.client.constants.AcqImageCorrection_Unprocessed
         
@@ -41,6 +47,7 @@ class ScopeWrapper(object):
 
     #---------------------------------------------------------------------------
     def TEMMODE(self):
+        self.mode = 'TEM'
         self.Acq.RemoveAllAcqDevices()
         self.Cam = self.m_acqusition.Cameras[0]
         self.Acq.AddAcqDevice(self.Cam)
@@ -48,10 +55,48 @@ class ScopeWrapper(object):
     
     #---------------------------------------------------------------------------
     def STEMMODE(self):
+        self.mode = 'STEM'
         self.Acq.RemoveAllAcqDevices()
         self.Det = self.Acq.Detectors(0)
         self.Acq.AddAcqDevice(self.Det)
         if self.debug: print("Scope is STEM Mode")  
     
+    #--------------------------------------------------------------------------- 
+    def getBinning(self):
+        if self.mode == 'TEM': return self.Cam.AcqParams.Binning
+        if self.mode == 'STEM': return self.Acq.Detectors.AcqParams.Binning
+        if self.debug: print("getting bin")
     #---------------------------------------------------------------------------
+    def setBinning(self,binning):
+        if self.mode == 'TEM': self.Cam.AcqParams.Binning = int(binning)
+        if self.mode == 'STEM': self.Acq.Detectors.AcqParams.Binning = int(binning)
+        if self.debug: print("setting bin")
+    
+    #---------------------------------------------------------------------------
+    def getDwellTime(self):
+        if self.mode == 'TEM': return -1
+        if self.mode == 'STEM': return self.Det.AcqParams.DwellTime
+        if self.debug: print("getting dwell")
+        
+    #---------------------------------------------------------------------------
+    def getExposure(self):
+        if self.mode == 'TEM': return self.Cam.AcqParams.Exposure
+        if self.mode == 'STEM': return -1
+        if self.debug: print("getting exp")
+
+    #---------------------------------------------------------------------------
+    def setDwellTime(self,dwell):
+        if self.mode == 'STEM': self.Det.AcqParams.DwellTime = float(dwell)
+        if self.debug: print("setting dwell")
+        
+    #---------------------------------------------------------------------------
+    def setExposure(self,exposure):
+        if self.mode == 'TEM': self.Cam.AcqParams.Exposure = float(exposure)
+        if self.debug: print("setting exp")    
+        
+    #---------------------------------------------------------------------------
+    
+    
+    
+    
     
