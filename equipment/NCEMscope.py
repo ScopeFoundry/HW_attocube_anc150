@@ -49,7 +49,7 @@ class ScopeWrapper(object):
     def TEMMODE(self):
         self.mode = 'TEM'
         self.Acq.RemoveAllAcqDevices()
-        self.Cam = self.m_acqusition.Cameras[0]
+        self.Cam = self.Acq.Cameras(0)
         self.Acq.AddAcqDevice(self.Cam)
         if self.debug: print("Scope is TEM Mode")  
     
