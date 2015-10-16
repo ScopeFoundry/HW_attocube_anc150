@@ -27,13 +27,14 @@ class EMHardwareComponent(HardwareComponent):
         self.current_exposure = self.add_logged_quantity(
                                 name = 'current_exposure',
                                 dtype = float, fmt="%e", ro=True,
-                                unit="us",
-                                vmin=None,vmax=None)
+                                unit="s",
+                                vmin=0.01,vmax=100.0)
         self.current_dwell = self.add_logged_quantity(
                                 name = 'current_dwell',
                                 dtype = float, fmt="%e", ro=True,
                                 unit="ns",
-                                vmin=None,vmax=None)
+                                vmin=1e-9,vmax=1000000.0
+)
 
         self.dummy_mode = self.add_logged_quantity(name='dummy_mode',
                             dtype=bool, initial=False, ro=False)
