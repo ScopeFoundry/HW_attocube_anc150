@@ -16,12 +16,12 @@ class EMHardwareComponent(HardwareComponent):
         # Create logged quantities
         self.current_defocus = self.add_logged_quantity(
                                 name = 'current_defocus',
-                                dtype = float, fmt="%e", ro=False,
+                                dtype = float, fmt="%e", ro=True,
                                 unit="Nm",
                                 vmin=None,vmax=None)
         self.current_binning = self.add_logged_quantity(
                                 name = 'current_binning',
-                                dtype = int, fmt="%e", ro=False,
+                                dtype = int, fmt="%e", ro=True,
                                 unit=None,
                                 vmin=None,vmax=None)
         self.current_exposure = self.add_logged_quantity(
