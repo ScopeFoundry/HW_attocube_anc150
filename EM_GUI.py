@@ -32,7 +32,6 @@ class em_gui(QtGui.QMainWindow):
     def _defaults(self):
         self.mode = ['STEM','Focal']
         self.binnings = [1,2,4,8]
-
         self.threads = [] 
         self.acquirer = None
     def updateTitle(self):
@@ -268,7 +267,7 @@ class em_gui(QtGui.QMainWindow):
         self.dfList = self.DFLMaker()
 
         
-        self._mstruct = _Series_Params('Foc',self.xDim,self.yDim,self.numPerDef,self.bin,
+        self._mstruct = _Series_Params(self.mode[0],'Foc',self.xDim,self.yDim,self.numPerDef,self.bin,
                                   self.dweTim,self.setTim,False)
         self._mstruct.setList(self.dfList,'True')
         self.updateInfo()
