@@ -18,12 +18,12 @@ class EMHardwareComponent(HardwareComponent):
                                 name = 'current_defocus',
                                 dtype = float, fmt="%e", ro=True,
                                 unit="Nm",
-                                vmin=None,vmax=None)
+                                vmin=-100,vmax=100)
         self.current_binning = self.add_logged_quantity(
                                 name = 'current_binning',
                                 dtype = int, fmt="%e", ro=True,
                                 unit=None,
-                                vmin=None,vmax=None)
+                                vmin=1,vmax=None)
         self.current_exposure = self.add_logged_quantity(
                                 name = 'current_exposure',
                                 dtype = float, fmt="%e", ro=True,
@@ -33,8 +33,11 @@ class EMHardwareComponent(HardwareComponent):
                                 name = 'current_dwell',
                                 dtype = float, fmt="%e", ro=True,
                                 unit="ns",
-                                vmin=1e-9,vmax=1000000.0
-)
+                                vmin=1e-9,vmax=1000000.0)
+        self.mode = self.add_logged_quantity(
+                                name = 'mode',
+                                dtype = str, fmt="%s", ro=False,
+                                unit=None)
 
         self.dummy_mode = self.add_logged_quantity(name='dummy_mode',
                             dtype=bool, initial=False, ro=False)
@@ -54,7 +57,8 @@ class EMHardwareComponent(HardwareComponent):
             self.Acq = self.wrapper.Acq
             self.Ill = self.wrapper.Ill
             self.Proj = self.wrapper.Proj
-                        
+            
+            self.mode.update_value(new_val=self.wrapper.mode, update_hardware=False)
             self.current_binning.hardware_read_func = \
                 self.wrapper.getBinning
             self.current_binning.hardware_set_func = \
