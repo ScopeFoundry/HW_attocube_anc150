@@ -11,28 +11,32 @@ import win32com.client
 from time import sleep
 from PySide import QtCore
 class SeriesMeasurement(Measurement,em_gui):
+    
     itr_finished = QtCore.Signal(ndarray)
-
     name = "em_series"
-
     ui_filename = "measurement_components/em_window.ui"
+    
     def __init__(self,gui):
+        self.debug = True
         Measurement.__init__(self,gui)
         em_gui.__init__(self,gui)
         self.hardware = self.gui.hardware_components['em_acquirer']
-        self.m = self.hardware.Scope
-        self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.m )
+        self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
+
     def setup(self):        
         self.display_update_period = 0.001 #seconds
-        # Connect events
         self.ui.aboBtn.released.connect(self.interrupt)
         self.ui.acqBtn.released.connect(self.start)
-    def setGlobals(self):
-        self.acquirer = None
+        self.measurement_sucessfully_completed.connect(self.postAcquisition)
+        self.itr_finished[ndarray].connect(self.postIteration)
+    def setupFigure(self):
+        pass
     def TEMMODE(self):
+        if not hasattr(self,'hardware'): self.getScope()
         em_gui.TEMMODE(self)
         self.hardware.setup4Tem()
     def STEMMODE(self):
+        if not hasattr(self,'hardware'): self.getScope()
         print '-----STEMMODE called-----'
         em_gui.STEMMODE(self)
         self.hardware.setup4Stem()
@@ -66,7 +70,6 @@ class SeriesMeasurement(Measurement,em_gui):
         self.series = zeros([x,y,deltas,repeats],dtype=uint16,) #contains raw data
         self.ssSeries = zeros([x,y,2],dtype=uint16) #contains start/stop images
     def getScope(self):
-
         self._m = win32com.client.Dispatch(pythoncom.CoGetInterfaceAndReleaseStream(self._id, 
                                                     pythoncom.IID_IDispatch))
         self.Acq = self._m.Acquisition
@@ -75,49 +78,44 @@ class SeriesMeasurement(Measurement,em_gui):
         print '-----DF:', str(self.initialDF),'m-----'
         if self._mstruct.mode == 'TEM': self.setTemAcqVals()
         if self._mstruct.mode == 'STEM': self.setStemAcqVals()
-
+        self.Acq.AcquireImages()
         print '-----end of getscope-----'
     def postAcquisition(self):
-        print 'entered post acq'
-        self.ui.lblStatus.setText('Acquisition complete')
+        em_gui.postAcquisition(self)
+        if self.debug: print 'entered post acq'
     def _run(self):
-        pythoncom.CoInitializeEx(pythoncom.COINIT_MULTITHREADED)
-        em_gui.onAcquire(self)
-        self.getScope()
-        self.dfList = self.DFLMaker(self.initialDF) #this sets self.numDF as well
-        self._mstruct.setList(self.dfList,'False') 
-        self.allocateStorage()
-        self.imageCount = 0
-        if self._mstruct.type == 'Foc':
-            print 'in foc'
-            self.startImage()
-            self.acqFoc()
-            self.stopImage()
-        if self._mstruct.type == 'Rot':
-            self.startImage()
-            self.acqRot()
-            self.stopImage()
-        print '----run thread complete-----'
-        print self.Proj.Defocus
-        pythoncom.CoUninitialize(0)
-        #is this right place to put this?
-        self.measurement_state_changed.emit(False)
-        if not self.interrupt_measurement_called:
-            self.measurement_sucessfully_completed.emit()
-        else:
-            self.measurement_interrupted.emit()
+        try:
+            em_gui.onAcquire(self)
+            if not hasattr(self,'_m') or self._m == None: self.getScope()
+            self.dfList = self.DFLMaker(self.initialDF) #this sets self.numDF as well
+            self._mstruct.setList(self.dfList,'False') 
+            self.allocateStorage()
+            self.imageCount = 0
+            if self._mstruct.type == 'Foc':
+                if self.debug: print 'in foc'
+                self.startImage()
+                self.acqFoc()
+                self.stopImage()
+            if self._mstruct.type == 'Rot':
+                if self.debug: print 'in rot'
+                self.startImage()
+                self.acqRot()
+                self.stopImage()
+            print '----run thread complete-----'
+        except Exception as err:
+            print self.name, "error:", err
+        #there seems to be no need to emit a finished signal...
     def acqFoc(self):
         for ii in range(len(self._mstruct.lisDel)):
             defVal = ((float(self._mstruct.lisDel[ii])) * 1e-9)
-            if self._mstruct.lisRel == True:
+            if self._mstruct.lisRel == True: #if the list is relative or absolute
                 defVal += self.initialDF
-            print defVal
             self.Proj.Defocus =  defVal    
             for jj in range(int(self._mstruct.numRep)):
                 acquiredImageSet = self.Acq.AcquireImages()      
                 self.series[:,:,ii,jj] = array(acquiredImageSet(0).AsSafeArray)
-                print '-----acquired @ '+str(self._mstruct.lisDel[ii])+'nm-----' 
-                print 'Size:'+str(self.series.nbytes)  
+                if self.debug: print '-----acquired @ '+str(self._mstruct.lisDel[ii])+'nm-----' 
+                if self.debug: print 'Size:'+str(self.series.nbytes)  
                 self.itr_finished.emit(self.series[:,:,ii,jj])
     def acqRot(self):
         for ii in range(int(self._mstruct.numDel)):
@@ -127,7 +125,7 @@ class SeriesMeasurement(Measurement,em_gui):
                 acquiredImageSet = self.Acq.AcquireImages()      
                 self.series[:,:,ii,jj] = array(acquiredImageSet(0).AsSafeArray)
                 print '-----acquired @ '+str(self._mstruct.lisDel[ii])+'nm-----'
-                self.itr_finished.emit(self.series[:,:,ii,jj])
+                #self.itr_finished.emit(self.series[:,:,ii,jj])
     def startImage(self):
         acquiredImageSet=self.Acq.AcquireImages() #acquire 
         self.ssSeries[:,:,0] = array(acquiredImageSet(0).AsSafeArray)
