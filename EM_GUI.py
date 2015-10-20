@@ -184,6 +184,8 @@ class em_gui(QtGui.QMainWindow):
         self.updateProgressBar(self.imageCount)
         self.imageCount+=1
         #self.updateView(QtCore.Qt.QString(data))
+    def postAcquisition(self):
+        self.ui.lblStatus.setText('Acquisition complete')
     def onBrowse(self):
         _dir = QtGui.QFileDialog.getExistingDirectory(self)
         if self.sender() == self.ui.broBtn:
@@ -353,7 +355,7 @@ class em_gui(QtGui.QMainWindow):
     def updateSlider(self):
         self.ui.inNum.setText(str(self.numDef)) #update GUI
         self.ui.viewSlider.setMaximum(self.numDef) #update slider
-        self.ui.progressBar.setMaximum(self.numDef)
+        self.ui.progressBar.setMaximum(self.numDef*self.numPerDef)
         self.ui.viewSlider.setValue(1)
         self.ui.lblSlider.setText('Image 1 of %i'%(self.numDef,))        
     def updateView(self,npa):
