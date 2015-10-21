@@ -9,10 +9,9 @@ import win32com.client
 #-------------------------------------------------------------------------------
 class ScopeWrapper(object):
     #---------------------------------------------------------------------------
-    def __init__(self,debug=False,mode):
+    def __init__(self,debug=False):
         
         self.debug                  = debug  
-        self.mode                   = mode  
         self.Scope                  = None
         self.Acq                    = None
         self.Cam                    = None
@@ -28,9 +27,7 @@ class ScopeWrapper(object):
         self.Acq = self.Scope.Acquisition
         self.Proj = self.Scope.Projection
         self.Ill = self.Scope.Illumination 
-        
-        if self.mode == 'STEM': self.STEMMODE()
-        if self.mode == 'TEM': self.TEMMODE()     
+        self.Stage = self.Scope.Stage
         
         #Get the default state values
         self.ACQIMAGECORRECTION_DEFAULT         = win32com.client.constants.AcqImageCorrection_Default
@@ -43,8 +40,16 @@ class ScopeWrapper(object):
         self.ACQIMAGEFILEFORMAT_TIFF            = win32com.client.constants.AcqImageFileFormat_TIFF
         self.ACQIMAGEFILEFORMAT_JPG             = win32com.client.constants.AcqImageFileFormat_JPG
         self.ACQIMAGEFILEFORMAT_PNG             = win32com.client.constants.AcqImageFileFormat_PNG
-
-
+       
+        #get the mode, ensure set up
+        self.mode = self.Scope.InstrumentModeControl.InstrumentMode
+        if self.mode == 0: self.TEMMODE()
+        if self.mode == 1: self.STEMMODE()     
+    #--------------------------------------------------------------------------- 
+    def getMode(self):
+        if self.mode == 0: return 'TEM'
+        if self.mode == 1: return 'STEM'
+        
     #---------------------------------------------------------------------------
     def TEMMODE(self):
         self.mode = 'TEM'
