@@ -44,7 +44,7 @@ class EMHardwareComponent(HardwareComponent):
 
         # connect to gui
         try:
-            self.current_binning.connect_bidir_to_widget(self.gui.ui.bin)
+            self.current_binning.connect_bidir_to_widget(self.gui.ui.inBin)
         except Exception as err:
             print "EMHardwareComponent: could not connect to custom GUI", err
         self.connect()
@@ -57,7 +57,7 @@ class EMHardwareComponent(HardwareComponent):
             self.Acq = self.wrapper.Acq
             self.Ill = self.wrapper.Ill
             self.Proj = self.wrapper.Proj
-            
+             
             self.mode.update_value(new_val=self.wrapper.mode, update_hardware=False)
             self.current_binning.hardware_read_func = \
                 self.wrapper.getBinning
