@@ -4,7 +4,7 @@ from PySide import QtGui
 from base_gui import BaseMicroscopeGUI
 
 # Import Hardware Components
-from hardware_components.em_hardware import EMHardwareComponent
+from foundry_scope.hardware_components.tem_hardware import EMHardwareComponent
 
 # Import Measurement Components
 from measurement_components.em_series import SeriesMeasurement

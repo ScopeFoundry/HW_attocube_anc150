@@ -10,7 +10,7 @@ from numpy import around,append,arange,float,ndarray
 from _m_struct import _Series_Params, _Mode
 import ConfigParser
 import time
-import os
+import os 
 
 class em_gui(QtGui.QMainWindow):
     def __del__ ( self ): 
@@ -30,10 +30,12 @@ class em_gui(QtGui.QMainWindow):
         pass
         """ Override to to stuff """ 
     def _defaults(self):
-        self.mode = ['STEM','Focal']
+        self.mode = ['TEM','Focal']
         self.binnings = [1,2,4,8]
         self.threads = [] 
         self.acquirer = None
+        if self.mode[0]=='TEM': self.TEMMODE()
+        if self.mode[0]=='STEM': self.STEMMODE()
     def updateTitle(self):
         self.ui.setWindowTitle('%s %s Series'%(self.mode[0],self.mode[1]))
     def TEMMODE(self):
@@ -362,11 +364,13 @@ class em_gui(QtGui.QMainWindow):
         print type(npa)
         self.npa = npa
         self.images = [QtGui.QPixmap("../icons/favicon.png")]
-        pixItem = QtGui.QImage(self.npa, self.xDim, self.yDim, QtGui.QImage.Format_RGB32)
-        pixItem = pixItem.scaled(500,500,QtCore.Qt.KeepAspectRatio)
+        print npa.shape
+        pixItem = QtGui.QImage(self.npa, self.xDim, self.yDim, QtGui.QImage.Format_RGB16)
+        #pixItem.convertToFormat(QtGui.QImage.Format_RGB16)
+        #pixItem = pixItem.scaled(500,500,QtCore.Qt.KeepAspectRatio)
         #pixItem = QtGui.QGraphicsPixmapItem(Image.fromarray(npa))
         self.scene.clear()
-        self.scene.addPixmap(QtGui.QPixmap.fromImage(pixItem))
+        #self.scene.addPixmap(QtGui.QPixmap.fromImage(pixItem))
     def updateStep(self,):
         self.getUsrAcqVals()
         self.updateSlider()

@@ -19,16 +19,17 @@ class SeriesMeasurement(Measurement,em_gui):
     def __init__(self,gui):
         self.debug = True
         Measurement.__init__(self,gui)
-        em_gui.__init__(self,gui)
         self.hardware = self.gui.hardware_components['em_acquirer']
+        self.hardware.connect()
         self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
-
+        em_gui.__init__(self,gui)
     def setup(self):        
         self.display_update_period = 0.001 #seconds
         self.ui.aboBtn.released.connect(self.interrupt)
         self.ui.acqBtn.released.connect(self.start)
         self.measurement_sucessfully_completed.connect(self.postAcquisition)
         self.itr_finished[ndarray].connect(self.postIteration)
+        
     def setupFigure(self):
         pass
     def TEMMODE(self):

@@ -89,18 +89,19 @@ class Measurement(QtCore.QObject):
     def _thread_run(self):
         #self.progress_updated.emit(50) # set progress bars to default run position at 50%
         self.set_progress(50)
-        try:
-            self._run()
-        except Exception as err:
-            self.interrupt_measurement_called = True
-            raise err
-        finally:
-            self.set_progress(0)  # set progress bars back to zero
-            self.measurement_state_changed.emit(False)
-            if self.interrupt_measurement_called:
-                self.measurement_interrupted.emit()
-            else:
-                self.measurement_sucessfully_completed.emit()
+        self._run()
+#         try:
+#             self._run()
+#         except Exception as err:
+#             self.interrupt_measurement_called = True
+#             raise err
+        
+        self.set_progress(0)  # set progress bars back to zero
+        self.measurement_state_changed.emit(False)
+        if self.interrupt_measurement_called:
+            self.measurement_interrupted.emit()
+        else:
+            self.measurement_sucessfully_completed.emit()
 
     def set_progress(self, pct):
         self.progress.update_value(pct)
