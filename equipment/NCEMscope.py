@@ -9,7 +9,7 @@ import win32com.client
 #-------------------------------------------------------------------------------
 class ScopeWrapper(object):
     #---------------------------------------------------------------------------
-    def __init__(self,debug=False,mode='STEM'):
+    def __init__(self,debug=False,mode):
         
         self.debug                  = debug  
         self.mode                   = mode  
@@ -51,6 +51,8 @@ class ScopeWrapper(object):
         self.Acq.RemoveAllAcqDevices()
         self.Cam = self.Acq.Cameras(0)
         self.Acq.AddAcqDevice(self.Cam)
+        self.Cam.AcqParams.ImageCorrection = self.ACQIMAGECORRECTION_UNPROCESSED #this has to be unprocessed. Not sure if it affects data from the micoscope itself
+        self.Cam.AcqParams.ImageSize = self.ACQIMAGESIZE_FULL  
         if self.debug: print("Scope is TEM Mode")  
     
     #---------------------------------------------------------------------------
@@ -66,6 +68,7 @@ class ScopeWrapper(object):
         if self.mode == 'TEM': return self.Cam.AcqParams.Binning
         if self.mode == 'STEM': return self.Acq.Detectors.AcqParams.Binning
         if self.debug: print("getting bin")
+        
     #---------------------------------------------------------------------------
     def setBinning(self,binning):
         if self.mode == 'TEM': self.Cam.AcqParams.Binning = int(binning)
@@ -95,8 +98,16 @@ class ScopeWrapper(object):
         if self.debug: print("setting exp")    
         
     #---------------------------------------------------------------------------
-    
-    
-    
+    def getDefocus(self):
+        return self.Proj.Defocus
+        if self.debug: print("getting def")
+        
+    #---------------------------------------------------------------------------
+    def setDefocus(self,defocus):
+        self.Proj.Defocus = float(defocus)
+        if self.debug: print("setting def")    
+        
+    #---------------------------------------------------------------------------
+
     
     
