@@ -104,15 +104,39 @@ class ScopeWrapper(object):
         
     #---------------------------------------------------------------------------
     def getDefocus(self):
-        return self.Proj.Defocus
+        return self.Proj.Defocus*1e9
         if self.debug: print("getting def")
         
     #---------------------------------------------------------------------------
     def setDefocus(self,defocus):
-        self.Proj.Defocus = float(defocus)
-        if self.debug: print("setting def")    
+        self.Proj.Defocus = float(defocus*1e-9)
+        if self.debug: print "setting def", defocus    
         
     #---------------------------------------------------------------------------
+    def getAlphaTilt(self):
+        return self.Stage.Position.A
+        if self.debug: print("getting alphatilt")
+        
+    #---------------------------------------------------------------------------
+    def setAlphaTilt(self,alpha):
+        position = self.Stage.Position
+        position.A = alpha
+        self.Stage.MoveTo(position,8) 
+        if self.debug: print "setting alphatilt", alpha  
+    #---------------------------------------------------------------------------
+    def getStageXY(self):
+        return [self.Stage.Position.X,self.Stage.Position.Y]
+        if self.debug: print("getting stagex")
+        
+    #---------------------------------------------------------------------------
+    def setStageXY(self,x,y):
+        position = self.Stage.Position
+        position.X = x
+        position.Y = y
+        self.Stage.MoveTo(position,3) 
+        if self.debug: print "setting xy", x, y    
+        
+    #--------------------------------------------------------------------------
 
     
     
