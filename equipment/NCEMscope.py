@@ -17,7 +17,6 @@ class ScopeWrapper(object):
         self.Cam                    = None
         self.Det                    = None
         
-
     #---------------------------------------------------------------------------
     def Connect(self):
         self.Scope = win32com.client.gencache.EnsureDispatch('TEMScripting.Instrument')
@@ -46,12 +45,14 @@ class ScopeWrapper(object):
         #get the mode, ensure set up
         mode = self.Scope.InstrumentModeControl.InstrumentMode
         if mode == 0: self.TEMMODE()
-        if mode == 1: self.STEMMODE()     
+        if mode == 1: self.STEMMODE()  
+           
     #--------------------------------------------------------------------------- 
     def getMode(self):
         mode = self.Scope.InstrumentModeControl.InstrumentMode
         if mode == 0: return 'TEM'
         if mode == 1: return 'STEM'
+        
     #---------------------------------------------------------------------------
     def TEMMODE(self):
         self.mode = 'TEM'
