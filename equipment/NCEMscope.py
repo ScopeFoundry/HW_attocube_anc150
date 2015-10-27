@@ -127,7 +127,7 @@ class ScopeWrapper(object):
     def setAlphaTilt(self,alpha):
         position = self.Stage.Position
         position.A = alpha
-        self.Stage.MoveTo(position,8) 
+        self.Stage.Goto(position,8) 
         if self.debug: print "setting alphatilt", alpha  
     #---------------------------------------------------------------------------
     def getStageXY(self):
@@ -139,7 +139,7 @@ class ScopeWrapper(object):
         position = self.Stage.Position
         position.X = x
         position.Y = y
-        self.Stage.MoveTo(position,3) 
+        self.Stage.Goto(position,3) 
         if self.debug: print "setting xy", x, y    
         
     #--------------------------------------------------------------------------
