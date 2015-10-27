@@ -14,6 +14,8 @@ class EM_Acquisition(BaseMicroscopeGUI):
     ui_filename = "base_gui.ui"
 
     def setup(self):
+        app.setWindowIcon(QtGui.QIcon('./icons/favicon.png'))
+
         #Add hardware components
         print "Adding Hardware Components"
         self.add_hardware_component(EMHardwareComponent(self))
