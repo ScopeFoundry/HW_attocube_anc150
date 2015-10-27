@@ -22,8 +22,10 @@ class ScopeWrapper(object):
     def Connect(self):
         self.Scope = win32com.client.gencache.EnsureDispatch('TEMScripting.Instrument')
         if self.debug: print("Connected to microscope")
+        
         self.TIA = win32com.client.Dispatch("ESVision.Application")
         if self.debug: print("Connected to TIA")  
+        
         self.Acq = self.Scope.Acquisition
         self.Proj = self.Scope.Projection
         self.Ill = self.Scope.Illumination 
@@ -42,13 +44,14 @@ class ScopeWrapper(object):
         self.ACQIMAGEFILEFORMAT_PNG             = win32com.client.constants.AcqImageFileFormat_PNG
        
         #get the mode, ensure set up
-        self.mode = self.Scope.InstrumentModeControl.InstrumentMode
-        if self.mode == 0: self.TEMMODE()
-        if self.mode == 1: self.STEMMODE()     
+        mode = self.Scope.InstrumentModeControl.InstrumentMode
+        if mode == 0: self.TEMMODE()
+        if mode == 1: self.STEMMODE()     
     #--------------------------------------------------------------------------- 
     def getMode(self):
-        if self.mode == 0: return 'TEM'
-        if self.mode == 1: return 'STEM'
+        mode = self.Scope.InstrumentModeControl.InstrumentMode
+        if mode == 0: return 'TEM'
+        if mode == 1: return 'STEM'
         
     #---------------------------------------------------------------------------
     def TEMMODE(self):
