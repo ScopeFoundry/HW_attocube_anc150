@@ -52,7 +52,6 @@ class ScopeWrapper(object):
         mode = self.Scope.InstrumentModeControl.InstrumentMode
         if mode == 0: return 'TEM'
         if mode == 1: return 'STEM'
-        
     #---------------------------------------------------------------------------
     def TEMMODE(self):
         self.mode = 'TEM'
@@ -91,19 +90,22 @@ class ScopeWrapper(object):
         
     #---------------------------------------------------------------------------
     def getExposure(self):
-        if self.mode == 'TEM': return self.Cam.AcqParams.Exposure
-        if self.mode == 'STEM': return -1
+        if self.mode == 'TEM': return self.Cam.AcqParams.ExposureTime
+        if self.mode == 'STEM': return -1.0
         if self.debug: print("getting exp")
 
     #---------------------------------------------------------------------------
     def setDwellTime(self,dwell):
-        if self.mode == 'STEM': self.Det.AcqParams.DwellTime = float(dwell)
-        if self.debug: print("setting dwell")
+        if self.mode == 'STEM': 
+            self.Det.AcqParams.DwellTime = float(dwell)
+            if self.debug: print("setting dwell")
         
     #---------------------------------------------------------------------------
     def setExposure(self,exposure):
-        if self.mode == 'TEM': self.Cam.AcqParams.Exposure = float(exposure)
-        if self.debug: print("setting exp")    
+        if self.mode == 'TEM': 
+            self.Cam.AcqParams.ExposureTime = float(exposure)
+            if self.debug: print("setting exp")   
+            if self.debug: print 'exp:', exposure 
         
     #---------------------------------------------------------------------------
     def getDefocus(self):
