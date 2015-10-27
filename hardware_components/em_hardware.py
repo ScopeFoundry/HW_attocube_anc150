@@ -4,14 +4,15 @@ try:
     from equipment.NCEMscope import ScopeWrapper
 except Exception as err:
     print "Cannot load required modules for em_hardware:", err
-
+    
+#-------------------------------------------------------------------------------
 class EMHardwareComponent(HardwareComponent):
-
+    
+    #---------------------------------------------------------------------------
     def setup(self):
-        self.debug = True
+        self.debug = self.debug_mode.val
         self.name = "em_hardware"
 
-        # Create logged quantities
         self.current_defocus = self.add_logged_quantity(
                                 name = 'current_defocus',
                                 dtype = float, fmt="%e", ro=False,
@@ -22,8 +23,6 @@ class EMHardwareComponent(HardwareComponent):
                                 dtype = int, fmt="%e", ro=False,
                                 unit=None,
                                 vmin=1,vmax=None)
-        self.dummy_mode = self.add_logged_quantity(name='dummy_mode',
-                            dtype=bool, initial=False, ro=False)
         self.current_exposure = self.add_logged_quantity(
                         name = 'current_exposure',
                         dtype = float, fmt="%e", ro=False,
@@ -34,7 +33,10 @@ class EMHardwareComponent(HardwareComponent):
                         dtype = float, fmt="%e", ro=False,
                         unit="s",
                         vmin=-1.0,vmax=100.0)
-                    
+        self.dummy_mode = self.add_logged_quantity(name='dummy_mode',
+                            dtype=bool, initial=False, ro=False)    
+                       
+    #---------------------------------------------------------------------------
     def connect(self):        
         if not self.dummy_mode.val:
             if self.debug_mode.val: print "Connecting to Scope"
@@ -73,34 +75,53 @@ class EMHardwareComponent(HardwareComponent):
 
         else:
             if self.debug_mode.val: print "em_hardware: not connecting, dummy"
-
-    def moveXY(self,x,y):
-        self.wrapper.setStageXY(x,y)      
-    def tiltAlpha(self,alpha):
-        self.wrapper.setAlphaTilt(alpha)
-    def setDefocus(self,defocus):
-        self.wrapper.setDefocus(defocus)
-    def getXY(self):
-        return self.wrapper.getStageXY()
-    def getAlpha(self):
-        return self.wrapper.getAlphaTilt()
-    def getBinnings(self):
-        return self.Cam.Info.Binnings
-    def stemSetup(self):
-        self.mode = 'STEM'
-        print 'em_hardware: stemSetup'
-        self.Det = self.wrapper.Det
-
-    def temSetup(self):
-        self.mode = 'TEM'
-        print 'em_hardware: temSetup'
-        self.Cam = self.wrapper.Cam
-
-
+    #---------------------------------------------------------------------------
     def disconnect(self):
         #disconnect logged quantities from hardware
         for lq in self.logged_quantities.values():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
         self.wrapper = None        
+        
+    #---------------------------------------------------------------------------
+    def stemSetup(self):
+        self.mode = 'STEM'
+        print 'em_hardware: stemSetup'
+        self.Det = self.wrapper.Det
+        
+    #---------------------------------------------------------------------------
+    def temSetup(self):
+        self.mode = 'TEM'
+        print 'em_hardware: temSetup'
+        self.Cam = self.wrapper.Cam
+        
+    #---------------------------------------------------------------------------
+    def setAlphaTilt(self,alpha):
+        self.wrapper.setAlphaTilt(alpha)
+        
+    #---------------------------------------------------------------------------
+    def getAlphaTilt(self):
+        return self.wrapper.getAlphaTilt()
+    
+    #---------------------------------------------------------------------------
+    def moveXY(self,x,y):
+        self.wrapper.setStageXY(x,y)    
+        
+    #---------------------------------------------------------------------------  
+    def getXY(self):
+        return self.wrapper.getStageXY()
+    
+    #---------------------------------------------------------------------------
+    def getBinnings(self):
+        return self.Cam.Info.Binnings
+    
+    #---------------------------------------------------------------------------
+    def setDefocus(self,defocus):
+        self.wrapper.setDefocus(defocus)
+        
+    #---------------------------------------------------------------------------
+    def getDefocus(self):
+        return self.wrapper.getDefocus
+    #---------------------------------------------------------------------------
+
 
