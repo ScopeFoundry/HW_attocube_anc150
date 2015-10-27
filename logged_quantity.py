@@ -1,5 +1,6 @@
 from PySide import  QtCore, QtGui
 import pyqtgraph
+import numpy as np
 
 class LoggedQuantity(QtCore.QObject):
 
@@ -217,7 +218,81 @@ class LoggedQuantity(QtCore.QObject):
         self.vmax = vmax
         widget.setRange(vmin, vmax)
         
+class LQRange(QtCore.QObject):
+    """
+    LQRange is a collection of logged quantities that describe a
+    numpy.linspace array inputs
+    Four LQ's are defined, min, max, num, step
+    and are connected by signals/slots that keep the quantities
+    in sync.
+    LQRange.array is the linspace array and is kept upto date
+    with changes to the 4 LQ's
+    """
+    updated_range = QtCore.Signal((),)# (float,),(int,),(bool,), (), (str,),) # signal sent when value has been updated
+    
+    def __init__(self, min_lq,max_lq,step_lq, num_lq):
+        QtCore.QObject.__init__(self)
 
+        self.min = min_lq
+        self.max = max_lq
+        self.num = num_lq
+        self.step = step_lq
+        
+        assert self.num.dtype == int
+                
+        self.array = np.linspace(self.min.val, self.max.val, self.num.val)
+        step = self.array[1]-self.array[0]
+        self.step.update_value(step)
+        
+        self.num.updated_value[int].connect(self.recalc_with_new_num)
+        self.min.updated_value.connect(self.recalc_with_new_min_max)
+        self.max.updated_value.connect(self.recalc_with_new_min_max)
+        self.step.updated_value.connect(self.recalc_with_new_step)        
+
+    def recalc_with_new_num(self, new_num):
+        print "recalc_with_new_num", new_num
+        self.array = np.linspace(self.min.val, self.max.val, int(new_num))
+        if len(self.array) > 1:
+            new_step = self.array[1]-self.array[0]
+            print "    new_step inside new_num", new_step
+            self.step.update_value(new_step)#, send_signal=True, update_hardware=False)
+            self.step.send_display_updates(force=True)
+        self.updated_range.emit()
+        
+    def recalc_with_new_min_max(self, x):
+        self.array = np.linspace(self.min.val, self.max.val, self.num.val)
+        step = self.array[1]-self.array[0]
+        self.step.update_value(step)#, send_signal=True, update_hardware=False)        
+        self.updated_range.emit()
+        
+    def recalc_with_new_step(self,new_step):
+        print "-->recalc_with_new_step"
+        if len(self.array) > 1:
+            old_step = self.array[1]-self.array[0]    
+        else:
+            old_step = np.nan
+        diff = np.abs(old_step - new_step)
+        print "step diff", diff
+        if diff < 10**(-self.step.spinbox_decimals):
+            print "steps close enough, no more recalc"
+            return
+        else:
+            new_num = int((((self.max.val - self.min.val)/new_step)+1))
+            self.array = np.linspace(self.min.val, self.max.val, new_num)
+            new_step1 = self.array[1]-self.array[0]
+            print "recalc_with_new_step", new_step, new_num, new_step1
+            #self.step.val = new_step1
+            #self.num.val = new_num
+            #self.step.update_value(new_step1, send_signal=False)
+            #if np.abs(self.step.val - new_step1)/self.step.val > 1e-2:
+            self.step.val = new_step1
+            self.num.update_value(new_num)
+            #self.num.send_display_updates(force=True)
+            #self.step.update_value(new_step1)
+
+            #print "sending step display Updates"
+            #self.step.send_display_updates(force=True)
+            self.updated_range.emit()
 
 def print_signals_and_slots(obj):
     for i in xrange(obj.metaObject().methodCount()):

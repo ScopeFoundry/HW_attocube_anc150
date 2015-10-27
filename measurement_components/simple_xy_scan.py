@@ -5,6 +5,7 @@ import time
 import h5_io
 from hardware_components import apd_counter
 from PySide import QtCore
+from logged_quantity import LQRange
 
 class SimpleXYScan(Measurement):
     name = "simple_xy_scan"
@@ -27,14 +28,19 @@ class SimpleXYScan(Measurement):
         self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
         self.dv.spinbox_decimals = 3
         
-        self.Nh = self.add_logged_quantity('Nh', initial=1, dtype=int, ro=True)
-        self.Nv = self.add_logged_quantity('Nv', initial=1, dtype=int, ro=True)
+        self.Nh = self.add_logged_quantity('Nh', initial=11, dtype=int, ro=False)
+        self.Nv = self.add_logged_quantity('Nv', initial=11, dtype=int, ro=False)
 
         #update Nh, Nv and other scan parameters when changes to inputs are made 
-        for lqname in 'h0 h1 v0 v1 dh dv'.split():
-            self.logged_quantities[lqname].updated_value.connect(self.compute_scan_params)
-            
-            
+        #for lqname in 'h0 h1 v0 v1 dh dv'.split():
+        #    self.logged_quantities[lqname].updated_value.connect(self.compute_scan_params)
+        self.h_range = LQRange(self.h0, self.h1, self.dh, self.Nh)
+        self.h_range.updated_range.connect(self.compute_scan_params)
+
+        self.v_range = LQRange(self.v0, self.v1, self.dv, self.Nv)
+        self.v_range.updated_range.connect(self.compute_scan_params) #update other scan parameters when changes to inputs are made
+
+        
         #connect events
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
@@ -45,6 +51,8 @@ class SimpleXYScan(Measurement):
         self.v1.connect_bidir_to_widget(self.ui.v1_doubleSpinBox)
         self.dh.connect_bidir_to_widget(self.ui.dh_doubleSpinBox)
         self.dv.connect_bidir_to_widget(self.ui.dv_doubleSpinBox)
+        self.Nh.connect_bidir_to_widget(self.ui.Nh_doubleSpinBox)
+        self.Nv.connect_bidir_to_widget(self.ui.Nv_doubleSpinBox)
         
         self.gui.hardware_components['dummy_xy_stage'].x_position.connect_bidir_to_widget(self.ui.x_doubleSpinBox)
         self.gui.hardware_components['dummy_xy_stage'].y_position.connect_bidir_to_widget(self.ui.y_doubleSpinBox)
@@ -62,11 +70,11 @@ class SimpleXYScan(Measurement):
         if self.is_measuring():
             return # maybe raise error
 
-        self.h_array = np.arange(self.h0.val, self.h1.val, self.dh.val, dtype=float)
-        self.v_array = np.arange(self.v0.val, self.v1.val, self.dv.val, dtype=float)
+        self.h_array = self.h_range.array #np.arange(self.h0.val, self.h1.val, self.dh.val, dtype=float)
+        self.v_array = self.v_range.array #np.arange(self.v0.val, self.v1.val, self.dv.val, dtype=float)
         
-        self.Nh.update_value(len(self.h_array))
-        self.Nv.update_value(len(self.v_array))
+        #self.Nh.update_value(len(self.h_array))
+        #self.Nv.update_value(len(self.v_array))
         
         self.range_extent = [self.h0.val, self.h1.val, self.v0.val, self.v1.val]
 
