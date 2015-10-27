@@ -5,6 +5,7 @@ import pythoncom
 from PySide import QtCore, QtGui
 import win32com.client
 from random import choice, random, randint
+from foundry_scope.logged_quantity import LQRange
 
 class EMTomographySeries(Measurement):
     itr_finished = QtCore.Signal(ndarray)
@@ -26,13 +27,24 @@ class EMTomographySeries(Measurement):
     def setupUI(self):
         
         self.minimum_tilt = self.add_logged_quantity(
-                                name = 'minimum_tilt',
+                                name = 'minimum_tilt', initial = -80.0,
                                 dtype = float, fmt="%e", ro=False,
                                 unit='deg', vmin=-80.0,vmax=80.0)
         self.maximum_tilt = self.add_logged_quantity(
-                                name = 'maximum_tilt',
+                                name = 'maximum_tilt', initial = 80.0,
                                 dtype = float, fmt="%e", ro=False,
                                 unit='deg', vmin=-80.0,vmax=80.0)
+        self.step_tilt = self.add_logged_quantity(
+                                name = 'step_tilt', initial = 6.0,
+                                dtype = float, fmt="%e", ro=False,
+                                unit='deg', vmin=-80.0,vmax=80.0)
+        self.num_tilts = self.add_logged_quantity(
+                                name = 'num_tilts', initial = 30,
+                                dtype = int, fmt="%e", ro=False,
+                                unit=None, vmin=2,vmax=160)
+        self.tiltLQRange = LQRange(self.minimum_tilt,self.maximum_tilt,
+                                   self.step_tilt,self.num_tilts)
+        
         try:
             self.ui.setWindowTitle('NCEM Tomography Tool')
             self.ui.btnPre.released.connect(self.preview)
@@ -46,15 +58,18 @@ class EMTomographySeries(Measurement):
             self.ui.buttonGroup.setId(self.ui.bin4,4)  
             self.ui.buttonGroup.buttonReleased[int].connect(self.binChanged)
             self.ui.buttonGroup.button(self.hardware.current_binning.val).setChecked(True)
-            
+            #hardware LQs
             self.hardware.current_exposure.connect_bidir_to_widget(self.ui.expBox)
             self.hardware.current_defocus.connect_bidir_to_widget(self.ui.defBox)
-            
+            #measurement LQs
+            self.num_tilts.connect_bidir_to_widget(self.ui.numBox)
+            self.step_tilt.connect_bidir_to_widget(self.ui.steBox)
+            self.minimum_tilt.connect_bidir_to_widget(self.ui.minBox)
+            self.maximum_tilt.connect_bidir_to_widget(self.ui.maxBox)
+            #signals
             self.measurement_sucessfully_completed.connect(self.postAcquisition)
-            self.itr_finished[ndarray].connect(self.postIteration)
-            
-#             self.minimum_tilt.connect_bidir_to_widget(self.gui.ui.minBox)
-#             self.maximum_tilt.connect_bidir_to_widget(self.gui.ui.maxBox)
+            self.itr_finished[ndarray].connect(self.postIteration)        
+
         except Exception as err: 
             print "EM_Tomography: could not connect to custom main GUI", err
     def getScope(self):
@@ -71,14 +86,14 @@ class EMTomographySeries(Measurement):
         lblx = choice(['+','-'])
         lbly = choice(['+','-'])
         if x%2==1: lbl = '+'
-        self.ui.lblXYShift.setText('('+lblx+str(x)+', '+lbly+str(y)+')')
+        self.ui.lblXYShift.setText('('+lblx+str(x)+'um, '+lbly+str(y)+'um)')
         d = randint(0,6)
         lbld = choice(['+','-'])
         if d==0: lbld=''
         self.ui.lblDeltaDefocus.setText(lbld+str(d)+'nm')
     def allocateStorage(self):
         if self.debug: print '-----allocating arrays-----'
-        deltas = len(self.tiltList)
+        deltas = len(self.tiltLQRange.array)
         self.series = zeros([self.xRes,self.yRes,deltas],dtype=uint16,) #contains raw data
     def setup_figure(self):
         if hasattr(self, 'graph_layout'):
@@ -89,16 +104,17 @@ class EMTomographySeries(Measurement):
         self.viewer = self.graph_layout.addViewBox()
         self.viewer.enableAutoRange()
     def acqFoc(self):
-        for ii in range(len(self.tiltList)):
-            tiltVal = float(self.tiltList[ii])
+        for ii in range(len(self.tiltLQRange.array)):
+            tiltVal = float(self.tiltLQRange.array[ii])
             self.hardware.setAlphaTilt(tiltVal)
             acquiredImageSet = self.Acq.AcquireImages()      
             self.series[:,:,ii] = array(acquiredImageSet(0).AsSafeArray)
-            if self.debug: print '-----acquired @ '+str(self.tiltList[ii])+'deg-----' 
+            if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----' 
             if self.debug: print 'Size:'+str(self.series.nbytes)  
             self.itr_finished.emit(self.series[:,:,ii])
     def preview(self):
         try:
+            print self.tiltLQRange.array
             if not hasattr(self,'_m') or self._m == None: self.getScope()
             acquiredImageSet = self.Acq.AcquireImages()      
             itr = array(acquiredImageSet(0).AsSafeArray) 
@@ -109,24 +125,23 @@ class EMTomographySeries(Measurement):
         try:
             if not hasattr(self,'_m') or self._m == None: self.getScope()
             self.allocateStorage()
-            #self.acqFoc()
+            self.acqFoc()
         except Exception as err:
             print self.name, "error:", err
-        #there seems to be no need to emit a finished signal...
     def postAcquisition(self):
-        print 'postacq'
+        print '-----postacq-----'
     def postIteration(self,data):
         self.viewer.clear()
         self.viewer.addItem(pg.ImageItem(data))
         self.dummyStuff()
         print 'shape:', data.shape
-        print 'postiter'
+        print '-----postiter-----'
     def minTilt(self):
         self.hardware.tiltAlpha(self.hardware.minimum_tilt.val)
-        print 'min tilt'
+        print '-----min tilt-----'
     def maxTilt(self):
         self.hardware.tiltAlpha(self.hardware.maximum_tilt.val)
-        print 'max tilt'
+        print '-----max tilt-----'
     def binChanged(self,btnId):
         if btnId in self.hardware.getBinnings():
             res = 2048/btnId
@@ -134,7 +149,6 @@ class EMTomographySeries(Measurement):
             self.yRes = res
             self.ui.lblXYRes.setText('('+str(res)+", "+str(res)+')')
             self.hardware.current_binning.update_value(new_val=btnId)
-
     def update_display(self):        
         self.gui.app.processEvents()
 
