@@ -190,7 +190,7 @@
       <rect>
        <x>10</x>
        <y>30</y>
-       <width>146</width>
+       <width>131</width>
        <height>171</height>
       </rect>
      </property>
@@ -228,13 +228,6 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QSpinBox" name="numBox">
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="0">
        <widget class="QLabel" name="lblSte">
         <property name="text">
@@ -246,6 +239,9 @@
        <widget class="QDoubleSpinBox" name="steBox">
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+        <property name="minimum">
+         <double>0.500000000000000</double>
         </property>
        </widget>
       </item>
@@ -294,10 +290,20 @@
          <double>-80.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>80.000000000000000</double>
+         <double>70.000000000000000</double>
         </property>
         <property name="value">
          <double>-80.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="numBox">
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+        <property name="minimum">
+         <double>2.000000000000000</double>
         </property>
        </widget>
       </item>
