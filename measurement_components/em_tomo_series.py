@@ -42,12 +42,17 @@ class EMTomographySeries(Measurement):
                                 name = 'num_tilts', initial = 30,
                                 dtype = int, fmt="%e", ro=False,
                                 unit=None, vmin=2,vmax=160)
+        self.num_repeats = self.add_logged_quantity(
+                                name = 'num_repeats', initial = 1,
+                                dtype = int, fmt="%e", ro=False,
+                                unit=None, vmin=1,vmax=30)
         self.tiltLQRange = LQRange(self.minimum_tilt,self.maximum_tilt,
                                    self.step_tilt,self.num_tilts)
         
         try:
             self.ui.setWindowTitle('NCEM Tomography Tool')
-            self.ui.btnPre.released.connect(self.preview)
+            self.ui.btnPreview.released.connect(self.preview)
+            self.ui.btnPreview_2.released.connect(self.preview)
             self.ui.btnAcq.released.connect(self.start)
             self.ui.btnAbo.released.connect(self.interrupt)   
             self.ui.btnMinTilt.released.connect(self.minTilt)     
@@ -66,6 +71,7 @@ class EMTomographySeries(Measurement):
             self.step_tilt.connect_bidir_to_widget(self.ui.steBox)
             self.minimum_tilt.connect_bidir_to_widget(self.ui.minBox)
             self.maximum_tilt.connect_bidir_to_widget(self.ui.maxBox)
+            self.num_repeats.connect_bidir_to_widget(self.ui.repBox)
             #signals
             self.measurement_sucessfully_completed.connect(self.postAcquisition)
             self.itr_finished[ndarray].connect(self.postIteration)        
@@ -137,10 +143,10 @@ class EMTomographySeries(Measurement):
         print 'shape:', data.shape
         print '-----postiter-----'
     def minTilt(self):
-        self.hardware.tiltAlpha(self.hardware.minimum_tilt.val)
+        self.hardware.setAlphaTilt(self.minimum_tilt.val)
         print '-----min tilt-----'
     def maxTilt(self):
-        self.hardware.tiltAlpha(self.hardware.maximum_tilt.val)
+        self.hardware.setAlphaTilt(self.maximum_tilt.val)
         print '-----max tilt-----'
     def binChanged(self,btnId):
         if btnId in self.hardware.getBinnings():
@@ -152,3 +158,9 @@ class EMTomographySeries(Measurement):
     def update_display(self):        
         self.gui.app.processEvents()
 
+class AcquiredSingleImage():
+    def __init__(self,acqData,acqParams,acqTime,staParams):
+        self.acqData = acqData
+        self.acqParams = acqParams
+        self.acqTime = acqTime
+        self.staParams = staParams
