@@ -41,7 +41,7 @@ class STEMHardwareComponent(HardwareComponent):
     def connect(self):        
         if not self.dummy_mode.val:
             if self.debug_mode.val: print "Connecting to Scope"
-            self.wrapper = NCEMscope.ScopeWrapper(debug = self.debug_mode.val, mode='TEM')
+            self.wrapper = NCEMscope.ScopeWrapper(mode='TEM',debug = self.debug_mode.val)
             self.wrapper.Connect()
             
             #handy to have these references
