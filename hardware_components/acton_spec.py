@@ -15,7 +15,7 @@ from PySide import QtCore
 
 class ActonSpectrometerHardwareComponent(HardwareComponent):
     
-    ACTON_SPEC_PORT = "COM18"
+    ACTON_SPEC_PORT = "COM4"
 
     
     def setup(self):
@@ -52,10 +52,11 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
                                                 )
 
         # connect to gui
-        
-        self.center_wl.connect_bidir_to_widget(self.gui.ui.acton_spec_center_wl_doubleSpinBox)
-        self.exit_mirror.connect_bidir_to_widget(self.gui.ui.acton_spec_exitmirror_comboBox)
-
+        try:
+            self.center_wl.connect_bidir_to_widget(self.gui.ui.acton_spec_center_wl_doubleSpinBox)
+            self.exit_mirror.connect_bidir_to_widget(self.gui.ui.acton_spec_exitmirror_comboBox)
+        except Exception as err:
+            print self.name, "Could not connect to gui:", err
 
     def connect(self):
         if self.debug: print "connecting to acton_spectrometer"
