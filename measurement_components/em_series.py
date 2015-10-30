@@ -19,7 +19,7 @@ class SeriesMeasurement(Measurement,em_gui):
     def __init__(self,gui):
         self.debug = True
         Measurement.__init__(self,gui)
-        self.hardware = self.gui.hardware_components['em_acquirer']
+        self.hardware = self.gui.hardware_components['em_hardware']
         self.hardware.connect()
         self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
         em_gui.__init__(self,gui)
@@ -35,12 +35,12 @@ class SeriesMeasurement(Measurement,em_gui):
     def TEMMODE(self):
         if not hasattr(self,'hardware'): self.getScope()
         em_gui.TEMMODE(self)
-        self.hardware.setup4Tem()
+        self.hardware.temSetup()
     def STEMMODE(self):
         if not hasattr(self,'hardware'): self.getScope()
         print '-----STEMMODE called-----'
         em_gui.STEMMODE(self)
-        self.hardware.setup4Stem()
+        self.hardware.stemSetup()
 
 #     def getAcquirer(self,params):
 #         if self.acquirer==None:
