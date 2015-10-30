@@ -5,7 +5,7 @@ Created on Oct 13, 2015
 '''
 
 import win32com.client
-
+import pythoncom
 #-------------------------------------------------------------------------------
 class ScopeWrapper(object):
     #---------------------------------------------------------------------------
@@ -19,7 +19,9 @@ class ScopeWrapper(object):
         
     #---------------------------------------------------------------------------
     def Connect(self):
-        self.Scope = win32com.client.gencache.EnsureDispatch('TEMScripting.Instrument')
+        self.Scope = win32com.client.Dispatch('TEMScripting.Instrument')
+        pythoncom.CoInitializeEx(pythoncom.COINIT_MULTITHREADED)
+
         if self.debug: print("Connected to microscope")
         
         self.TIA = win32com.client.Dispatch("ESVision.Application")
@@ -86,7 +88,7 @@ class ScopeWrapper(object):
     #---------------------------------------------------------------------------
     def getDwellTime(self):
         if self.mode == 'TEM': return -1
-        if self.mode == 'STEM': return self.Det.AcqParams.DwellTime
+        if self.mode == 'STEM': return self.Acq.Detectors.AcqParams.DwellTime
         if self.debug: print("getting dwell")
         
     #---------------------------------------------------------------------------
@@ -119,16 +121,16 @@ class ScopeWrapper(object):
         if self.debug: print "setting def", defocus    
         
     #---------------------------------------------------------------------------
-    def getAlphaTilt(self):
-        return self.Stage.Position.A
-        if self.debug: print("getting alphatilt")
-        
-    #---------------------------------------------------------------------------
     def setAlphaTilt(self,alpha):
         position = self.Stage.Position
         position.A = alpha
         self.Stage.Goto(position,8) 
         if self.debug: print "setting alphatilt", alpha  
+    #---------------------------------------------------------------------------
+    def getAlphaTilt(self):
+        return self.Stage.Position.A
+        if self.debug: print("getting alphatilt")
+        
     #---------------------------------------------------------------------------
     def getStageXY(self):
         return [self.Stage.Position.X,self.Stage.Position.Y]
