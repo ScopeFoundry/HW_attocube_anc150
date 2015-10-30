@@ -19,11 +19,11 @@ class EM_Acquisition(BaseMicroscopeGUI):
         #Add hardware components
         print "Adding Hardware Components"
         self.add_hardware_component(EMHardwareComponent(self))
+        self.hardware_components['em_hardware'].connected.update_value(True)
+
         #Add measurement components
         print "Create Measurement objects"
         self.add_measurement_component(EMTomographySeries(self))
-
-        self.hardware_components['em_hardware'].connected.update_value(True)
         self.hardware_components['em_hardware'].debug_mode.update_value(True)
 
 if __name__ == '__main__':
