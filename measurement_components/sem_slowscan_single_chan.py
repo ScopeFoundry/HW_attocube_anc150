@@ -1,15 +1,19 @@
+'''
+Created on Oct 29, 2015
+
+@author: NIuser
+'''
 from measurement import Measurement
 import numpy as np
 import pyqtgraph as pg
 import time
 import h5_io
-from hardware_components import apd_counter
 from PySide import QtCore
 from logged_quantity import LQRange
 
-class SimpleXYScan(Measurement):
-    name = "simple_xy_scan"
-    ui_filename = "measurement_components/simple_xy_scan.ui"
+class SEMSlowscanSingleChan(Measurement):
+    name = "sem_slowscan_single_chan"
+    ui_filename = "measurement_components/sem_slowscan_single_chan.ui"
     
     def setup(self):
         self.display_update_period = 0.001 #seconds
@@ -17,19 +21,19 @@ class SimpleXYScan(Measurement):
         #connect events        
 
         # local logged quantities
-        lq_params = dict(dtype=float, vmin=-1,vmax=100, ro=False, unit='um' )
-        self.h0 = self.add_logged_quantity('h0',  initial=25, **lq_params  )
-        self.h1 = self.add_logged_quantity('h1',  initial=45, **lq_params  )
-        self.v0 = self.add_logged_quantity('v0',  initial=25, **lq_params  )
-        self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
+        lq_params = dict(dtype=float, vmin=-10,vmax=10, ro=False, unit='V' )
+        self.h0 = self.add_logged_quantity('h0',  initial=-5, **lq_params  )
+        self.h1 = self.add_logged_quantity('h1',  initial=5, **lq_params  )
+        self.v0 = self.add_logged_quantity('v0',  initial=-5, **lq_params  )
+        self.v1 = self.add_logged_quantity('v1',  initial=5, **lq_params  )
 
         self.dh = self.add_logged_quantity('dh', initial=1, **lq_params)
         self.dh.spinbox_decimals = 3
         self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
         self.dv.spinbox_decimals = 3
         
-        self.Nh = self.add_logged_quantity('Nh', initial=11, dtype=int, ro=False)
-        self.Nv = self.add_logged_quantity('Nv', initial=11, dtype=int, ro=False)
+        self.Nh = self.add_logged_quantity('Nh', initial=64, dtype=int, ro=False)
+        self.Nv = self.add_logged_quantity('Nv', initial=64, dtype=int, ro=False)
 
         #update Nh, Nv and other scan parameters when changes to inputs are made 
         #for lqname in 'h0 h1 v0 v1 dh dv'.split():
@@ -54,10 +58,10 @@ class SimpleXYScan(Measurement):
         self.Nh.connect_bidir_to_widget(self.ui.Nh_doubleSpinBox)
         self.Nv.connect_bidir_to_widget(self.ui.Nv_doubleSpinBox)
         
-        self.gui.hardware_components['dummy_xy_stage'].x_position.connect_bidir_to_widget(self.ui.x_doubleSpinBox)
-        self.gui.hardware_components['dummy_xy_stage'].y_position.connect_bidir_to_widget(self.ui.y_doubleSpinBox)
+        self.gui.hardware_components['sem_slowscan_vout'].x_position.connect_bidir_to_widget(self.ui.x_doubleSpinBox)
+        self.gui.hardware_components['sem_slowscan_vout'].y_position.connect_bidir_to_widget(self.ui.y_doubleSpinBox)
         
-        self.gui.hardware_components['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
+        #self.gui.hardware_components['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
         
         self.progress.connect_bidir_to_widget(self.ui.progress_doubleSpinBox)
         #self.progress.updated_value[str].connect(self.ui.xy_scan_progressBar.setValue)
@@ -88,9 +92,11 @@ class SimpleXYScan(Measurement):
     
     def _run(self):
         #Hardware
-        self.apd_counter_hc = self.gui.hardware_components['apd_counter']
-        self.apd_count_rate = self.apd_counter_hc.apd_count_rate
-        self.stage = self.gui.hardware_components['dummy_xy_stage']
+        #self.apd_counter_hc = self.gui.hardware_components['apd_counter']
+        #self.apd_count_rate = self.apd_counter_hc.apd_count_rate
+        self.sem_signal_hc = self.gui.hardware_components['sem_singlechan_signal']
+        self.sem_signal_lq = self.sem_signal_hc.sem_signal
+        self.stage = self.gui.hardware_components['sem_slowscan_vout']
 
         # Data File
         # H5
@@ -114,8 +120,8 @@ class SimpleXYScan(Measurement):
             H['corners'] = self.corners
             H['imshow_extent'] = self.imshow_extent
             
-            self.apd_map = np.zeros((self.Nv.val, self.Nh.val), dtype=float)
-            self.apd_map_h5 = h5_io.h5_create_emd_dataset(name='apd_count_rate_map',
+            self.sem_map = np.zeros((self.Nv.val, self.Nh.val), dtype=float)
+            self.sem_map_h5 = h5_io.h5_create_emd_dataset(name='sem_signal_map',
                                         h5parent = self.h5_meas_group, 
                                         shape=(self.Nv.val, self.Nh.val),
                                         data=None,
@@ -123,7 +129,7 @@ class SimpleXYScan(Measurement):
                                         # dim arrays are hardlinks in this case
                                         dim_arrays=[H['v_array'], H['h_array']],
                                         dim_names=['V','H'], 
-                                        dim_units=['[u_m]','[u_m]'],
+                                        dim_units=['[V]','[V]'],
                                         compression='gzip'
                                         )
             
@@ -139,10 +145,12 @@ class SimpleXYScan(Measurement):
                     # each pixel:
                     # acquire signal and save to data array
                     self.pixel_i += 1
-                    self.apd_count_rate.read_from_hardware()
-                    self.apd_map[jj,ii] = self.apd_count_rate.val
-                    self.apd_map_h5['data'][jj,ii] = self.apd_count_rate.val
-                    self.progress.update_value(100.0*self.pixel_i / (self.Nh.val*self.Nv.val))
+                    self.sem_signal_lq.read_from_hardware()
+                    #print self.sem_signal_lq.val
+                    #print self.sem_map[0:5,0:5]
+                    self.sem_map[jj,ii] = self.sem_signal_lq.val
+                    #self.sem_map_h5['data'][jj,ii] = self.sem_signal_lq.val
+                self.progress.update_value(100.0*self.pixel_i / (self.Nh.val*self.Nv.val))
         finally:
             self.h5_file.close()
             
@@ -172,7 +180,7 @@ class SimpleXYScan(Measurement):
         self.current_stage_pos_arrow.setZValue(100)
         self.img_plot.addItem(self.current_stage_pos_arrow)
         
-        self.stage = self.gui.hardware_components['dummy_xy_stage']
+        self.stage = self.gui.hardware_components['sem_slowscan_vout']
         self.stage.x_position.updated_value.connect(self.update_arrow_pos, QtCore.Qt.UniqueConnection)
         self.stage.y_position.updated_value.connect(self.update_arrow_pos, QtCore.Qt.UniqueConnection)
         
@@ -222,14 +230,22 @@ class SimpleXYScan(Measurement):
             self.img_plot.addItem(self.img_item)
             #self.hist_lut.setImageItem(self.img_item)
     
-            self.img_item.setImage(self.apd_map.T)
+            self.img_item.setImage(self.sem_map.T)
             x0, x1, y0, y1 = self.imshow_extent
             print x0, x1, y0, y1
             self.img_item.setRect(QtCore.QRectF(x0, y0, x1-x0, y1-y0))
             
             self.initial_scan_setup_plotting = False
         else:
-            self.img_item.setImage(self.apd_map.T, autoRange=False, autoLevels=False)
+            self.img_item.setImage(self.sem_map.T, autoRange=False, autoLevels=True)
+            """try:
+                vmin = np.min(self.sem_map[np.nonzero(self.sem_map)])
+                vmax = np.max(self.sem_map[np.nonzero(self.sem_map)])
+            except:
+                vmin=0
+                vmax=1
+            """
+            #self.img_item.setLevels([vmin,vmax], update=True)
             #self.hist_lut.imageChanged(autoLevel=True)        
     
     def mouseMoved(self,evt):
@@ -242,7 +258,7 @@ class SimpleXYScan(Measurement):
         #                )
 
         self.pos_label.setText(
-            "H {:+02.2f} um [{}], V {:+02.2f} um [{}]: {:1.2e} Hz".format(
+            "H {:+02.2f} V [{}], V {:+02.2f} V [{}]: {:1.2e} V".format(
                         mousePoint.x(), 0, mousePoint.y(), 0, 0))
 
         
