@@ -81,7 +81,29 @@ class EMHardwareComponent(HardwareComponent):
         for lq in self.logged_quantities.values():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
-        self.wrapper = None        
+        self.wrapper = None 
+     
+    #---------------------------------------------------------------------------      
+    def acquire(self):
+        return self.wrapper.Acq.AcquireImages()
+    
+    #---------------------------------------------------------------------------      
+    def setTemAcqVals(self,binning,exp):
+        myCcdAcqParams = self.Acq.Cameras(0).AcqParams
+        myCcdAcqParams.Binning = int(binning)
+        myCcdAcqParams.ExposureTime = float(exp)
+        myCcdAcqParams.ImageCorrection = self.wrapper.ACQIMAGECORRECTION_UNPROCESSED #this has to be unprocessed. Not sure if it affects data from the micoscope itself
+        myCcdAcqParams.ImageSize = self.wrapper.ACQIMAGESIZE_FULL
+        self.Acq.Cameras(0).AcqParams = myCcdAcqParams
+        print '-----set TEM vals-----'
+
+    #---------------------------------------------------------------------------
+    def setStemAcqVals(self,binning,dwell):
+        self.myStemAcqParams = self.Acq.Detectors.AcqParams
+        self.myStemAcqParams.Binning = int(bin)
+        self.myStemAcqParams.DwellTime = float(dwell)
+        self.Acq.Detectors.AcqParams = self.myStemAcqParams
+        print '-----set STEM vals-----'
         
     #---------------------------------------------------------------------------
     def stemSetup(self):
@@ -104,17 +126,18 @@ class EMHardwareComponent(HardwareComponent):
         return self.wrapper.getAlphaTilt()
     
     #---------------------------------------------------------------------------
-    def moveXY(self,x,y):
+    def moveStageXY(self,x,y):
         self.wrapper.setStageXY(x,y)    
         
     #---------------------------------------------------------------------------  
-    def getXY(self):
+    def getStageXY(self):
         return self.wrapper.getStageXY()
     
     #---------------------------------------------------------------------------
     def getBinnings(self):
-        return self.Cam.Info.Binnings
-    
+        if self.mode == 'TEM': return self.Cam.Info.Binnings
+        if self.mode == 'STEM': return self.Det.Info.Binnings
+        
     #---------------------------------------------------------------------------
     def setDefocus(self,defocus):
         self.wrapper.setDefocus(defocus)
