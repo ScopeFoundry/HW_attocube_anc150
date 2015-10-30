@@ -41,6 +41,7 @@ class PiCAM(object):
 
         
     def read_param(self, pname):
+        print "read_param", pname
         param = picam_ctypes.PicamParameter["PicamParameter_" + pname]
         
         ptype = param.param_type
@@ -61,7 +62,8 @@ class PiCAM(object):
                 enum_obj = getattr(picam_ctypes, enum_name)
                 enum_name =enum_obj.bynums[val.value]
                 #print "PI_read_param", pname, ptype, val, repr(val.value), enum_name
-                return val.value, enum_name
+                #return val.value, enum_name
+                return enum_name
         elif ptype in ['Rois']:
             rois_p = ctypes.POINTER(picam_ctypes.PicamRois)()
             self._err(PI.Picam_GetParameterRoisValue(self.camera_handle, param.enum, byref(rois_p)))
