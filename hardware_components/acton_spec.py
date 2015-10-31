@@ -78,10 +78,13 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
                 self.acton_spectrometer.write_exit_mirror
 
         # connect GUI
-        self.center_wl.updated_value[float].connect(
+        try:
+            self.center_wl.updated_value[float].connect(
                         self.gui.ui.acton_spec_center_wl_doubleSpinBox.setValue)
-        self.grating.updated_value[str].connect(
-                        self.gui.ui.acton_spec_grating_lineEdit.setText)    
+            self.grating.updated_value[str].connect(
+                        self.gui.ui.acton_spec_grating_lineEdit.setText)
+        except Exception as err:
+            print "could not connect to custom gui"
 
         self.read_from_hardware()
 
