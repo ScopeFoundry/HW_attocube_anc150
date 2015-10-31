@@ -39,6 +39,7 @@ class PicamReadout(Measurement):
             del self.graph_layout
 
         self.ui = self.graph_layout = pg.GraphicsLayoutWidget(border=(100,100,100))
+        self.ui.setWindowTitle(self.name)
 
         self.spec_plot = self.graph_layout.addPlot()
         self.spec_plot_line = self.spec_plot.plot([1,3,2,4,3,5])
@@ -57,7 +58,7 @@ class PicamReadout(Measurement):
         self.hist_lut.setImageItem(self.img_item)
         self.graph_layout.addItem(self.hist_lut)
 
-        self.show_ui()
+        #self.show_ui()
 
     def update_display(self):
         import numpy as np
