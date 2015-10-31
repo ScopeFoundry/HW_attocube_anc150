@@ -50,12 +50,12 @@
      <property name="title">
       <string>Control Panel</string>
      </property>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>30</x>
         <y>30</y>
-        <width>93</width>
+        <width>91</width>
         <height>161</height>
        </rect>
       </property>
@@ -156,7 +156,7 @@
         <x>10</x>
         <y>30</y>
         <width>131</width>
-        <height>171</height>
+        <height>161</height>
        </rect>
       </property>
       <layout class="QFormLayout" name="formLayout_2">
@@ -340,97 +340,7 @@
      <property name="title">
       <string>Status</string>
      </property>
-     <widget class="QWidget" name="">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>20</y>
-        <width>131</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_11">
-       <property name="spacing">
-        <number>-1</number>
-       </property>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <item>
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Res:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lblXYRes">
-           <property name="text">
-            <string>(res,res)</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_6">
-         <item>
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Shift:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lblXYShift">
-           <property name="text">
-            <string>(±x,±y)</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_7">
-         <item>
-          <widget class="QLabel" name="label_11">
-           <property name="text">
-            <string>Delta Def:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lblDeltaDefocus">
-           <property name="text">
-            <string>±(def)</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
-         <item>
-          <widget class="QLabel" name="label_9">
-           <property name="text">
-            <string>Defocus</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QDoubleSpinBox" name="defBox">
-           <property name="suffix">
-            <string>nm</string>
-           </property>
-           <property name="minimum">
-            <double>-99.989999999999995</double>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -524,19 +434,123 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <zorder>verticalLayoutWidget_2</zorder>
-     <zorder>verticalLayoutWidget</zorder>
-     <zorder></zorder>
-     <zorder></zorder>
-     <zorder></zorder>
-     <zorder></zorder>
-     <zorder></zorder>
-     <zorder>lblBin</zorder>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>131</width>
+        <height>101</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_11">
+       <property name="spacing">
+        <number>-1</number>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Res:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblXYRes">
+           <property name="text">
+            <string>(res,res)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Shift:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblXYShift">
+           <property name="text">
+            <string>(±x,±y)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Delta Def:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblDeltaDefocus">
+           <property name="text">
+            <string>±(def)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>Defocus</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="defBox">
+           <property name="suffix">
+            <string>nm</string>
+           </property>
+           <property name="minimum">
+            <double>-99.989999999999995</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QLabel" name="label_16">
+           <property name="text">
+            <string>Alpha</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="alphaBox">
+           <property name="suffix">
+            <string>°</string>
+           </property>
+           <property name="minimum">
+            <double>-99.989999999999995</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
     </widget>
-    <zorder>controlPanelBox</zorder>
     <zorder>seriesBox</zorder>
     <zorder>statusBox</zorder>
-    <zorder></zorder>
+    <zorder>controlPanelBox</zorder>
+    <zorder>alphaBox</zorder>
+    <zorder>label_16</zorder>
    </widget>
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
@@ -589,13 +603,13 @@
     <property name="title">
      <string>Amender</string>
     </property>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>0</x>
        <y>20</y>
        <width>272</width>
-       <height>201</height>
+       <height>204</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -666,13 +680,13 @@
     <property name="title">
      <string/>
     </property>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>150</x>
        <y>10</y>
        <width>511</width>
-       <height>41</height>
+       <height>51</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_18">
@@ -856,13 +870,6 @@
       </item>
      </layout>
     </widget>
-    <zorder></zorder>
-    <zorder></zorder>
-    <zorder></zorder>
-    <zorder></zorder>
-    <zorder></zorder>
-    <zorder></zorder>
-    <zorder></zorder>
    </widget>
    <widget class="QGroupBox" name="plot_groupBox">
     <property name="geometry">
@@ -878,24 +885,6 @@
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_19"/>
    </widget>
-   <zorder>horizontalLayoutWidget</zorder>
-   <zorder>lblBin</zorder>
-   <zorder>splitter_2</zorder>
-   <zorder>splitter</zorder>
-   <zorder>groupBox</zorder>
-   <zorder>groupBox_2</zorder>
-   <zorder>groupBox_3</zorder>
-   <zorder>columnView</zorder>
-   <zorder>columnView_3</zorder>
-   <zorder>verticalLayoutWidget_3</zorder>
-   <zorder></zorder>
-   <zorder></zorder>
-   <zorder></zorder>
-   <zorder></zorder>
-   <zorder></zorder>
-   <zorder>bin2</zorder>
-   <zorder>groupBox_4</zorder>
-   <zorder>plot_groupBox</zorder>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
