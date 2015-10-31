@@ -7,8 +7,9 @@ import win32com.client
 from random import choice, random, randint
 from foundry_scope.logged_quantity import LQRange
 from threading import Thread
-from foundry_scope.measurement_components.LoopLocker import LoopLocker
-
+from foundry_scope.measurement_components.LoopLocker import LoopLocker,\
+    AcquiredSingleImage
+import datetime
 class EMTomographySeries(Measurement):
     itr_finished = QtCore.Signal(ndarray)
     name = "em_tomography"
@@ -20,7 +21,8 @@ class EMTomographySeries(Measurement):
     def setup(self):
         self.display_update_period = 0.1 #seconds
         self.getHardware()
-        self.setupUI()        
+        self.setupUI()  
+        self.dataLocker = LoopLocker()      
 
     def getHardware(self):
         self.hardware = self.gui.hardware_components['em_hardware']
@@ -86,6 +88,7 @@ class EMTomographySeries(Measurement):
         self.Acq = self._m.Acquisition
         self.Proj = self._m.Projection
         self.initialDF = self.Proj.Defocus
+        self.Stage = self._m.Stage
         myCcdAcqParams = self.Acq.Cameras(0).AcqParams
         myCcdAcqParams.Binning = self.hardware.current_binning.val
         myCcdAcqParams.ExposureTime = self.hardware.current_exposure.val
@@ -106,11 +109,7 @@ class EMTomographySeries(Measurement):
         if d==0: lbld=''
         self.ui.lblDeltaDefocus.setText(lbld+str(d)+'nm')
     def allocateStorage(self):
-        if self.debug: print '-----allocating arrays-----'
-        deltas = len(self.tiltLQRange.array)
-        self.seriesDict = dict()
-        for x in self.tiltLQRange.array:
-            self.seriesDict.update(x=[])
+        pass
     def setup_figure(self):
         if hasattr(self, 'graph_layout'):
             self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
@@ -128,6 +127,10 @@ class EMTomographySeries(Measurement):
             for ii in range(self.num_repeats.val):
                 acquiredImageSet = self.Acq.AcquireImages()      
                 itr = array(acquiredImageSet(0).AsSafeArray) 
+                self.dataLocker.addToSeries(AcquiredSingleImage(itr,
+                                                self.Acq.Detectors.AcqParams,
+                                                datetime.datetime.now(),
+                                                tiltVal))
                 self.itr_finished.emit(itr)
                 if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----' 
                 if self.debug: print 'Size:'+str(itr.nbytes)  
@@ -136,7 +139,11 @@ class EMTomographySeries(Measurement):
             print self.tiltLQRange.array
             #self.getScope()
             acquiredImageSet = self.hardware.acquire()      
-            itr = array(acquiredImageSet(0).AsSafeArray) 
+            itr = array(acquiredImageSet(0).AsSafeArray)
+            self.dataLocker.addToFloating(AcquiredSingleImage(itr,
+                                                self.hardware.Acq.Detectors.AcqParams,
+                                                datetime.datetime.now(),
+                                                self.hardware.current_tilt.val))
             self.itr_finished.emit(itr)
         except Exception as err:
             print self.name, "error:", err
@@ -149,6 +156,7 @@ class EMTomographySeries(Measurement):
         except Exception as err:
             print self.name, "error:", err
     def postAcquisition(self):
+        self.dataLocker.printStuff()
         print '-----postacq-----'
     def updateView(self,data):
         self.viewer.clear()
@@ -164,10 +172,10 @@ class EMTomographySeries(Measurement):
         self.updateView(data)
 
     def minTilt(self):
-        self.hardware.setAlphaTilt(self.minimum_tilt.val)
+        self.hardware.current_tilt.update_value(self.minimum_tilt.val)
         print '-----min tilt-----'
     def maxTilt(self):
-        self.hardware.setAlphaTilt(self.maximum_tilt.val)
+        self.hardware.current_tilt.update_value(self.maximum_tilt.val)
         print '-----max tilt-----'
     def binChanged(self,btnId):
         if btnId in self.hardware.getBinnings():
