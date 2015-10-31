@@ -7,6 +7,7 @@ import win32com.client
 from random import choice, random, randint
 from foundry_scope.logged_quantity import LQRange
 from threading import Thread
+from foundry_scope.measurement_components.LoopLocker import LoopLocker
 
 class EMTomographySeries(Measurement):
     itr_finished = QtCore.Signal(ndarray)
@@ -19,14 +20,13 @@ class EMTomographySeries(Measurement):
     def setup(self):
         self.display_update_period = 0.1 #seconds
         self.getHardware()
-        self.setupUI()
+        self.setupUI()        
 
     def getHardware(self):
         self.hardware = self.gui.hardware_components['em_hardware']
         self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
 
     def setupUI(self):
-        
         self.minimum_tilt = self.add_logged_quantity(
                                 name = 'minimum_tilt', initial = -80.0,
                                 dtype = float, fmt="%e", ro=False,
@@ -40,7 +40,7 @@ class EMTomographySeries(Measurement):
                                 dtype = float, fmt="%e", ro=False,
                                 unit='deg', vmin=-80.0,vmax=80.0)
         self.num_tilts = self.add_logged_quantity(
-                                name = 'num_tilts', initial = 30,
+                                name = 'num_tilts', initial = 10,
                                 dtype = int, fmt="%e", ro=False,
                                 unit=None, vmin=2,vmax=160)
         self.num_repeats = self.add_logged_quantity(
@@ -67,6 +67,7 @@ class EMTomographySeries(Measurement):
             #hardware LQs
             self.hardware.current_exposure.connect_bidir_to_widget(self.ui.expBox)
             self.hardware.current_defocus.connect_bidir_to_widget(self.ui.defBox)
+            self.hardware.current_tilt.connect_bidir_to_widget(self.ui.alphaBox)
             #measurement LQs
             self.num_tilts.connect_bidir_to_widget(self.ui.numBox)
             self.step_tilt.connect_bidir_to_widget(self.ui.steBox)
@@ -118,8 +119,18 @@ class EMTomographySeries(Measurement):
         self.ui.plot_groupBox.layout().addWidget(self.graph_layout)
         self.viewer = self.graph_layout.addViewBox()
         self.viewer.enableAutoRange()
-    def acqFoc(self):
-        pass
+    def acqSeries(self):
+        for ii in range(len(self.tiltLQRange.array)):
+            print len(self.tiltLQRange.array)
+            print 'loop ' + str(ii)
+            tiltVal = float(self.tiltLQRange.array[ii])
+            self.hardware.current_tilt.update_value(tiltVal)
+            for ii in range(self.num_repeats.val):
+                acquiredImageSet = self.Acq.AcquireImages()      
+                itr = array(acquiredImageSet(0).AsSafeArray) 
+                self.itr_finished.emit(itr)
+                if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----' 
+                if self.debug: print 'Size:'+str(itr.nbytes)  
     def preview(self):
         try:
             print self.tiltLQRange.array
@@ -133,16 +144,7 @@ class EMTomographySeries(Measurement):
         try:
             if not hasattr(self,'_m') or self._m == None: self.getScope()
             self.allocateStorage()
-            for ii in range(len(self.tiltLQRange.array)):
-                print len(self.tiltLQRange.array)
-                print 'loop ' + str(ii)
-                tiltVal = float(self.tiltLQRange.array[ii])
-                #self.hardware.setAlphaTilt(tiltVal)
-                acquiredImageSet = self.Acq.AcquireImages()      
-                itr = array(acquiredImageSet(0).AsSafeArray) 
-                self.itr_finished.emit(itr)
-                if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----' 
-                if self.debug: print 'Size:'+str(itr.nbytes)  
+            self.acqSeries()
             self.measurement_sucessfully_completed.emit()
         except Exception as err:
             print self.name, "error:", err
