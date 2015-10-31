@@ -33,6 +33,10 @@ class EMHardwareComponent(HardwareComponent):
                         dtype = float, fmt="%e", ro=False,
                         unit="s",
                         vmin=-1.0,vmax=100.0)
+        self.current_tilt = self.add_logged_quantity(
+                        name = 'current_tilt', initial = 80.0,
+                        dtype = float, fmt="%e", ro=False,
+                        unit='deg', vmin=-80.0,vmax=80.0)
         self.dummy_mode = self.add_logged_quantity(name='dummy_mode',
                             dtype=bool, initial=False, ro=False)    
                        
@@ -53,7 +57,11 @@ class EMHardwareComponent(HardwareComponent):
             self.current_defocus.hardware_read_func = \
                 self.wrapper.getDefocus
             self.current_defocus.hardware_set_func = \
-                self.wrapper.setDefocus
+                self.wrapper.setDefocus             
+            self.current_tilt.hardware_read_func = \
+                self.wrapper.getAlphaTilt
+            self.current_tilt.hardware_set_func = \
+                self.wrapper.setAlphaTilt
                 
             self.current_binning.hardware_read_func = \
                 self.wrapper.getBinning
@@ -68,9 +76,9 @@ class EMHardwareComponent(HardwareComponent):
             self.current_dwell.hardware_set_func = \
                 self.wrapper.setDwellTime
              
-            if self.wrapper.getMode() == 'TEM': self.temSetup()
-            if self.wrapper.getMode() == 'STEM': self.stemSetup()
             
+            if self.wrapper.getMode() == 'STEM': self.stemSetup()
+            else: self.temSetup()
             self.read_from_hardware()
 
         else:
