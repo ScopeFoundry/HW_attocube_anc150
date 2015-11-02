@@ -15,7 +15,7 @@ from PySide import QtCore
 
 class ActonSpectrometerHardwareComponent(HardwareComponent):
     
-    ACTON_SPEC_PORT = "COM18"
+    ACTON_SPEC_PORT = "COM4"
 
     
     def setup(self):
@@ -52,10 +52,11 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
                                                 )
 
         # connect to gui
-        
-        self.center_wl.connect_bidir_to_widget(self.gui.ui.acton_spec_center_wl_doubleSpinBox)
-        self.exit_mirror.connect_bidir_to_widget(self.gui.ui.acton_spec_exitmirror_comboBox)
-
+        try:
+            self.center_wl.connect_bidir_to_widget(self.gui.ui.acton_spec_center_wl_doubleSpinBox)
+            self.exit_mirror.connect_bidir_to_widget(self.gui.ui.acton_spec_exitmirror_comboBox)
+        except Exception as err:
+            print self.name, "Could not connect to gui:", err
 
     def connect(self):
         if self.debug: print "connecting to acton_spectrometer"
@@ -77,10 +78,13 @@ class ActonSpectrometerHardwareComponent(HardwareComponent):
                 self.acton_spectrometer.write_exit_mirror
 
         # connect GUI
-        self.center_wl.updated_value[float].connect(
+        try:
+            self.center_wl.updated_value[float].connect(
                         self.gui.ui.acton_spec_center_wl_doubleSpinBox.setValue)
-        self.grating.updated_value[str].connect(
-                        self.gui.ui.acton_spec_grating_lineEdit.setText)    
+            self.grating.updated_value[str].connect(
+                        self.gui.ui.acton_spec_grating_lineEdit.setText)
+        except Exception as err:
+            print "could not connect to custom gui"
 
         self.read_from_hardware()
 

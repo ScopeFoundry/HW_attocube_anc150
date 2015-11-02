@@ -47,8 +47,9 @@ class LoggedQuantity(QtCore.QObject):
     def read_from_hardware(self, send_signal=True):
         if self.hardware_read_func:
             self.oldval = self.val
-            #print "read_from_hardware", self.name
-            self.val = self.dtype(self.hardware_read_func())
+            val = self.hardware_read_func()
+            #print "read_from_hardware", self.name, val
+            self.val = self.dtype(val)
             if send_signal:
                 self.send_display_updates()
         return self.val

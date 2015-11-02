@@ -18,8 +18,9 @@ ROI_tuple = collections.namedtuple('ROI_tuple', "x width x_binning y height y_bi
 
 class PiCAM(object):
     
-    def __init__(self):
+    def __init__(self, debug=False):
         
+        self.debug = debug
         PI.Picam_InitializeLibrary()
         
         self.camera_handle = picam_ctypes.PicamHandle()
@@ -30,10 +31,10 @@ class PiCAM(object):
         #model_name_buf = ctypes.create_string_buffer(256)
         model_name_buf = ctypes.c_char_p()
         PI.Picam_GetEnumerationString(picam_ctypes.PicamEnumeratedTypeEnum.bysname['Model'], self.camera_id.model, byref(model_name_buf) )
-        print self.camera_handle, self.camera_id.model, str(model_name_buf.value), picam_ctypes.PicamModelEnum.bynums[self.camera_id.model]
+        if self.debug: print self.camera_handle, self.camera_id.model, str(model_name_buf.value), picam_ctypes.PicamModelEnum.bynums[self.camera_id.model]
         PI.Picam_DestroyString( model_name_buf )
         
-        print "SN:{} [{}]".format(self.camera_id.serial_number, self.camera_id.sensor_name)
+        if self.debug: print "SN:{} [{}]".format(self.camera_id.serial_number, self.camera_id.sensor_name)
         
     def close(self):
         PI.Picam_CloseCamera( self.camera_handle )
@@ -41,6 +42,8 @@ class PiCAM(object):
 
         
     def read_param(self, pname):
+        if self.debug: print "read_param", pname
+        
         param = picam_ctypes.PicamParameter["PicamParameter_" + pname]
         
         ptype = param.param_type
@@ -61,7 +64,8 @@ class PiCAM(object):
                 enum_obj = getattr(picam_ctypes, enum_name)
                 enum_name =enum_obj.bynums[val.value]
                 #print "PI_read_param", pname, ptype, val, repr(val.value), enum_name
-                return val.value, enum_name
+                #return val.value, enum_name
+                return enum_name
         elif ptype in ['Rois']:
             rois_p = ctypes.POINTER(picam_ctypes.PicamRois)()
             self._err(PI.Picam_GetParameterRoisValue(self.camera_handle, param.enum, byref(rois_p)))
@@ -200,7 +204,7 @@ class PiCAM(object):
         
 if __name__ == '__main__':
     
-    cam = PiCAM()
+    cam = PiCAM(debug=True)
     
     pnames = cam.get_param_names()
     
