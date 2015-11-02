@@ -1,8 +1,8 @@
 from measurement import Measurement
-from numpy import ndarray,zeros,uint16,array, round
+from numpy import ndarray,array, round
 import pyqtgraph as pg
 import pythoncom
-from PySide import QtCore
+from PySide import QtCore, QtGui
 import win32com.client
 from random import choice, random, randint
 from foundry_scope.logged_quantity import LQRange
@@ -10,25 +10,27 @@ from threading import Thread
 from foundry_scope.measurement_components.LoopLocker import LoopLocker,\
     AcquiredSingleImage
 import datetime
+from PySide.QtGui import QAction, QTreeWidgetItem
 class EMTomographySeries(Measurement):
     itr_finished = QtCore.Signal(ndarray)
     name = "em_tomography"
     ui_filename = "measurement_components/em_tomo.ui"
     def __init__(self,gui):
         self.debug = True
-        Measurement.__init__(self, gui)
-         
+        self.dataLocker = LoopLocker() 
+        Measurement.__init__(self, gui)         
     def setup(self):
         self.display_update_period = 0.1 #seconds
         self.getHardware()
         self.setupUI()  
-        self.dataLocker = LoopLocker()      
-
     def getHardware(self):
         self.hardware = self.gui.hardware_components['em_hardware']
         self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
-
     def setupUI(self):
+        self.seriesModel = QtGui.QStandardItemModel()   
+        self.floatingModel = QtGui.QStandardItemModel()     
+  
+
         self.minimum_tilt = self.add_logged_quantity(
                                 name = 'minimum_tilt', initial = -80.0,
                                 dtype = float, fmt="%e", ro=False,
@@ -54,7 +56,17 @@ class EMTomographySeries(Measurement):
         
         try:
             self.ui.setWindowTitle('NCEM Tomography Tool')
-            self.ui.btnPreview.released.connect(self.preview)
+            self.ui.seriesView.itemClicked.connect(self.selected)
+            self.ui.floatingView.itemClicked.connect(self.selected)
+            self.ui.seriesView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+            self.ui.floatingView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+            self.dataLocker.change_occurred.connect(self.updateTrees)
+            #buttons
+            self.ui.btnDiscard.released.connect(self.discardItem)
+            self.ui.btnAverage.released.connect(self.averageItems)
+            self.ui.btnSaveAll.released.connect(self.saveAll)
+            self.ui.btnSaveFloating.released.connect(self.saveFloating)
+            self.ui.btnSavePrimary.released.connect(self.saveSeries)            
             self.ui.btnPreview_2.released.connect(self.preview)
             self.ui.btnAcq.released.connect(self.start)
             self.ui.btnAbo.released.connect(self.interrupt)   
@@ -76,12 +88,87 @@ class EMTomographySeries(Measurement):
             self.minimum_tilt.connect_bidir_to_widget(self.ui.minBox)
             self.maximum_tilt.connect_bidir_to_widget(self.ui.maxBox)
             self.num_repeats.connect_bidir_to_widget(self.ui.repBox)
-            #signals
+            #measurement signals
             self.measurement_sucessfully_completed.connect(self.postAcquisition)
-            self.itr_finished[ndarray].connect(self.postIteration)        
-
+            self.itr_finished[ndarray].connect(self.postIteration)   
+            d = { 'key1': 'value1', 
+              'key2': 'value2',
+              'key3': [1,2,3, { 1: 3, 7 : 9}],
+              'key4': object(),
+              'key5': { 'another key1' : 'another value1',
+                        'another key2' : 'another value2'} }
+#             self.ui.seriesView.setModel(self.seriesModel) 
+#             self.item = QtGui.QTreeWidgetItem('Heheehehehe')
+#             self.seriesModel.appendRow(self.item)
         except Exception as err: 
             print "EM_Tomography: could not connect to custom main GUI", err
+    def updateTrees(self):
+        print '-----update trees-----'
+        self.fill_widget(self.ui.floatingView,self.dataLocker.floating)
+        self.fill_widget(self.ui.seriesView,self.dataLocker.series)
+    def saveAll(self):
+        print '----save all-----'
+    def saveFloating(self):
+        print '----save floating----'
+    def saveSeries(self):
+        print '-----save series-----'
+        
+    def selected(self,item):
+        self.updateView(self.dataLocker.getDisplayRepr(
+                                        self.sender().objectName(),
+                                        float(item.parent().text(0)),
+                                        int(item.text(0))))
+        print item.text(0)
+    def discardItem(self):
+        selected = self.ui.seriesView.selectedItems()
+
+        selected = self.ui.seriesView.selectedItems()
+        if len(selected)!=0:
+            for i in selected:
+                
+                print i.parent().text(0)
+        selected = self.ui.floatingView.selectedItems()
+        if len(selected)!=0:
+            for i in selected:
+                print i.parent().text(0)
+            
+        print '-----remove something-----'
+    def averageItems(self):
+        selected = self.ui.seriesView.selectedItems()
+        for i in selected:
+            print i.parent().text(0)
+    def fill_item(self,item, value):
+        item.setExpanded(True)
+        if type(value) is dict:
+            for key, val in sorted(value.iteritems()):
+                child = QTreeWidgetItem()
+                x = "{0:.3f}".format(key)
+#                 x = key
+                child.setText(0, unicode(x))
+                child.setFlags(QtCore.Qt.ItemIsEnabled)
+                item.addChild(child)
+                self.fill_item(child, val)
+        elif type(value) is list:
+            for val in value:
+                child = QTreeWidgetItem()
+                item.addChild(child)
+                if type(val) is dict:      
+                    child.setText(0, '[dict]')
+                    self.fill_item(child, val)
+                elif type(val) is list:
+                    child.setText(0, '[list]')
+                    self.fill_item(child, val)
+                else:
+                    child.setText(0, str(value.index(val)))
+                    child.setExpanded(True)
+        else:
+            print 'hi'
+            child = QTreeWidgetItem()
+            child.setText(0, unicode(value))
+            item.addChild(child)  
+    def fill_widget(self,widget, value):
+        widget.clear()
+        self.fill_item(widget.invisibleRootItem(), value)
     def getScope(self):
         self._m = win32com.client.Dispatch(pythoncom.CoGetInterfaceAndReleaseStream(self._id, 
                                                     pythoncom.IID_IDispatch))
@@ -144,6 +231,7 @@ class EMTomographySeries(Measurement):
                                                 self.hardware.Acq.Detectors.AcqParams,
                                                 datetime.datetime.now(),
                                                 self.hardware.current_tilt.val))
+            #self.ui.columnView.addAction(QAction(str(self.hardware.current_tilt.val),self.ui.columnView))
             self.itr_finished.emit(itr)
         except Exception as err:
             print self.name, "error:", err
