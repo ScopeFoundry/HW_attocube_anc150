@@ -17,19 +17,20 @@ class SimpleXYScan(Measurement):
         #connect events        
 
         # local logged quantities
-        lq_params = dict(dtype=float, vmin=-1,vmax=100, ro=False, unit='um' )
+        lq_params = dict(dtype=float, vmin=0,vmax=100, ro=False, unit='um' )
         self.h0 = self.add_logged_quantity('h0',  initial=25, **lq_params  )
         self.h1 = self.add_logged_quantity('h1',  initial=45, **lq_params  )
         self.v0 = self.add_logged_quantity('v0',  initial=25, **lq_params  )
         self.v1 = self.add_logged_quantity('v1',  initial=45, **lq_params  )
 
+        lq_params = dict(dtype=float, vmin=1e-9,vmax=100, ro=False, unit='um' )
         self.dh = self.add_logged_quantity('dh', initial=1, **lq_params)
         self.dh.spinbox_decimals = 3
         self.dv = self.add_logged_quantity('dv', initial=1, **lq_params)
         self.dv.spinbox_decimals = 3
         
-        self.Nh = self.add_logged_quantity('Nh', initial=11, dtype=int, ro=False)
-        self.Nv = self.add_logged_quantity('Nv', initial=11, dtype=int, ro=False)
+        self.Nh = self.add_logged_quantity('Nh', initial=11, vmin=1, dtype=int, ro=False)
+        self.Nv = self.add_logged_quantity('Nv', initial=11, vmin=1, dtype=int, ro=False)
 
         #update Nh, Nv and other scan parameters when changes to inputs are made 
         #for lqname in 'h0 h1 v0 v1 dh dv'.split():
@@ -87,6 +88,11 @@ class SimpleXYScan(Measurement):
                 
     
     def _run(self):
+        
+        # set all logged quantities read only
+        for lqname in "h0 h1 v0 v1 dh dv Nh Nv".split():
+            self.logged_quantities[lqname].change_readonly(True)
+        
         #Hardware
         self.apd_counter_hc = self.gui.hardware_components['apd_counter']
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
@@ -144,6 +150,10 @@ class SimpleXYScan(Measurement):
                     self.apd_map_h5['data'][jj,ii] = self.apd_count_rate.val
                     self.progress.update_value(100.0*self.pixel_i / (self.Nh.val*self.Nv.val))
         finally:
+            # set all logged quantities writable
+            for lqname in "h0 h1 v0 v1 dh dv Nh Nv".split():
+                self.logged_quantities[lqname].change_readonly(False)
+            
             self.h5_file.close()
             
     def clear_qt_attr(self, attr_name):
