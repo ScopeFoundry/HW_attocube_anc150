@@ -8,6 +8,9 @@ class LoggedQuantity(QtCore.QObject):
     updated_text_value = QtCore.Signal(str)
     updated_choice_index_value = QtCore.Signal(int) # emits the index of the value in self.choices
     
+    updated_min_max = QtCore.Signal((float,float),(int,int), (),) # signal sent when min max range updated
+    updated_readonly = QtCore.Signal((bool,), (),)
+    
     def __init__(self, name, dtype=float, 
                  hardware_read_func=None, hardware_set_func=None, 
                  initial=0, fmt="%g", si=True,
@@ -38,6 +41,8 @@ class LoggedQuantity(QtCore.QObject):
         self.oldval = None
         
         self._in_reread_loop = False # flag to prevent reread from hardware loops
+        
+        self.widget_list = []
         
     def read_from_hardware(self, send_signal=True):
         if self.hardware_read_func:
@@ -125,15 +130,13 @@ class LoggedQuantity(QtCore.QObject):
                 widget.setSuffix(" "+self.unit)
             if self.dtype == int:
                 widget.setDecimals(0)
-            if self.ro:
-                widget.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
-                widget.setReadOnly(True)
+            self.change_readonly(self.ro)
             widget.setDecimals(self.spinbox_decimals)
             widget.setValue(self.val)
             #events
             self.updated_value[float].connect(widget.setValue)
-            if not self.ro:
-                widget.valueChanged[float].connect(self.update_value)
+            #if not self.ro:
+            widget.valueChanged[float].connect(self.update_value)
                 
         elif type(widget) == QtGui.QCheckBox:
             print self.name
@@ -166,9 +169,9 @@ class LoggedQuantity(QtCore.QObject):
             if self.unit is None:
                 suffix = ""
             if self.dtype == int:
-                        integer = True
-                        minStep=1
-                        step=1
+                integer = True
+                minStep=1
+                step=1
             else:
                 integer = False
                 minStep=.1
@@ -196,27 +199,37 @@ class LoggedQuantity(QtCore.QObject):
             raise ValueError("Unknown widget type")
         
         self.send_display_updates(force=True)
-        self.widget = widget
+        #self.widget = widget
+        self.widget_list.append(widget)
     
     def change_choice_list(self, choices):
-        widget = self.widget
-        
+        #widget = self.widget
         self.choices = choices
         
-        if type(widget) == QtGui.QComboBox:
-            # need to have a choice list to connect to a QComboBox
-            assert self.choices is not None 
-            widget.clear() # removes all old choices
-            for choice_name, choice_value in self.choices:
-                widget.addItem(choice_name, choice_value)
-        else:
-            raise RuntimeError("Invalid widget type.")
+        for widget in self.widget_list:
+            if type(widget) == QtGui.QComboBox:
+                # need to have a choice list to connect to a QComboBox
+                assert self.choices is not None 
+                widget.clear() # removes all old choices
+                for choice_name, choice_value in self.choices:
+                    widget.addItem(choice_name, choice_value)
+            else:
+                raise RuntimeError("Invalid widget type.")
     
-    def change_min_max(self, vmin=0, vmax=99.99):
-        widget = self.widget
+    def change_min_max(self, vmin=-1e12, vmax=+1e12):
         self.vmin = vmin
         self.vmax = vmax
-        widget.setRange(vmin, vmax)
+        for widget in self.widget_list: # may not work for certain widget types
+            widget.setRange(vmin, vmax)
+        self.updated_min_max.emit(vmin,vmax)
+        
+    def change_readonly(self, ro=True):
+        self.ro = ro
+        for widget in self.widget_list:
+            if type(widget) in [QtGui.QDoubleSpinBox, pyqtgraph.widgets.SpinBox.SpinBox]:
+                widget.setReadOnly(self.ro)    
+            #elif
+        self.updated_readonly.emit(self.ro)
         
 class LQRange(QtCore.QObject):
     """
