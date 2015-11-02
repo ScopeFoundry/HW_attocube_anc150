@@ -12,8 +12,13 @@ import collections
 from PySide import QtCore, QtGui, QtUiTools
 import pyqtgraph as pg
 #import pyqtgraph.console
-from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
-from IPython.qt.inprocess import QtInProcessKernelManager
+import IPython
+if IPython.version_info[0] < 4:
+    from IPython.qt.console.rich_ipython_widget import RichIPythonWidget as RichJupyterWidget
+    from IPython.qt.inprocess import QtInProcessKernelManager
+else:
+    from qtconsole.rich_jupyter_widget import RichJupyterWidget
+    from qtconsole.inprocess import QtInProcessKernelManager
 
 import matplotlib
 matplotlib.rcParams['backend.qt4'] = 'PySide'
@@ -75,17 +80,17 @@ class BaseMicroscopeGUI(object):
         self.kernel = self.kernel_manager.kernel
         self.kernel.gui = 'qt4'
         self.kernel.shell.push({'np': np, 'gui': self})
-
         self.kernel_client = self.kernel_manager.client()
         self.kernel_client.start_channels()
 
-        self.console_widget = RichIPythonWidget()
+        #self.console_widget = RichIPythonWidget()
+        self.console_widget = RichJupyterWidget()
         self.console_widget.setWindowTitle("ScopeFoundry IPython Console")
         self.console_widget.kernel_manager = self.kernel_manager
         self.console_widget.kernel_client = self.kernel_client
         #self.console_widget.exit_requested.connect(stop)
-        self.console_widget.show()
-
+        #self.console_widget.show()
+        
         if hasattr(self.ui, 'console_pushButton'):
             self.ui.console_pushButton.clicked.connect(self.console_widget.show)
             self.ui.console_pushButton.clicked.connect(self.console_widget.activateWindow)
@@ -295,7 +300,7 @@ class CloseEventEater(QtCore.QObject):
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    app.setApplicationName("CL Microscope Control Application")
+    app.setApplicationName("Microscope Control Application")
     
     gui = BaseMicroscopeGUI(app)
     gui.show()
