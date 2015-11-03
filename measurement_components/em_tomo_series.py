@@ -58,15 +58,25 @@ class EMTomographySeries(Measurement):
             self.ui.setWindowTitle('NCEM Tomography Tool')
             self.ui.seriesView.itemClicked.connect(self.selected)
             self.ui.floatingView.itemClicked.connect(self.selected)
+            self.ui.floatingView.itemSelectionChanged.connect(self.selectionChanged)
+            self.ui.seriesView.itemSelectionChanged.connect(self.selectionChanged)
             self.ui.seriesView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
             self.ui.floatingView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
             self.dataLocker.change_occurred.connect(self.updateTrees)
             #buttons
+            self.ui.btnGoTo.released.connect(self.goToSelectedAlpha)
+            self.ui.btnDiff.released.connect(self.diff)
+            self.ui.btnS2F.released.connect(self.seriesToFloating)
+            self.ui.btnF2S.released.connect(self.floatingToSeries)
+            self.ui.btnFlushPrimary.released.connect(self.dataLocker.flushSeries)
+            self.ui.btnClearFloating.released.connect(self.dataLocker.clearFloating)
+            self.ui.btnClearAll.released.connect(self.dataLocker.clearData)
             self.ui.btnDiscard.released.connect(self.discardItem)
             self.ui.btnAverage.released.connect(self.averageItems)
             self.ui.btnSaveAll.released.connect(self.saveAll)
             self.ui.btnSaveFloating.released.connect(self.saveFloating)
-            self.ui.btnSavePrimary.released.connect(self.saveSeries)            
+            self.ui.btnSavePrimary.released.connect(self.saveSeries)  
+            self.ui.btnPreview.released.connect(self.preview)          
             self.ui.btnPreview_2.released.connect(self.preview)
             self.ui.btnAcq.released.connect(self.start)
             self.ui.btnAbo.released.connect(self.interrupt)   
@@ -91,52 +101,118 @@ class EMTomographySeries(Measurement):
             #measurement signals
             self.measurement_sucessfully_completed.connect(self.postAcquisition)
             self.itr_finished[ndarray].connect(self.postIteration)   
-            d = { 'key1': 'value1', 
-              'key2': 'value2',
-              'key3': [1,2,3, { 1: 3, 7 : 9}],
-              'key4': object(),
-              'key5': { 'another key1' : 'another value1',
-                        'another key2' : 'another value2'} }
-#             self.ui.seriesView.setModel(self.seriesModel) 
-#             self.item = QtGui.QTreeWidgetItem('Heheehehehe')
-#             self.seriesModel.appendRow(self.item)
         except Exception as err: 
             print "EM_Tomography: could not connect to custom main GUI", err
+    def goToSelectedAlpha(self):
+        selection = self.ui.seriesView.selectedItems() + self.ui.floatingView.selectedItems()
+        if len(selection)==1: 
+            if abs(self.hardware.current_tilt.val-float(selection[0].parent().text(0)))>5.0:
+                reply = QtGui.QMessageBox.question(None, 
+                                        "Large Change", 
+                                        "Current: %s deg\nDesired: %s deg\n Make Change?" % (self.hardware.current_tilt.val,selection[0].parent().text(0),),
+                                        QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+                if reply == QtGui.QMessageBox.Yes:
+                    self.hardware.current_tilt.update_value(selection[0].parent().text(0))
+                else: pass
+            else:
+                self.hardware.current_tilt.update_value(selection[0].parent().text(0))                  
+    def diff(self):
+        if self.changed_selection:
+            self.diffCounter = 0
+            self.changed_selection = False
+            self.tempSelect = self.ui.seriesView.selectedItems() + self.ui.floatingView.selectedItems()
+        else:
+            selected = self.tempSelect
+            self.updateView(self.dataLocker.getDisplayRepr(
+                                        selected[self.diffCounter].treeWidget().objectName(),
+                                        float(selected[self.diffCounter].parent().text(0)),
+                                        int(selected[self.diffCounter].text(0))))
+            self.diffCounter+=1
+            if self.diffCounter == len(selected): self.diffCounter = 0
     def updateTrees(self):
         print '-----update trees-----'
-        self.fill_widget(self.ui.floatingView,self.dataLocker.floating)
-        self.fill_widget(self.ui.seriesView,self.dataLocker.series)
+        self.fill_trees([[self.ui.floatingView,self.dataLocker.floating],
+                        [self.ui.seriesView,self.dataLocker.series]])
     def saveAll(self):
         print '----save all-----'
     def saveFloating(self):
         print '----save floating----'
     def saveSeries(self):
         print '-----save series-----'
-        
-    def selected(self,item):
-        self.updateView(self.dataLocker.getDisplayRepr(
+    def selectionChanged(self):
+        self.changed_selection = True
+        selected = self.sender().selectedItems()
+        if len(selected)==1: self.updateView(self.dataLocker.getDisplayRepr(
                                         self.sender().objectName(),
-                                        float(item.parent().text(0)),
-                                        int(item.text(0))))
-        print item.text(0)
-    def discardItem(self):
-        selected = self.ui.seriesView.selectedItems()
-
+                                        float(selected[0].parent().text(0)),
+                                        int(selected[0].text(0))))
+    def seriesToFloating(self):
+        self.dataLocker.blockSignals(True)
+        moved = 0
         selected = self.ui.seriesView.selectedItems()
         if len(selected)!=0:
             for i in selected:
-                
-                print i.parent().text(0)
+                print 'in selected loop s2f'
+                self.dataLocker.moveFromSeries(float(i.parent().text(0)),
+                                                (int(i.text(0))+moved))
+                moved-=1
+        self.dataLocker.blockSignals(False) 
+        self.dataLocker.change_occurred.emit() 
+
+    def floatingToSeries(self):
+        self.dataLocker.blockSignals(True)
+        moved = 0
         selected = self.ui.floatingView.selectedItems()
         if len(selected)!=0:
             for i in selected:
-                print i.parent().text(0)
-            
-        print '-----remove something-----'
+                self.dataLocker.moveFromFloating(float(i.parent().text(0)),
+                                                (int(i.text(0))+moved))
+                moved-=1
+        self.dataLocker.blockSignals(False) 
+        self.dataLocker.change_occurred.emit() 
+
+    def selected(self,item):
+        try:
+            self.updateView(self.dataLocker.getDisplayRepr(
+                                            self.sender().objectName(),
+                                            float(item.parent().text(0)),
+                                            int(item.text(0))))
+            print item.text(0)
+        except:
+            pass
     def averageItems(self):
+            selected = self.ui.seriesView.selectedItems() + self.ui.floatingView.selectedItems()
+            avg = None
+            for item in selected:
+                if type(avg).__name__=='NoneType': avg = self.dataLocker.getDisplayRepr(
+                                        item.treeWidget().objectName(),
+                                        float(item.parent().text(0)),
+                                        int(item.text(0)))
+                else: avg += self.dataLocker.getDisplayRepr(
+                                        item.treeWidget().objectName(),
+                                        float(item.parent().text(0)),
+                                        int(item.text(0)))
+            avg /= float(len(selected))
+            self.updateView(avg)     
+    def discardItem(self):
+        self.dataLocker.blockSignals(True)
+        deleted = 0
         selected = self.ui.seriesView.selectedItems()
-        for i in selected:
-            print i.parent().text(0)
+        if len(selected)!=0:
+            for i in selected:
+                self.dataLocker.deleteFromSeries(float(i.parent().text(0)),
+                                                (int(i.text(0))+deleted))
+                deleted-=1
+        selected = self.ui.floatingView.selectedItems()
+        deleted = 0
+        if len(selected)!=0:
+            for i in selected:
+                self.dataLocker.deleteFromFloating(float(i.parent().text(0)),
+                                                (int(i.text(0))+deleted))  
+                deleted-=1      
+        self.dataLocker.blockSignals(False)
+        self.dataLocker.change_occurred.emit() 
+        print '-----remove something-----'
     def fill_item(self,item, value):
         item.setExpanded(True)
         if type(value) is dict:
@@ -166,9 +242,10 @@ class EMTomographySeries(Measurement):
             child = QTreeWidgetItem()
             child.setText(0, unicode(value))
             item.addChild(child)  
-    def fill_widget(self,widget, value):
-        widget.clear()
-        self.fill_item(widget.invisibleRootItem(), value)
+    def fill_trees(self,widgetsToFill):
+        for widget,value in widgetsToFill:
+            widget.clear()
+            self.fill_item(widget.invisibleRootItem(), value)
     def getScope(self):
         self._m = win32com.client.Dispatch(pythoncom.CoGetInterfaceAndReleaseStream(self._id, 
                                                     pythoncom.IID_IDispatch))
@@ -248,6 +325,9 @@ class EMTomographySeries(Measurement):
         print '-----postacq-----'
     def updateView(self,data):
         self.viewer.clear()
+        print type(data)
+        try: print data
+        except: pass
         self.viewer.addItem(pg.ImageItem(data))
         self.dummyStuff()
         self.update_display()
@@ -258,12 +338,29 @@ class EMTomographySeries(Measurement):
 #         thread.start()
 #         thread.join()
         self.updateView(data)
-
     def minTilt(self):
-        self.hardware.current_tilt.update_value(self.minimum_tilt.val)
+        if abs(self.hardware.current_tilt.val-self.minimum_tilt.val)>5.0:
+            reply = QtGui.QMessageBox.question(None, 
+                                    "Large Change", 
+                                    "Current: %s deg\nDesired: %s deg\n Make Change?" % (self.hardware.current_tilt.val,self.minimum_tilt.val,),
+                                    QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                self.hardware.current_tilt.update_value(self.minimum_tilt.val)
+            else: pass
+        else:
+            self.hardware.current_tilt.update_value(self.minimum_tilt.val)
         print '-----min tilt-----'
     def maxTilt(self):
-        self.hardware.current_tilt.update_value(self.maximum_tilt.val)
+        if abs(self.hardware.current_tilt.val-self.maximum_tilt.val)>5.0:
+            reply = QtGui.QMessageBox.question(None, 
+                                    "Large Change", 
+                                    "Current: %s deg\nDesired: %s deg\n Make Change?" % (self.hardware.current_tilt.val,self.maximum_tilt.val,),
+                                    QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                self.hardware.current_tilt.update_value(self.maximum_tilt.val)
+            else: pass
+        else:
+            self.hardware.current_tilt.update_value(self.maximum_tilt.val)
         print '-----max tilt-----'
     def binChanged(self,btnId):
         if btnId in self.hardware.getBinnings():
