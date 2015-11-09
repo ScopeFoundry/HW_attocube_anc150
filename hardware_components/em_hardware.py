@@ -10,6 +10,7 @@ class EMHardwareComponent(HardwareComponent):
     
     #---------------------------------------------------------------------------
     def setup(self):
+        self.debug_mode.update_value(True)
         self.debug = self.debug_mode.val
         self.name = "em_hardware"
 
@@ -31,7 +32,7 @@ class EMHardwareComponent(HardwareComponent):
         self.current_dwell = self.add_logged_quantity(
                         name = 'current_dwell',
                         dtype = float, fmt="%e", ro=False,
-                        unit="s",
+                        unit="us",
                         vmin=-1.0,vmax=100.0)
         self.current_tilt = self.add_logged_quantity(
                         name = 'current_tilt', initial = 80.0,
@@ -39,7 +40,9 @@ class EMHardwareComponent(HardwareComponent):
                         unit='deg', vmin=-80.0,vmax=80.0)
         self.dummy_mode = self.add_logged_quantity(name='dummy_mode',
                             dtype=bool, initial=False, ro=False)    
-                       
+            
+        self.acquisition_mode = self.add_logged_quantity(name='acquisition_mode',
+                            dtype = str, initial='',fmt="%s",unit=None,ro=False)          
     #---------------------------------------------------------------------------
     def connect(self):        
         if not self.dummy_mode.val:
@@ -53,34 +56,39 @@ class EMHardwareComponent(HardwareComponent):
             self.Ill = self.wrapper.Ill
             self.Proj = self.wrapper.Proj
             self.Stage = self.wrapper.Stage
-             
+            
+            self.acquisition_mode.hardware_read_func = \
+                self.wrapper.getMode
+            self.acquisition_mode.hardware_set_func = None
+
             self.current_defocus.hardware_read_func = \
                 self.wrapper.getDefocus
             self.current_defocus.hardware_set_func = \
-                self.wrapper.setDefocus             
+                self.wrapper.setDefocus       
+                      
             self.current_tilt.hardware_read_func = \
                 self.wrapper.getAlphaTilt
             self.current_tilt.hardware_set_func = \
                 self.wrapper.setAlphaTilt
-                
+            
             self.current_binning.hardware_read_func = \
                 self.wrapper.getBinning
             self.current_binning.hardware_set_func = \
                 self.wrapper.setBinning  
+                
             self.current_exposure.hardware_read_func = \
                 self.wrapper.getExposure
             self.current_exposure.hardware_set_func = \
                 self.wrapper.setExposure
+                
             self.current_dwell.hardware_read_func = \
                 self.wrapper.getDwellTime
             self.current_dwell.hardware_set_func = \
-                self.wrapper.setDwellTime
-             
+                self.wrapper.setDwellTime     
             
             if self.wrapper.getMode() == 'STEM': self.stemSetup()
             else: self.temSetup()
             self.read_from_hardware()
-
         else:
             if self.debug_mode.val: print "em_hardware: not connecting, dummy"
     #---------------------------------------------------------------------------
