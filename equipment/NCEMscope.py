@@ -9,8 +9,7 @@ import pythoncom
 #-------------------------------------------------------------------------------
 class ScopeWrapper(object):
     #---------------------------------------------------------------------------
-    def __init__(self,debug=False):
-        
+    def __init__(self,debug=True):       
         self.debug                  = debug  
         self.Scope                  = None
         self.Acq                    = None
@@ -21,7 +20,6 @@ class ScopeWrapper(object):
     def Connect(self):
         self.Scope = win32com.client.Dispatch('TEMScripting.Instrument')
         pythoncom.CoInitializeEx(pythoncom.COINIT_MULTITHREADED)
-
         if self.debug: print("Connected to microscope")
         
         self.TIA = win32com.client.Dispatch("ESVision.Application")
@@ -88,21 +86,22 @@ class ScopeWrapper(object):
     #---------------------------------------------------------------------------
     def getDwellTime(self):
         if self.mode == 'TEM': return -1
-        if self.mode == 'STEM': return self.Acq.Detectors.AcqParams.DwellTime
+        if self.mode == 'STEM': return self.Acq.Detectors.AcqParams.DwellTime/1e-6
         if self.debug: print("getting dwell")
         
+    #---------------------------------------------------------------------------
+    def setDwellTime(self,dwell):
+        if self.mode == 'STEM':
+            dwell *= 1e-6
+            self.Acq.Detectors.AcqParams.DwellTime = float(dwell)
+            if self.debug: print 'setting dwell:', dwell
+            
     #---------------------------------------------------------------------------
     def getExposure(self):
         if self.mode == 'TEM': return self.Cam.AcqParams.ExposureTime
         if self.mode == 'STEM': return -1.0
         if self.debug: print("getting exp")
-
-    #---------------------------------------------------------------------------
-    def setDwellTime(self,dwell):
-        if self.mode == 'STEM': 
-            self.Det.AcqParams.DwellTime = float(dwell)
-            if self.debug: print("setting dwell")
-        
+  
     #---------------------------------------------------------------------------
     def setExposure(self,exposure):
         if self.mode == 'TEM': 
@@ -114,11 +113,15 @@ class ScopeWrapper(object):
     def getDefocus(self):
         return self.Proj.Defocus*1e9
         if self.debug: print("getting def")
-        
     #---------------------------------------------------------------------------
     def setDefocus(self,defocus):
         self.Proj.Defocus = float(defocus*1e-9)
         if self.debug: print "setting def", defocus    
+         
+    #---------------------------------------------------------------------------
+    def getAlphaTilt(self):
+        return self.Stage.Position.A
+        if self.debug: print("getting alphatilt")
         
     #---------------------------------------------------------------------------
     def setAlphaTilt(self,alpha):
@@ -126,10 +129,7 @@ class ScopeWrapper(object):
         position.A = alpha
         self.Stage.Goto(position,8) 
         if self.debug: print "setting alphatilt", alpha  
-    #---------------------------------------------------------------------------
-    def getAlphaTilt(self):
-        return self.Stage.Position.A
-        if self.debug: print("getting alphatilt")
+
         
     #---------------------------------------------------------------------------
     def getStageXY(self):
