@@ -15,22 +15,22 @@ class EMHardwareComponent(HardwareComponent):
         self.name = "em_hardware"
 
         self.current_defocus = self.add_logged_quantity(
-                                name = 'current_defocus',
-                                dtype = float, fmt="%e", ro=False,
-                                unit="Nm",
-                                vmin=-100,vmax=100)
+                        name = 'current_defocus',
+                        dtype = float, fmt="%e", ro=False,
+                        unit="Nm",
+                        vmin=-100,vmax=100)
         self.current_binning = self.add_logged_quantity(
-                                name = 'current_binning',
-                                dtype = int, fmt="%e", ro=False,
-                                unit=None,
-                                vmin=1,vmax=None)
+                        name = 'current_binning',
+                        dtype = int, fmt="%e", ro=False,
+                        unit=None,
+                        vmin=1,vmax=None)
         self.current_exposure = self.add_logged_quantity(
                         name = 'current_exposure',
                         dtype = float, fmt="%e", ro=False,
                         unit="s",
                         vmin=-1.0,vmax=100.0) 
-        self.current_dwell = self.add_logged_quantity(
-                        name = 'current_dwell',
+        self.current_dwell = self.add_logged_quantity( #works with uS, equip converts
+                        name = 'current_dwell', initial = 12.0,
                         dtype = float, fmt="%e", ro=False,
                         unit="us",
                         vmin=-1.0,vmax=100.0)
@@ -135,6 +135,7 @@ class EMHardwareComponent(HardwareComponent):
         
     #---------------------------------------------------------------------------
     def setAlphaTilt(self,alpha):
+        alpha = round(alpha,2)
         self.wrapper.setAlphaTilt(alpha)
         
     #---------------------------------------------------------------------------
