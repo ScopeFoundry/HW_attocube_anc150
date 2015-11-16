@@ -19,7 +19,10 @@ class EM_Acquisition(BaseMicroscopeGUI):
         #Add hardware components
         print "Adding Hardware Components"
         self.add_hardware_component(EMHardwareComponent(self))
-        self.hardware_components['em_hardware'].connected.update_value(True)
+        self.hardware = self.hardware_components['em_hardware']
+        self.hardware.connected.update_value(True)
+        self.hardware.current_binning.update_value(4)
+        self.hardware.current_exposure.update_value(0.1)
 
         #Add measurement components
         print "Create Measurement objects"
