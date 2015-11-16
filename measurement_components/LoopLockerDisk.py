@@ -8,9 +8,7 @@ Requires two QTreeWidgets; buttons should be connected to goToSelectedAlpha,
 from PySide.QtCore import QObject, Signal, Qt
 from PySide.QtGui import QTreeWidgetItem, QAbstractItemView
 from numpy import array,ndarray,string_,int8,arange,zeros
-import hickle
 import h5py
-import cPickle as cp
 import datetime
 from time import time
 import os
@@ -85,17 +83,18 @@ class LoopLocker(QObject):
         dim2 = grp.create_dataset('dim2',(shape[1],),'f',)
         dim2.attrs['name'] = string_('y')
         dim2.attrs['units'] = string_('[n_m]')
-        dim1[:] = arange(0,shape[0],1)*EMImage.calibration[0] 
-        dim2[:] = arange(0,shape[1],1)*EMImage.calibration[1]   
+        dim1[:] = arange(0,shape[0],1)*EMImage.xCal 
+        dim2[:] = arange(0,shape[1],1)*EMImage.yCal  
         
         settingsGrp = grp.create_group('settings')
         for k,v in EMImage.__dict__.iteritems():
             if k != 'data':
-                settingsGrp.attrs[k] = v          
+                settingsGrp.attrs[k] = str(v)          
                    
         print '-----add to series-----'
         self.seriesFile.flush()
         self.sCount += 1
+        self.display_request.emit(EMImage)
         self.change_occurred.emit()
     
     #--------------------------------------------------------------------------- 
@@ -117,16 +116,17 @@ class LoopLocker(QObject):
         dim2 = grp.create_dataset('dim2',(shape[1],),'f',)
         dim2.attrs['name'] = string_('y')
         dim2.attrs['units'] = string_('[n_m]')
-        dim1[:] = arange(0,shape[0],1)*EMImage.calX 
-        dim2[:] = arange(0,shape[1],1)*EMImage.calY
+        dim1[:] = arange(0,shape[0],1)*EMImage.xCal 
+        dim2[:] = arange(0,shape[1],1)*EMImage.yCal
         
         settingsGrp = grp.create_group('settings')        
         for k,v in EMImage.__dict__.iteritems():
             if k != 'data':
                 print k
                 settingsGrp.attrs[k] = str(v)
+
         print '-----add to floating-----'
-        
+        self.display_request.emit(EMImage)
         self.floatingFile.flush()
         self.fCount += 1
         self.change_occurred.emit()
@@ -293,7 +293,10 @@ class LoopLocker(QObject):
             stemImage.stageY = grp['settings'].attrs['stageY']
             stemImage.stageZ = grp['settings'].attrs['stageZ']
             stemImage.dwellTime = grp['settings'].attrs['dwellTime']
-            stemImage.comment = grp['settings'].attrs['comment']            
+            stemImage.comment = grp['settings'].attrs['comment']   
+            stemImage.xCal = grp['settings'].attrs['xCal']       
+            stemImage.yCal = grp['settings'].attrs['yCal']       
+            stemImage.calUnits = grp['settings'].attrs['calUnits']              
             self.display_request.emit(stemImage)  
         except:
             pass        
@@ -322,7 +325,10 @@ class LoopLocker(QObject):
             stemImage.stageY = grp['settings'].attrs['stageY']
             stemImage.stageZ = grp['settings'].attrs['stageZ']
             stemImage.dwellTime = grp['settings'].attrs['dwellTime']
-            stemImage.comment = grp['settings'].attrs['comment']            
+            stemImage.comment = grp['settings'].attrs['comment']     
+            stemImage.xCal = grp['settings'].attrs['xCal']       
+            stemImage.yCal = grp['settings'].attrs['yCal']       
+            stemImage.calUnits = grp['settings'].attrs['calUnits']       
             self.display_request.emit(stemImage) 
 #             self.updateView(self.getDisplayRepr(
 #                                         self.sender().objectName(),
@@ -372,9 +378,6 @@ class LoopLocker(QObject):
             self.diffCounter+=1
             if self.diffCounter == len(selected): self.diffCounter = 0
     def saveData(self):
-        hickle.dump(self.series, 'series.hkl', mode='w')
-        hickle.dump(self.floating, 'floating.hkl', mode='w')
-
         print '----save all-----'
     def saveFloating(self):
         print '----save floating----'
@@ -438,8 +441,8 @@ class EMImage():
             self.height = data.shape[1]
             self.width = data.shape[0]
         
-        self.calX = None
-        self.calY = None
+        self.xCal = None
+        self.yCal = None
         self.calUnits = None
         
         self.binning = None
@@ -451,9 +454,6 @@ class EMImage():
         self.stageZ = 0.0
         self.stageAlpha = 0.0
         self.stageBeta = 0.0
-        
-
-    
     def setStagePosition(self,staPos):
         self.stageX = staPos.X
         self.stageY = staPos.Y
@@ -461,8 +461,8 @@ class EMImage():
         self.stageAlpha = staPos.A
         self.stageBeta = staPos.B
     def setCalibration(self,calibration):
-        self.calX = calibration[0]
-        self.calY = calibration[1]
+        self.xCal = calibration[0]
+        self.yCal = calibration[1]
         self.calUnits = calibration[2]
         
 class STEMImage(EMImage):
