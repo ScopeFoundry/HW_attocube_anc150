@@ -80,10 +80,11 @@ class LoopLocker(QObject):
         dim1 = grp.create_dataset('dim1',(shape[0],),'f',)
         dim1.attrs['name'] = string_('x') #use string_ to write fixed length strings. The viewer does not accommodate the default variable length strings (yet...)
         dim1.attrs['units'] = string_('[n_m]') #represent units properly (nanometers)
+        dim1[:] = arange(0,shape[0],1)*EMImage.xCal 
+        
         dim2 = grp.create_dataset('dim2',(shape[1],),'f',)
         dim2.attrs['name'] = string_('y')
         dim2.attrs['units'] = string_('[n_m]')
-        dim1[:] = arange(0,shape[0],1)*EMImage.xCal 
         dim2[:] = arange(0,shape[1],1)*EMImage.yCal  
         
         settingsGrp = grp.create_group('settings')
@@ -168,7 +169,6 @@ class LoopLocker(QObject):
         tilt = str(tilt)
         ID = str(ID)
         self.series[tilt].pop(ID)
-        if len(self.series[tilt])==0: self.series.pop(tilt)
         print '-----remove a'+str(tilt)+ ' from series-----'
         self.change_occurred.emit()
         
@@ -177,7 +177,6 @@ class LoopLocker(QObject):
         tilt = str(tilt)
         ID = str(ID)
         self.floating[tilt].pop(ID)
-        if len(self.floating[tilt])==0: self.floating.pop(tilt)
         print '-----remove a'+str(tilt)+ ' from floating-----'
         self.change_occurred.emit()
         
@@ -189,9 +188,15 @@ class LoopLocker(QObject):
     #--------------------------------------------------------------------------- 
     def flushSeries(self):
         '''Moves everything from Series to Floating'''
-        for x in self.series.keys():
-            self.series.copy(x,self.floating)
-            self.series.pop(x)
+        for tilt in self.series.keys():
+            if tilt in self.floating.keys():
+                for id in self.floating[tilt]:
+                    self.series.copy(self.series[tilt][id],self.floating[tilt])
+                    self.series[tilt].pop(id)
+            else:
+                self.series[tilt].copy(self.series[tilt],self.floating)
+                self.series.pop(tilt)
+     
         self.fCount += self.sCount
         self.sCount = 0
         self.change_occurred.emit()
@@ -427,7 +432,7 @@ class LoopLocker(QObject):
 class EMImage():
     def __init__(self,image=None,data=None):
         self.ID = str(time())
-        self.time = str(datetime.datetime.now())
+        self.time = str(datetime.datetime.now().strftime('%X %x %Z'))
         
         if image is not None:
             self.data = array(image.AsSafeArray)
