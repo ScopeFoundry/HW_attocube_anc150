@@ -12,10 +12,15 @@ from foundry_scope.measurement_components.LoopLockerDisk import LoopLocker,\
 TILT_SNAP_THRESHOLD = 5.0 
 class EMTomographySeries(Measurement):
     itr_finished = QtCore.Signal(ndarray)
+    series_paused = QtCore.Signal()
+
     name = "em_tomography"
     ui_filename = "measurement_components/em_tomo.ui"
     def __init__(self,gui):
         self.debug = True
+        self.paused = False
+        self.workingList = [] #used to support pausing
+        
         Measurement.__init__(self, gui)         
     def getHardware(self):
         self.hardware = self.gui.hardware_components['em_hardware']
@@ -41,7 +46,7 @@ class EMTomographySeries(Measurement):
         self.display_update_period = 0.1 #seconds
         self.getHardware()
         self.dataLocker = LoopLocker(self.ui.seriesView,self.ui.floatingView) 
-        self.setupUI()       
+        self.setupUI() 
     def setup_figure(self):
         if hasattr(self, 'graph_layout'):
             self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
@@ -83,12 +88,16 @@ class EMTomographySeries(Measurement):
                         
             #measurement signals
             self.measurement_sucessfully_completed.connect(self.postAcquisition)
-            self.itr_finished[ndarray].connect(self.postIteration)   
+            self.progress.updated_value.connect(self.updateProgressBar)
+
             #LoopLocker signals
             self.dataLocker.diagnostic_info.connect(self.printDiag)
             self.dataLocker.display_request.connect(self.updateFigure)
             self.dataLocker.alpha_move_request.connect(self.ensureTiltChange)
-            self.ui.inComment.returnPressed.connect(self.commentChanger)
+            self.ui.inComment.returnPressed.connect(self.commentSaver)
+            self.ui.inComment.textEdited.connect(self.cmntColor)
+            
+            self.tiltLQRange.updated_range.connect(self.updateListToolTip)
             #LoopLocker button connections
             self.ui.btnGoTo.released.connect(self.dataLocker.goToSelectedAlpha)
             self.ui.btnDiff.released.connect(self.dataLocker.diffItems)
@@ -107,6 +116,7 @@ class EMTomographySeries(Measurement):
             self.ui.btnPreview.released.connect(self.preview)          
             self.ui.btnPreview_2.released.connect(self.preview)
             self.ui.btnAcq.released.connect(self.start)
+            self.ui.btnPause.released.connect(self.pauseSeries)
             self.ui.btnAbo.released.connect(self.interrupt)   
             self.ui.btnMinTilt.released.connect(self.minTilt)     
             self.ui.btnMaxTilt.released.connect(self.maxTilt)
@@ -140,6 +150,21 @@ class EMTomographySeries(Measurement):
 
         except Exception as err: 
             print "EM_Tomography: could not connect to custom main GUI", err
+    def cmntColor(self):
+        if self.sender().text() == '':
+            color = '#ffffff' # white
+        else:
+            color = '#f6989d' # red
+        self.sender().setStyleSheet('QLineEdit { background-color: %s }' % color)
+    def updateProgressBar(self,num):
+        self.ui.progressBar.setValue(num)
+    def updateListToolTip(self,data = None):
+        if data is None:
+            self.ui.btnAcq.setToolTip(str(self.tiltLQRange.array))
+            self.ui.btnPause.setToolTip(str(self.tiltLQRange.array))
+        else: 
+            self.ui.btnAcq.setToolTip(str(data))
+            self.ui.btnPause.setToolTip(str(data))
     def doubleClickChecker(self):
         if  not self.doubleClickTimer.isActive():
             self.doubleClickTimer.start()
@@ -148,12 +173,19 @@ class EMTomographySeries(Measurement):
             print "DoubleClick"
             self.doubleClickTimer.stop()
             self.doDoubleClickAction()
-    def commentChanger(self):
+    def commentSaver(self):
+        self.sender().setStyleSheet('QLineEdit { background-color: %s }' % '#c4df9b')
         cmnt = self.ui.inComment.text()
         self.dataLocker.setSelectedComments(cmnt)
+    def pauseSeries(self):
+        if not self.paused:
+            self.paused = True
+            self.toggleUI(True)
+            self.updateListToolTip(self.workingList)
+        else:
+            self.ui.btnAcq.released.emit()       
     def doDoubleClickAction(self):
-        print "Double Click on pushButton detected"
-        
+        print "Double Click on pushButton detected"        
     def printDiag(self,junk):
         print junk
     def dummyStuff(self):
@@ -168,34 +200,23 @@ class EMTomographySeries(Measurement):
         lbld = choice(['+','-'])
         if d==0: lbld=''
         self.ui.lblDeltaDefocus.setText(lbld+str(d)+'nm')
-    def acqSeries(self):
-        for ii in range(len(self.tiltLQRange.array)):
-            if self.debug: print len(self.tiltLQRange.array)
-            if self.debug: print 'loop ' + str(ii)
-            tiltVal = float(self.tiltLQRange.array[ii])
-            self.hardware.current_tilt.update_value(tiltVal)
-            for ii in range(self.num_repeats.val):
-                acquiredImageSet = self.Acq.AcquireImages()      
-                itr = acquiredImageSet(0)
-                self.TIA = win32com.client.Dispatch("ESVision.Application")
-                window = self.TIA.ActiveDisplayWindow()
-                img = window.FindDisplay(window.DisplayNames(0)); #returns an image display object
-                units = img.SpatialUnit.unitstring 
-                units = ' '+units 
-                calX = img.image.calibration.deltaX #returns the x calibration
-                calY = img.image.calibration.deltaY
-                calibration = (calX,calY,units,)
+    def toggleUI(self,val):
+        self.ui.btnAcq.setEnabled(val) 
+        self.ui.btnMaxTilt.setEnabled(val) 
+        self.ui.btnMinTilt.setEnabled(val) 
+        self.ui.btnPreview_2.setEnabled(val)
+        self.ui.btnCustom1.setEnabled(val)
+        self.ui.btnCustom2.setEnabled(val)
+        self.ui.btnAddCustom.setEnabled(val) 
+
+        self.ui.lockerWidget.setEnabled(val)
+        self.ui.seriesBox.setEnabled(val)
+        self.ui.statusBox.setEnabled(val)
                 
-                stemImage = STEMImage(itr)
-                stemImage.setCalibration(calibration)
-                stemImage.binning = self.hardware.current_binning.val
-                stemImage.defocus = self.hardware.current_defocus.val
-                stemImage.dwellTime = self.hardware.current_dwell.val
-                stemImage.stageAlpha = self.hardware.current_tilt.val       
-                
-                self.dataLocker.addToSeries(stemImage)
-                self.itr_finished.emit(itr)
-                if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----' 
+        if val: self.ui.progressBar.hide()
+        else: self.ui.progressBar.show()
+
+
     def preview(self):
 #         try:
             print self.tiltLQRange.array
@@ -218,17 +239,59 @@ class EMTomographySeries(Measurement):
             stemImage.stageAlpha = self.hardware.current_tilt.val       
             
             self.dataLocker.addToFloating(stemImage)
-            self.itr_finished.emit(itr)
 #         except Exception as err:
 #             print self.name, "error:", err
     def _run(self):
 #         try:
-            if not hasattr(self,'_m') or self._m == None: self.getScope()
-            self.acqSeries()
-            self.measurement_sucessfully_completed.emit()
+        if not hasattr(self,'_m') or self._m == None: self.getScope()
+        changed = False
+        self.prev_tiltLQRange = None
+        if self.prev_tiltLQRange==None or self.prev_tiltLQRange!=self.tiltLQRange.array:
+            self.prev_tiltLQRange=self.tiltLQRange.array
+            changed = True
+        
+        if not self.workingList or changed:
+            self.workingList = list(self.tiltLQRange.array[::-1])
+        self.paused = False
+        totalImages = len(self.workingList)*self.num_repeats.val
+        imagePct = int((100.0/totalImages))
+        imagesTaken = 0
+        self.set_progress(0)
+        self.toggleUI(False)
+        while self.workingList:
+            if self.debug: print len(self.workingList)
+            tiltVal = float(self.workingList.pop())
+            self.hardware.current_tilt.update_value(tiltVal)
+            for x in range(self.num_repeats.val):
+                acquiredImageSet = self.Acq.AcquireImages()      
+                itr = acquiredImageSet(0)
+                self.TIA = win32com.client.Dispatch("ESVision.Application")
+                window = self.TIA.ActiveDisplayWindow()
+                img = window.FindDisplay(window.DisplayNames(0)); #returns an image display object
+                units = img.SpatialUnit.unitstring 
+                units = ' '+units 
+                calX = img.image.calibration.deltaX #returns the x calibration
+                calY = img.image.calibration.deltaY
+                calibration = (calX,calY,units,)
+                
+                stemImage = STEMImage(itr)
+                stemImage.setCalibration(calibration)
+                stemImage.binning = self.hardware.current_binning.val
+                stemImage.defocus = self.hardware.current_defocus.val
+                stemImage.dwellTime = self.hardware.current_dwell.val
+                stemImage.stageAlpha = self.hardware.current_tilt.val       
+                
+                self.dataLocker.addToSeries(stemImage)
+                imagesTaken += 1
+                self.set_progress(imagesTaken*imagePct)
+                if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----'
+            if self.paused: break
+
 #         except Exception as err:
 #             print self.name, "error:", err
     def postAcquisition(self):
+        self.set_progress(0)
+        self.toggleUI(True)
         print '-----postacq-----'
     def updateFigure(self,stemImage):
         data = stemImage.data
@@ -244,8 +307,9 @@ class EMTomographySeries(Measurement):
         self.ui.lblDef_details.setText(str(stemImage.defocus)+' nm')
         self.ui.lblDwell_details.setText(str(stemImage.dwellTime)+' us')
         self.ui.inComment.setText(str(stemImage.comment))
-        self.ui.lblXCal_details.setText(str(stemImage.xCal)+stemImage.calUnits)
-        self.ui.lblYCal_details.setText(str(stemImage.yCal)+stemImage.calUnits)
+        self.ui.inComment.setStyleSheet('QLineEdit { background-color: %s }' % '#ffffff')
+        self.ui.lblXCal_details.setText(str(stemImage.xCal)+str(stemImage.calUnits))
+        self.ui.lblYCal_details.setText(str(stemImage.yCal)+str(stemImage.calUnits))
 
         self.viewer.clear()
         self.viewer.addItem(pg.ImageItem(data))
@@ -253,8 +317,6 @@ class EMTomographySeries(Measurement):
 
         self.dummyStuff()
         print '-----postiter-----'
-    def postIteration(self,image):
-        pass
     def minTilt(self):
         self.ensureTiltChange(self.minimum_tilt.val)
         print '-----min tilt-----'
