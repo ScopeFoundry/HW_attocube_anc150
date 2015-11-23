@@ -7,6 +7,7 @@ from base_gui import BaseMicroscopeGUI
 from hardware_components.apd_counter import APDCounterHardwareComponent
 from hardware_components.dummy_xy_stage import DummyXYStage
 from hardware_components.picam import PicamHardware
+from hardware_components.mcl_xyz_stage import MclXYZStage
 
 # Import Measurement Components
 from measurement_components.apd_optimizer_simple import APDOptimizerMeasurement
@@ -24,6 +25,7 @@ class HiPMicroscopeGUI(BaseMicroscopeGUI):
         print "Adding Hardware Components"
         #self.add_hardware_component(APDCounterHardwareComponent(self))
         #self.add_hardware_component(DummyXYStage(self))
+        self.add_hardware_component(MclXYZStage(self))
         self.add_hardware_component(PicamHardware(self))
         self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
 
