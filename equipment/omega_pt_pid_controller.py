@@ -13,8 +13,12 @@ class OmegaPtPIDController(minimalmodbus.Instrument):
 
     def __init__(self, port, address=0x01 ):
         minimalmodbus.Instrument.__init__(self, port, address, mode=minimalmodbus.MODE_RTU)
-        
+    
+    
     def read_temp(self):
+        return self.read_current_input_value()
+
+    def read_current_input_value(self):
         return self.read_float(0x210) # CURRENT_INPUT_VALUE
     
     def read_setpoint1(self):
