@@ -238,11 +238,12 @@ class OmegaPIDController(object):
         #2080H~ 20BFH ,Pattern 0~7 execution time setting Pattern 0 time is set to 2080H~2087H 
 
 
-class OmegaPtPIDController(object):
+class OmegaPtPIDControllerSerialProtocol(object):
     """ Omega PID Controller Pt Platinum  series via Serial Communications protocol
     
     See Manual M5452
     
+    Untested
     """
     def __init__(self,port="COM7", address=0x01, debug=False):
         self.port = port
