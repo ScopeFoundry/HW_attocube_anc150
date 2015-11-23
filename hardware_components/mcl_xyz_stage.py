@@ -59,23 +59,29 @@ class MclXYZStage(HardwareComponent):
                                                              dtype=float)        
         
         # connect GUI
-        self.x_position.connect_bidir_to_widget(self.gui.ui.cx_doubleSpinBox)
-        self.gui.ui.x_set_lineEdit.returnPressed.connect(self.x_target.update_value)
-        self.gui.ui.x_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.x_set_lineEdit.setText(""))
+        if hasattr(self.gui.ui, "cx_doubleSpinBox"):
+            self.x_position.connect_bidir_to_widget(self.gui.ui.cx_doubleSpinBox)
+            self.gui.ui.x_set_lineEdit.returnPressed.connect(self.x_target.update_value)
+            self.gui.ui.x_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.x_set_lineEdit.setText(""))
 
-        self.y_position.connect_bidir_to_widget(self.gui.ui.cy_doubleSpinBox)
-        self.gui.ui.y_set_lineEdit.returnPressed.connect(self.y_target.update_value)
-        self.gui.ui.y_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.y_set_lineEdit.setText(""))
+        if hasattr(self.gui.ui, "cy_doubleSpinBox"):
+            self.y_position.connect_bidir_to_widget(self.gui.ui.cy_doubleSpinBox)
+            self.gui.ui.y_set_lineEdit.returnPressed.connect(self.y_target.update_value)
+            self.gui.ui.y_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.y_set_lineEdit.setText(""))
 
-        self.z_position.connect_bidir_to_widget(self.gui.ui.cz_doubleSpinBox)
-        self.gui.ui.z_set_lineEdit.returnPressed.connect(self.z_target.update_value)
-        self.gui.ui.z_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.z_set_lineEdit.setText(""))
+        if hasattr(self.gui.ui, "cz_doubleSpinBox"):
+            self.z_position.connect_bidir_to_widget(self.gui.ui.cz_doubleSpinBox)
+            self.gui.ui.z_set_lineEdit.returnPressed.connect(self.z_target.update_value)
+            self.gui.ui.z_set_lineEdit.returnPressed.connect(lambda: self.gui.ui.z_set_lineEdit.setText(""))
 
-        self.move_speed.connect_bidir_to_widget(
+        if hasattr(self.gui.ui, "nanodrive_move_slow_doubleSpinBox"):
+            self.move_speed.connect_bidir_to_widget(
                                   self.gui.ui.nanodrive_move_slow_doubleSpinBox)
         
-        self.h_axis.connect_bidir_to_widget(self.gui.ui.h_axis_comboBox)
-        self.v_axis.connect_bidir_to_widget(self.gui.ui.v_axis_comboBox)
+        if hasattr(self.gui.ui, "h_axis_comboBox"):
+            self.h_axis.connect_bidir_to_widget(self.gui.ui.h_axis_comboBox)
+        if hasattr(self.gui.ui, "v_axis_comboBox"):
+            self.v_axis.connect_bidir_to_widget(self.gui.ui.v_axis_comboBox)
         
         # connect logged quantities together
         self.x_target.updated_value[()].connect(self.read_pos)
