@@ -1,13 +1,15 @@
 '''
-Storage solution draft for dynamic series/preview acquisition
+Storage solution for flexible series/preview acquisition
 
-Requires two QTreeWidgets; buttons should be connected to goToSelectedAlpha,
+Requires two QTreeWidgets and some buttons; buttons should be connected to goToSelectedAlpha,
     seriesToFloating, floatingToSeries, diffItems, saveAll, saveFloating, saveSeries,
     averageItems, discardItems
+    
+    Zach Anderson ver 1.0
 '''
 from PySide.QtCore import QObject, Signal, Qt
 from PySide.QtGui import QTreeWidgetItem, QAbstractItemView
-from numpy import array,ndarray,string_,int8,arange,zeros
+from numpy import array,string_,arange,zeros
 import h5py
 import datetime
 from time import time
@@ -19,39 +21,21 @@ class LoopLocker(QObject):
     alpha_move_request = Signal(float)
     diagnostic_info = Signal(str)
     
+    SERIESFILESUFFIX = '_series.emd'
+    FLOATINGFILESUFFIX = '_floating.emd'
+    
     def __init__(self,seriesTreeWidget,floatingTreeWidget):
         QObject.__init__(self)
-        SERIESFILESUFFIX = '_series.emd'
-        FLOATINGFILESUFFIX = '_floating.emd'
-        index = 1
-        while os.path.isfile(str(index).zfill(3)+SERIESFILESUFFIX):
-            index += 1
-        self.seriesFileName = str(index).zfill(3)+SERIESFILESUFFIX
+
+        #-----create hdf5 files-----
+        self.createSeriesFile()        
+        self.createFloatingFile()
         
-        index = 1
-        while os.path.isfile(str(index).zfill(3)+FLOATINGFILESUFFIX):
-            index += 1
-        self.floatingFileName = str(index).zfill(3)+FLOATINGFILESUFFIX
-        
-        self.seriesFile = h5py.File(self.seriesFileName,'w')
-        self.floatingFile = h5py.File(self.floatingFileName,'w')
-        
-        self.series = self.seriesFile.create_group('series_data')
-        self.series.attrs['filename'] = self.seriesFileName
-        self.series.attrs['emd_group_type'] = 1
-        self.sCount = 0
-        
-        self.floating = self.floatingFile.create_group('floating_data')
-        self.floating.attrs['filename'] = self.floatingFileName
-        self.floating.attrs['emd_group_type'] = 1
-        self.fCount = 0
-        
-        #----view stuff-----
+        #-----view stuff-----
         self.seriesView = seriesTreeWidget
-        self.floatingView = floatingTreeWidget
-        
+        self.floatingView = floatingTreeWidget   
+        #-----connect events-----
         self.change_occurred.connect(self.updateTrees)
-        
         self.floatingView.itemSelectionChanged.connect(self.selectionChanged)
         self.seriesView.itemSelectionChanged.connect(self.selectionChanged)
         self.seriesView.itemClicked.connect(self.itemClicked)
@@ -60,11 +44,32 @@ class LoopLocker(QObject):
         self.floatingView.setSelectionMode(QAbstractItemView.ExtendedSelection)        
         
     #--------------------------------------------------------------------------- 
-    def closeFiles(self):
-        self.seriesFile.close()
-        self.floatingFile.close()
-        
+
 #--------------------------------------------------------------------------- 
+    def createSeriesFile(self):
+        index = 1
+        while os.path.isfile(str(index).zfill(3)+self.SERIESFILESUFFIX):
+            index += 1
+        self.seriesFileName = str(index).zfill(3)+self.SERIESFILESUFFIX
+        self.seriesFile = h5py.File(self.seriesFileName,'w')
+        root = self.seriesFile['/']
+        root.attrs["ScopeFoundry_version"] = 100
+        self.series = root.create_group('series_data')
+        self.series.attrs['filename'] = self.seriesFileName
+        self.series.attrs['emd_group_type'] = 1
+        self.sCount = 0    
+    def createFloatingFile(self):
+        index = 1
+        while os.path.isfile(str(index).zfill(3)+self.FLOATINGFILESUFFIX):
+            index += 1
+        self.floatingFileName = str(index).zfill(3)+self.FLOATINGFILESUFFIX   
+        self.floatingFile = h5py.File(self.floatingFileName,'w')
+        root = self.floatingFile['/']
+        root.attrs["ScopeFoundry_version"] = 100  
+        self.floating = root.create_group('floating_data')
+        self.floating.attrs['filename'] = self.floatingFileName
+        self.floating.attrs['emd_group_type'] = 1
+        self.fCount = 0
     def addToSeries(self,EMImage):
         tilt = str("{0:.3f}".format(EMImage.stageAlpha))
         shape = EMImage.data.shape
@@ -74,6 +79,7 @@ class LoopLocker(QObject):
             tiltGroup.attrs['emd_group_type'] = 1   
             
         grp = self.series[tilt].create_group(EMImage.ID)
+        grp.attrs['emd_group_type'] = 1 
         dset = grp.create_dataset('data',shape,dtype='int16')
         dset[:,:] = EMImage.data
         
@@ -87,7 +93,7 @@ class LoopLocker(QObject):
         dim2.attrs['units'] = string_('[n_m]')
         dim2[:] = arange(0,shape[1],1)*EMImage.yCal  
         
-        settingsGrp = grp.create_group('settings')
+        settingsGrp = grp.create_group('parameters')
         for k,v in EMImage.__dict__.iteritems():
             if k != 'data':
                 settingsGrp.attrs[k] = str(v)          
@@ -120,7 +126,7 @@ class LoopLocker(QObject):
         dim1[:] = arange(0,shape[0],1)*EMImage.xCal 
         dim2[:] = arange(0,shape[1],1)*EMImage.yCal
         
-        settingsGrp = grp.create_group('settings')        
+        settingsGrp = grp.create_group('parameters')        
         for k,v in EMImage.__dict__.iteritems():
             if k != 'data':
                 print k
@@ -190,9 +196,9 @@ class LoopLocker(QObject):
         '''Moves everything from Series to Floating'''
         for tilt in self.series.keys():
             if tilt in self.floating.keys():
-                for id in self.floating[tilt]:
-                    self.series.copy(self.series[tilt][id],self.floating[tilt])
-                    self.series[tilt].pop(id)
+                for imageID in self.floating[tilt]:
+                    self.series.copy(self.series[tilt][imageID],self.floating[tilt])
+                    self.series[tilt].pop(imageID)
             else:
                 self.series[tilt].copy(self.series[tilt],self.floating)
                 self.series.pop(tilt)
@@ -258,9 +264,9 @@ class LoopLocker(QObject):
         tilt = str(tilt)
         ID = str(ID)
         if loc == 'seriesView': 
-            grp = self.series[tilt][ID]['settings']
+            grp = self.series[tilt][ID]['parameters']
         if loc == 'floatingView':  
-            grp = self.floating[tilt][ID]['settings']
+            grp = self.floating[tilt][ID]['parameters']
         grp.attrs['comment'] = cmnt
     #--------------------------------------------------------------------------- 
 
@@ -281,27 +287,31 @@ class LoopLocker(QObject):
                 childchild.setExpanded(True)              
     def itemClicked(self,item):
         try:
+            tiltVal = item.parent().text(0)
+            imageID = item.text(0)
             if item.treeWidget().objectName() == 'seriesView':
-                grp = self.series[item.parent().text(0)][item.text(0)]
+                grp = self.series[tiltVal][imageID]
             if item.treeWidget().objectName() == 'floatingView':
-                grp = self.floating[item.parent().text(0)][item.text(0)]
+                grp = self.floating[tiltVal][imageID]
 
             data = zeros(grp['data'].shape, dtype='int16')
             grp['data'].read_direct(data)
                           
             stemImage = STEMImage(data = data)
-            stemImage.defocus = grp['settings'].attrs['defocus']
-            stemImage.time = grp['settings'].attrs['time']
-            stemImage.stageAlpha = grp['settings'].attrs['stageAlpha']
-            stemImage.stageBeta = grp['settings'].attrs['stageBeta']
-            stemImage.stageX = grp['settings'].attrs['stageX']
-            stemImage.stageY = grp['settings'].attrs['stageY']
-            stemImage.stageZ = grp['settings'].attrs['stageZ']
-            stemImage.dwellTime = grp['settings'].attrs['dwellTime']
-            stemImage.comment = grp['settings'].attrs['comment']   
-            stemImage.xCal = grp['settings'].attrs['xCal']       
-            stemImage.yCal = grp['settings'].attrs['yCal']       
-            stemImage.calUnits = grp['settings'].attrs['calUnits']              
+            stemImage.defocus = grp['parameters'].attrs['defocus']
+            stemImage.time = grp['parameters'].attrs['time']
+            stemImage.ID = grp['parameters'].attrs['ID']
+            stemImage.stageAlpha = grp['parameters'].attrs['stageAlpha']
+            stemImage.stageBeta = grp['parameters'].attrs['stageBeta']
+            stemImage.stageX = grp['parameters'].attrs['stageX']
+            stemImage.stageY = grp['parameters'].attrs['stageY']
+            stemImage.stageZ = grp['parameters'].attrs['stageZ']
+            stemImage.dwellTime = grp['parameters'].attrs['dwellTime']
+            stemImage.comment = grp['parameters'].attrs['comment']   
+            stemImage.xCal = grp['parameters'].attrs['xCal']       
+            stemImage.yCal = grp['parameters'].attrs['yCal']       
+            stemImage.calUnits = grp['parameters'].attrs['calUnits']  
+            stemImage.stemRotation = grp['parameters'].attrs['stemRotation']            
             self.display_request.emit(stemImage)  
         except:
             pass        
@@ -322,23 +332,21 @@ class LoopLocker(QObject):
             grp['data'].read_direct(data)
                           
             stemImage = STEMImage(data = data)
-            stemImage.defocus = grp['settings'].attrs['defocus']
-            stemImage.time = grp['settings'].attrs['time']
-            stemImage.stageAlpha = grp['settings'].attrs['stageAlpha']
-            stemImage.stageBeta = grp['settings'].attrs['stageBeta']
-            stemImage.stageX = grp['settings'].attrs['stageX']
-            stemImage.stageY = grp['settings'].attrs['stageY']
-            stemImage.stageZ = grp['settings'].attrs['stageZ']
-            stemImage.dwellTime = grp['settings'].attrs['dwellTime']
-            stemImage.comment = grp['settings'].attrs['comment']     
-            stemImage.xCal = grp['settings'].attrs['xCal']       
-            stemImage.yCal = grp['settings'].attrs['yCal']       
-            stemImage.calUnits = grp['settings'].attrs['calUnits']       
-            self.display_request.emit(stemImage) 
-#             self.updateView(self.getDisplayRepr(
-#                                         self.sender().objectName(),
-#                                         float(selected[0].parent().text(0)),
-#                                         int(selected[0].text(0))))
+            stemImage.ID = grp['parameters'].attrs['ID']
+            stemImage.defocus = grp['parameters'].attrs['defocus']
+            stemImage.time = grp['parameters'].attrs['time']
+            stemImage.stageAlpha = grp['parameters'].attrs['stageAlpha']
+            stemImage.stageBeta = grp['parameters'].attrs['stageBeta']
+            stemImage.stageX = grp['parameters'].attrs['stageX']
+            stemImage.stageY = grp['parameters'].attrs['stageY']
+            stemImage.stageZ = grp['parameters'].attrs['stageZ']
+            stemImage.dwellTime = grp['parameters'].attrs['dwellTime']
+            stemImage.comment = grp['parameters'].attrs['comment']     
+            stemImage.xCal = grp['parameters'].attrs['xCal']       
+            stemImage.yCal = grp['parameters'].attrs['yCal']      
+            stemImage.stemRotation = grp['parameters'].attrs['stemRotation']             
+            stemImage.calUnits = grp['parameters'].attrs['calUnits']       
+            self.display_request.emit(stemImage)
     def goToSelectedAlpha(self):
         selection = self.seriesView.selectedItems() + self.floatingView.selectedItems()
         if len(selection)==1:
@@ -376,23 +384,29 @@ class LoopLocker(QObject):
             self.tempSelect = self.seriesView.selectedItems() + self.floatingView.selectedItems()
         else:
             selected = self.tempSelect
-            self.display_request.emit(STEMImage(data=self.getDisplayRepr(
-                                        selected[self.diffCounter].treeWidget().objectName(),
-                                        selected[self.diffCounter].parent().text(0),
-                                        selected[self.diffCounter].text(0))))
+            loc = selected[self.diffCounter].treeWidget().objectName()
+            tilt = selected[self.diffCounter].parent().text(0)
+            imgID = selected[self.diffCounter].text(0)
+            img = STEMImage(data=self.getDisplayRepr(loc,tilt,imgID))
+            img.ID = imgID
+            self.display_request.emit(img)
             self.diffCounter+=1
             if self.diffCounter == len(selected): self.diffCounter = 0
-    def saveData(self):
-        print '----save all-----'
     def saveFloating(self):
+        self.floatingFile.close()
+        self.floatingView.clear()
+        self.createFloatingFile()
         print '----save floating----'
     def saveSeries(self):
+        self.seriesFile.close()
+        self.seriesView.clear()
+        self.createSeriesFile()
         print '-----save series-----'
             #creates file, saves data        
     def saveAll(self):
         try:
-            self.floatingFile.close()
-            self.seriesFile.close()
+            self.saveFloating()
+            self.saveSeries()
         except:
             pass
     def averageItems(self):
@@ -430,8 +444,8 @@ class LoopLocker(QObject):
         print '-----remove something-----'
                 
 class EMImage():
-    def __init__(self,image=None,data=None):
-        self.ID = str(time())
+    def __init__(self,image=None,data=None,):
+        self.ID = id
         self.time = str(datetime.datetime.now().strftime('%X %x %Z'))
         
         if image is not None:
@@ -449,7 +463,7 @@ class EMImage():
         self.xCal = None
         self.yCal = None
         self.calUnits = None
-        
+                
         self.binning = None
         self.defocus = None
         self.comment = ''
@@ -473,7 +487,8 @@ class EMImage():
 class STEMImage(EMImage):
     def __init__(self,image=None,data=None):
         EMImage.__init__(self,image,data)
-        
+
+        self.stemRotation = None
         self.dwellTime = None
         self.stemMag = None
         

@@ -21,9 +21,9 @@ class EM_Acquisition(BaseMicroscopeGUI):
         self.add_hardware_component(EMHardwareComponent(self))
         self.hardware = self.hardware_components['em_hardware']
         self.hardware.connected.update_value(True)
-        self.hardware.current_binning.update_value(4)
-        self.hardware.current_exposure.update_value(0.1)
-
+        
+        self.hardware.current_binning.update_value(8)
+        self.hardware.current_dwell.update_value(12.0)
         #Add measurement components
         print "Create Measurement objects"
         self.add_measurement_component(EMTomographySeries(self))
