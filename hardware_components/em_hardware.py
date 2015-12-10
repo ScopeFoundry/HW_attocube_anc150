@@ -11,13 +11,12 @@ class EMHardwareComponent(HardwareComponent):
     #---------------------------------------------------------------------------
     def setup(self):
         self.debug_mode.update_value(True)
-        self.debug = self.debug_mode.val
         self.name = "em_hardware"
 
         self.current_defocus = self.add_logged_quantity(
                         name = 'current_defocus',
                         dtype = float, fmt="%e", ro=False,
-                        unit="Nm",
+                        unit="nm",
                         vmin=-100,vmax=100)
         self.current_binning = self.add_logged_quantity(
                         name = 'current_binning',
@@ -38,6 +37,14 @@ class EMHardwareComponent(HardwareComponent):
                         name = 'current_tilt', initial = 80.0,
                         dtype = float, fmt="%e", ro=False,
                         unit='deg', vmin=-80.0,vmax=80.0)
+        self.current_stem_rotation = self.add_logged_quantity(
+                        name = 'current_stem_rotation',
+                        dtype = float, fmt="%e", ro=False,
+                        unit='deg', vmin=0.0,vmax=360.0)
+        self.current_stem_magnification = self.add_logged_quantity(
+                        name = 'current_stem_magnification',
+                        dtype = float, fmt="%e", ro=False,
+                        unit='deg', vmin=1,vmax=None)
         self.dummy_mode = self.add_logged_quantity(name='dummy_mode',
                             dtype=bool, initial=False, ro=False)    
             
@@ -47,7 +54,7 @@ class EMHardwareComponent(HardwareComponent):
     def connect(self):        
         if not self.dummy_mode.val:
             if self.debug_mode.val: print "Connecting to Scope"
-            self.wrapper = ScopeWrapper(debug = self.debug_mode.val)
+            self.wrapper = ScopeWrapper(self.debug_mode.val)
             self.wrapper.Connect()
             
             #handy to have these references
@@ -57,6 +64,7 @@ class EMHardwareComponent(HardwareComponent):
             self.Proj = self.wrapper.Proj
             self.Stage = self.wrapper.Stage
             
+            #set get and set functions for LQs
             self.acquisition_mode.hardware_read_func = \
                 self.wrapper.getMode
             self.acquisition_mode.hardware_set_func = None
@@ -84,13 +92,23 @@ class EMHardwareComponent(HardwareComponent):
             self.current_dwell.hardware_read_func = \
                 self.wrapper.getDwellTime
             self.current_dwell.hardware_set_func = \
-                self.wrapper.setDwellTime     
-            
+                self.wrapper.setDwellTime  
+                
+            self.current_stem_rotation.hardware_read_func = \
+                self.wrapper.getStemRotation
+            self.current_stem_rotation.hardware_set_func = \
+                self.wrapper.setStemRotation
+                     
+            self.current_stem_magnification.hardware_read_func = \
+                self.wrapper.getStemMagnification
+            self.current_stem_magnification.hardware_set_func = \
+                self.wrapper.setStemMagnification
+                
             if self.wrapper.getMode() == 'STEM': self.stemSetup()
-            else: self.temSetup()
+            if self.wrapper.getMode() == 'TEM': self.temSetup()
             self.read_from_hardware()
         else:
-            if self.debug_mode.val: print "em_hardware: not connecting, dummy"
+            if self.debug_mode.val: print "em_hardware: error while connecting"
     #---------------------------------------------------------------------------
     def disconnect(self):
         #disconnect logged quantities from hardware
@@ -111,7 +129,7 @@ class EMHardwareComponent(HardwareComponent):
         myCcdAcqParams.ImageCorrection = self.wrapper.ACQIMAGECORRECTION_UNPROCESSED #this has to be unprocessed. Not sure if it affects data from the micoscope itself
         myCcdAcqParams.ImageSize = self.wrapper.ACQIMAGESIZE_FULL
         self.Acq.Cameras(0).AcqParams = myCcdAcqParams
-        print '-----set TEM vals-----'
+        if self.debug_mode.val: print '-----set TEM vals-----'
 
     #---------------------------------------------------------------------------
     def setStemAcqVals(self,binning,dwell):
@@ -119,23 +137,24 @@ class EMHardwareComponent(HardwareComponent):
         self.myStemAcqParams.Binning = int(bin)
         self.myStemAcqParams.DwellTime = float(dwell)
         self.Acq.Detectors.AcqParams = self.myStemAcqParams
-        print '-----set STEM vals-----'
+        if self.debug_mode.val: print '-----set STEM vals-----'
         
     #---------------------------------------------------------------------------
     def stemSetup(self):
+        if self.debug_mode.val: print 'em_hardware: stemSetup'
         self.mode = 'STEM'
-        print 'em_hardware: stemSetup'
         self.Det = self.wrapper.Det
         
     #---------------------------------------------------------------------------
     def temSetup(self):
+        if self.debug_mode.val: print 'em_hardware: temSetup'
         self.mode = 'TEM'
-        print 'em_hardware: temSetup'
         self.Cam = self.wrapper.Cam
         
     #---------------------------------------------------------------------------
     def setAlphaTilt(self,alpha):
         alpha = round(alpha,2)
+        if self.debug_mode.val: print 'setting alpha tilt: ', alpha 
         self.wrapper.setAlphaTilt(alpha)
         
     #---------------------------------------------------------------------------
@@ -144,6 +163,7 @@ class EMHardwareComponent(HardwareComponent):
     
     #---------------------------------------------------------------------------
     def moveStageXY(self,x,y):
+        if self.debug_mode.val: print 'moving stage to: ('+str(x)+', '+str(y)+')'
         self.wrapper.setStageXY(x,y)    
         
     #---------------------------------------------------------------------------  

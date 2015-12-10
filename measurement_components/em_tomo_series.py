@@ -31,6 +31,7 @@ class EMTomographySeries(Measurement):
                                                     pythoncom.IID_IDispatch))
         self.Acq = self._m.Acquisition
         self.Proj = self._m.Projection
+        self.Ill = self._m.Illumination
         self.initialDF = self.Proj.Defocus
         self.Stage = self._m.Stage   
         if self.debug: print '-----DF:', str(self.initialDF),'m-----'
@@ -281,6 +282,7 @@ class EMTomographySeries(Measurement):
             self.workingList = list(self.tiltLQRange.array[::-1])
         self.paused = False
         totalImages = len(self.workingList)*self.num_repeats.val
+        if self.rot_series_bool.val: totalImages *= len(self.rotationLQRange.array)
         imagePct = int((100.0/totalImages))
         imagesTaken = 0
         self.set_progress(0)
@@ -290,37 +292,50 @@ class EMTomographySeries(Measurement):
             tiltVal = round(float(self.workingList.pop()),2)
             self.hardware.current_tilt.update_value(tiltVal)
             if self.rot_series_bool.val:
+                print 'list of rots:', self.rotationLQRange.array
                 for i in self.rotationLQRange.array:
-                    self.hardware.current_stem_rotation.update_value(i)
+                    i = round(i,2)
+                    self.hardware.current_stem_rotation.update_value(i,update_hardware=False,send_signal=False)
+                    self.Ill.StemRotation = i
                     for _ in range(self.num_repeats.val):
-                        acquiredImageSet = self.Acq.AcquireImages()      
-                        itr = acquiredImageSet(0)
-                        self.TIA = win32com.client.Dispatch("ESVision.Application")
-                        window = self.TIA.ActiveDisplayWindow()
-                        img = window.FindDisplay(window.DisplayNames(0)); #returns an image display object
-                        units = img.SpatialUnit.unitstring 
-                        units = ' '+units 
-                        calX = img.image.calibration.deltaX*1e9 #returns the x calibration
-                        calY = img.image.calibration.deltaY*1e9
-                        calibration = (calX,calY,units,)
-                        
-                        stemImage = STEMImage(itr)
-                        stemImage.setCalibration(calibration)
-                        stemImage.ID = str(round(time() - self.bootTime,2))
-                        stemImage.stemRotation = self.hardware.current_stem_rotation.val
-                        stemImage.binning = self.hardware.current_binning.val
-                        stemImage.defocus = self.hardware.current_defocus.val
-                        stemImage.dwellTime = self.hardware.current_dwell.val
-                        stemImage.stageAlpha = self.hardware.current_tilt.val       
-                        
-                        self.dataLocker.addToSeries(stemImage)
+                        self.dataLocker.addToSeries(self.acquireSTEMImage())
                         imagesTaken += 1
                         self.set_progress(imagesTaken*imagePct)
                         if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----'
                         if self.auto_pause.val: self.pauseSeries()
                 if self.paused: break
+            else:
+                for _ in range(self.num_repeats.val):
+                    self.dataLocker.addToSeries(self.acquireSTEMImage())
+                    imagesTaken += 1
+                    self.set_progress(imagesTaken*imagePct)
+                    if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----'
+                    if self.auto_pause.val: self.pauseSeries()
+                    if self.paused: break
          #except Exception as err:
              #print self.name, "error:", err
+    def acquireSTEMImage(self):
+        acquiredImageSet = self.Acq.AcquireImages()      
+        itr = acquiredImageSet(0)
+        self.TIA = win32com.client.Dispatch("ESVision.Application")
+        window = self.TIA.ActiveDisplayWindow()
+        img = window.FindDisplay(window.DisplayNames(0)); #returns an image display object
+        units = img.SpatialUnit.unitstring 
+        units = ' '+units 
+        calX = img.image.calibration.deltaX*1e9 #returns the x calibration
+        calY = img.image.calibration.deltaY*1e9
+        calibration = (calX,calY,units,)
+        
+        stemImage = STEMImage(itr)
+        stemImage.setCalibration(calibration)
+        stemImage.ID = str(round(time() - self.bootTime,2))
+        stemImage.stemRotation = self.hardware.current_stem_rotation.val
+        stemImage.binning = self.hardware.current_binning.val
+        stemImage.defocus = self.hardware.current_defocus.val
+        stemImage.dwellTime = self.hardware.current_dwell.val
+        stemImage.stageAlpha = self.hardware.current_tilt.val       
+        
+        return stemImage
     def postAcquisition(self):
         self.set_progress(0)
         self.toggleUI(True)

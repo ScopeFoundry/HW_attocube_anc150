@@ -33,7 +33,8 @@ class LoopLocker(QObject):
         
         #-----view stuff-----
         self.seriesView = seriesTreeWidget
-        self.floatingView = floatingTreeWidget   
+        self.floatingView = floatingTreeWidget
+           
         #-----connect events-----
         self.change_occurred.connect(self.updateTrees)
         self.floatingView.itemSelectionChanged.connect(self.selectionChanged)
@@ -99,7 +100,7 @@ class LoopLocker(QObject):
                 settingsGrp.attrs[k] = str(v)          
                    
         print '-----add to series-----'
-        self.seriesFile.flush()
+        self.seriesFile.flush() #tell h5py to flush buffers to disk
         self.sCount += 1
         self.display_request.emit(EMImage)
         self.change_occurred.emit()
@@ -196,9 +197,9 @@ class LoopLocker(QObject):
         '''Moves everything from Series to Floating'''
         for tilt in self.series.keys():
             if tilt in self.floating.keys():
-                for imageID in self.floating[tilt]:
-                    self.series.copy(self.series[tilt][imageID],self.floating[tilt])
-                    self.series[tilt].pop(imageID)
+                for imgID in self.floating[tilt]:
+                    self.series.copy(self.series[tilt][imgID],self.floating[tilt])
+                    self.series[tilt].pop(imgID)
             else:
                 self.series[tilt].copy(self.series[tilt],self.floating)
                 self.series.pop(tilt)
@@ -287,12 +288,18 @@ class LoopLocker(QObject):
                 childchild.setExpanded(True)              
     def itemClicked(self,item):
         try:
+            loc = item.treeWidget().objectName()
             tiltVal = item.parent().text(0)
-            imageID = item.text(0)
-            if item.treeWidget().objectName() == 'seriesView':
-                grp = self.series[tiltVal][imageID]
-            if item.treeWidget().objectName() == 'floatingView':
-                grp = self.floating[tiltVal][imageID]
+            imgID = item.text(0)
+            stemImage = self.getSTEMImage(loc, tiltVal, imgID)
+            self.display_request.emit(stemImage)  
+        except:
+            pass    
+    def getSTEMImage(self,loc,tiltVal,imgID):  
+            if loc == 'seriesView':
+                grp = self.series[tiltVal][imgID]
+            if loc == 'floatingView':
+                grp = self.floating[tiltVal][imgID]
 
             data = zeros(grp['data'].shape, dtype='int16')
             grp['data'].read_direct(data)
@@ -311,10 +318,7 @@ class LoopLocker(QObject):
             stemImage.xCal = grp['parameters'].attrs['xCal']       
             stemImage.yCal = grp['parameters'].attrs['yCal']       
             stemImage.calUnits = grp['parameters'].attrs['calUnits']  
-            stemImage.stemRotation = grp['parameters'].attrs['stemRotation']            
-            self.display_request.emit(stemImage)  
-        except:
-            pass        
+            stemImage.stemRotation = grp['parameters'].attrs['stemRotation']   
     def updateTrees(self):
         for widget,value in [[self.floatingView,self.floating],
                         [self.seriesView,self.series]]:
@@ -324,28 +328,10 @@ class LoopLocker(QObject):
         self.changed_selection = True
         selected = self.sender().selectedItems()
         if len(selected)==1:
-            if selected[0].treeWidget().objectName() == 'seriesView':
-                grp = self.series[selected[0].parent().text(0)][selected[0].text(0)]
-            if selected[0].treeWidget().objectName() == 'floatingView':
-                grp = self.floating[selected[0].parent().text(0)][selected[0].text(0)]
-            data = zeros(grp['data'].shape, dtype='int16')
-            grp['data'].read_direct(data)
-                          
-            stemImage = STEMImage(data = data)
-            stemImage.ID = grp['parameters'].attrs['ID']
-            stemImage.defocus = grp['parameters'].attrs['defocus']
-            stemImage.time = grp['parameters'].attrs['time']
-            stemImage.stageAlpha = grp['parameters'].attrs['stageAlpha']
-            stemImage.stageBeta = grp['parameters'].attrs['stageBeta']
-            stemImage.stageX = grp['parameters'].attrs['stageX']
-            stemImage.stageY = grp['parameters'].attrs['stageY']
-            stemImage.stageZ = grp['parameters'].attrs['stageZ']
-            stemImage.dwellTime = grp['parameters'].attrs['dwellTime']
-            stemImage.comment = grp['parameters'].attrs['comment']     
-            stemImage.xCal = grp['parameters'].attrs['xCal']       
-            stemImage.yCal = grp['parameters'].attrs['yCal']      
-            stemImage.stemRotation = grp['parameters'].attrs['stemRotation']             
-            stemImage.calUnits = grp['parameters'].attrs['calUnits']       
+            loc = selected[0].treeWidget().objectName()
+            tiltVal = selected[0].parent().text(0)
+            imgID = selected[0].text(0)
+            stemImage = self.getSTEMImage(loc, tiltVal, imgID)
             self.display_request.emit(stemImage)
     def goToSelectedAlpha(self):
         selection = self.seriesView.selectedItems() + self.floatingView.selectedItems()

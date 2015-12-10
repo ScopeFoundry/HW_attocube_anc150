@@ -1,11 +1,13 @@
 '''
 Created on Oct 13, 2015
+ScopeFoundry Equipment Module for FEI Microscope (STEM/TEM)
 
 @author: Zach
 '''
 
 import win32com.client
 import pythoncom
+from math import degrees,radians
 #-------------------------------------------------------------------------------
 class ScopeWrapper(object):
     #---------------------------------------------------------------------------
@@ -18,13 +20,16 @@ class ScopeWrapper(object):
         
     #---------------------------------------------------------------------------
     def Connect(self):
+        #connect to TEMScripting wrapper
         self.Scope = win32com.client.Dispatch('TEMScripting.Instrument')
         pythoncom.CoInitializeEx(pythoncom.COINIT_MULTITHREADED)
         if self.debug: print("Connected to microscope")
         
+        #connect to TIA
         self.TIA = win32com.client.Dispatch("ESVision.Application")
         if self.debug: print("Connected to TIA")  
         
+        #get aliases
         self.Acq = self.Scope.Acquisition
         self.Proj = self.Scope.Projection
         self.Ill = self.Scope.Illumination 
@@ -50,8 +55,9 @@ class ScopeWrapper(object):
     #--------------------------------------------------------------------------- 
     def getMode(self):
         mode = self.Scope.InstrumentModeControl.InstrumentMode
-        if mode == 0: return 'TEM'
-        if mode == 1: return 'STEM'
+        if mode == 0: self.mode = 'TEM'
+        if mode == 1: self.mode = 'STEM'
+        return self.mode
         
     #---------------------------------------------------------------------------
     def TEMMODE(self):
@@ -125,9 +131,9 @@ class ScopeWrapper(object):
         
     #---------------------------------------------------------------------------
     def setAlphaTilt(self,alpha):
-        position = self.Stage.Position
-        position.A = alpha
-        self.Stage.Goto(position,8) 
+#         position = self.Stage.Position
+#         position.A = alpha
+#         self.Stage.Goto(position,8) 
         if self.debug: print "setting alphatilt", alpha  
 
         
@@ -138,11 +144,35 @@ class ScopeWrapper(object):
         
     #---------------------------------------------------------------------------
     def setStageXY(self,x,y):
-        position = self.Stage.Position
-        position.X = x
-        position.Y = y
-        self.Stage.Goto(position,3) 
-        if self.debug: print "setting xy", x, y    
+#         position = self.Stage.Position
+#         position.X = x
+#         position.Y = y
+#         self.Stage.Goto(position,3) 
+        if self.debug: print "moving stage: ",'(',x,', ',y,')'
+        
+    #--------------------------------------------------------------------------
+    def getStemRotation(self):
+        rtrn = round(degrees(self.Ill.StemRotation),2)
+        if rtrn<0: rtrn += 360.0
+        return rtrn
+        if self.debug: print("getting rotation")
+        
+    #--------------------------------------------------------------------------
+    def setStemRotation(self,rot):
+        if rot<0: rot += 360.0
+        if self.debug: print "moving stemRot: ",rot,' deg'
+        if self.debug: print "moving stemRot: ",radians(rot),' rad'
+        self.Ill.StemRotation = float(radians(rot))
+
+    #--------------------------------------------------------------------------
+    def getStemMagnification(self):
+        return self.Ill.StemMagnification
+        if self.debug: print("getting stem mag")
+        
+    #--------------------------------------------------------------------------
+    def setStemMagnification(self,mag):
+        if self.debug: print "setting stem mag: ",mag
+        self.Ill.StemMagnification = float(mag)
         
     #--------------------------------------------------------------------------
 
