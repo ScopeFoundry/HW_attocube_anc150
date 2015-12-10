@@ -11,18 +11,15 @@ from foundry_scope.measurement_components.LoopLockerDisk import LoopLocker,\
     STEMImage
 
 class EMTomographySeries(Measurement):
-    itr_finished = QtCore.Signal(ndarray)
-    series_paused = QtCore.Signal()
     tilt_snap_threshold = 5.0 #deg, if a change exceeds this, user must confirm
-
 
     name = "em_tomography"
     ui_filename = "measurement_components/em_tomo.ui"
-    bootTime = time()
-    def __init__(self,gui):
+    bootTime = time() #used to generate unique imgIDs for each acquired image
+
+    def __init__(self,gui,debug = True):
         Measurement.__init__(self, gui) #calls setup()
-        self.debug = True
-        self.paused,self.workingList = False, [] #pausing  
+        self.paused,self.workingList = False, [] #pausing variables
     def getHardware(self):
         self.hardware = self.gui.hardware_components['em_hardware']
         self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
@@ -39,18 +36,18 @@ class EMTomographySeries(Measurement):
     def setup(self):
         self.display_update_period = 0.1 #seconds
         self.getHardware()
-        self.dataLocker = LoopLocker(self.ui.seriesView,self.ui.floatingView) 
+        self.dataLocker = LoopLocker(self.ui.seriesView,self.ui.floatingView) #create a looplocker that uses these  treewidgets
         self.setupUI()     
     def setup_figure(self):
-        if hasattr(self, 'graph_layout'):
-            self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
-            del self.graph_layout
-        self.graph_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
-        self.ui.plot_groupBox.layout().addWidget(self.graph_layout)
-        self.viewer = self.graph_layout.addViewBox()
-        self.graph_layout.setCentralItem(self.viewer)
-        self.viewer.invertY(True)
-        self.viewer.enableAutoRange(self.viewer.XYAxes)
+        if hasattr(self, 'graphicsLayout'):
+            self.graphicsLayout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
+            del self.graphicsLayout
+        self.graphicsLayout=pg.GraphicsLayoutWidget(border=(100,100,100)) #GraphicsView with a single GraphicsLayout as its central item
+        self.ui.plot_groupBox.layout().addWidget(self.graphicsLayout)
+        self.viewBox = self.graphicsLayout.addViewBox()
+        self.graphicsLayout.setCentralItem(self.viewBox)
+        self.viewBox.invertY(True) #must be done
+        self.viewBox.enableAutoRange(self.viewBox.XYAxes)
     def setupUI(self):
         self.minimum_tilt = self.add_logged_quantity(
                                 name = 'minimum_tilt', initial = -80.0,
@@ -119,7 +116,7 @@ class EMTomographySeries(Measurement):
             self.dataLocker.diagnostic_info.connect(self.printDiag)
             self.dataLocker.display_request.connect(self.updateFigure)
             self.dataLocker.alpha_move_request.connect(self.ensureTiltChange)
-            self.ui.inComment.returnPressed.connect(self.commentSaver)
+            self.ui.inComment.returnPressed.connect(self.saveCommentsToSelected)
             self.ui.inComment.textEdited.connect(self.cmntColor)    
             
             #LoopLocker button connections
@@ -132,7 +129,7 @@ class EMTomographySeries(Measurement):
             self.ui.btnClearAll.released.connect(self.dataLocker.clearData)
             self.ui.btnDiscard.released.connect(self.dataLocker.discardItems)
             self.ui.btnAverage.released.connect(self.dataLocker.averageItems)
-            self.ui.btnSaveAll.released.connect(self.dataLocker.saveAll)
+            self.ui.btnSaveAll.released.connect(self.dataLocker.saveSeriesAndFloating)
             self.ui.btnSaveFloating.released.connect(self.dataLocker.saveFloating)
             self.ui.btnSavePrimary.released.connect(self.dataLocker.saveSeries)  
             
@@ -149,9 +146,8 @@ class EMTomographySeries(Measurement):
             self.ui.buttonGroup.setId(self.ui.bin2,2)
             self.ui.buttonGroup.setId(self.ui.bin4,4)  
             self.ui.buttonGroup.setId(self.ui.bin8,8)
-            self.ui.buttonGroup.buttonReleased[int].connect(self.binChanged)
+            self.ui.buttonGroup.buttonReleased[int].connect(self.binButtonClicked)
             self.ui.buttonGroup.button(self.hardware.current_binning.val).setChecked(True)
-            self.binChanged(self.ui.buttonGroup.checkedId())
             
             #hardware LQs
             self.hardware.current_dwell.connect_bidir_to_widget(self.ui.expBox)
@@ -180,48 +176,47 @@ class EMTomographySeries(Measurement):
 
 
         except Exception as err: 
-            print "EM_Tomography: error in setupUI block", err
-    def cmntColor(self):
-        if self.sender().text() == '':
-            color = '#ffffff' # white
-        else:
-            color = '#f6989d' # red
+            print "EM_Tomography: error in setupUI block\n\
+            Most likely cause: change in .ui widgets,", err
+    def cmntColor(self): #comment box is white if empty, red if unsaved
+        if self.sender().text() == '': color = '#ffffff' # white
+        else: color = '#f6989d' # red
         self.sender().setStyleSheet('QLineEdit { background-color: %s }' % color)
-    def updateProgressBar(self,num):
-        self.ui.progressBar.setValue(num)
+    def updateProgressBar(self,pct):
+        self.ui.progressBar.setValue(pct)
     def updateListToolTip(self,data = None):
+        ############
+        # Hovering pause or start will display the list of tilt values to be acquired
+        ############
         if data is None:
             self.ui.btnAcq.setToolTip(str(self.tiltLQRange.array))
             self.ui.btnPause.setToolTip(str(self.tiltLQRange.array))
         else: 
             self.ui.btnAcq.setToolTip(str(data))
             self.ui.btnPause.setToolTip(str(data))
-
-    def commentSaver(self):
-        self.sender().setStyleSheet('QLineEdit { background-color: %s }' % '#c4df9b')
+    def saveCommentsToSelected(self):
         cmnt = self.ui.inComment.text()
         self.dataLocker.setSelectedComments(cmnt)
+        #make the textEdit green
+        self.sender().setStyleSheet('QLineEdit { background-color: %s }' % '#c4df9b')
     def pauseSeries(self):
         if not self.paused:
             self.paused = True
-            self.toggleUI(True)
+            self.grayUI(True)
             self.updateListToolTip(self.workingList)
         else:
-            self.ui.btnAcq.released.emit()       
-    def doDoubleClickAction(self):
-        print "Double Click on pushButton detected"        
-    def printDiag(self,junk):
+            self.ui.btnAcq.released.emit() #resumes acquisition
+    def printDiag(self,junk): #allows LoopLocker to print stuff
         print junk
-    def updateRotationLabel(self):
-        self.ui.lblStemRot2.setText(str(self.hardware.current_stem_rotation.val))
-    def dummyStuff(self):
-        '''temporary, fills some data boxes until later implementation'''
+    def updateRotationLabel(self): #updates 'relative to: XXXX'
+        self.ui.lblRot_RotationTab.setText(str(self.hardware.current_stem_rotation.val))
+    def updateDriftLabel(self): #fakes the drift magnitude
         x = round(random(),2)
         y = round(random(),2)
         lblx = choice(['','-'])
         lbly = choice(['','-'])
         self.ui.lblXYShift.setText('('+lblx+str(x)+'um, '+lbly+str(y)+'um)')
-    def toggleUI(self,val):
+    def grayUI(self,val): #grays most stuff while acquiring a series
         self.ui.btnAcq.setEnabled(val) 
         self.ui.btnPreview_2.setEnabled(val)
         self.ui.btnCustom1.setEnabled(val)
@@ -238,7 +233,7 @@ class EMTomographySeries(Measurement):
                 
         if val: self.ui.progressBar.hide()
         else: self.ui.progressBar.show()
-    def grayRotTab(self):
+    def grayRotTab(self): #grays rotation tab doing one
         self.ui.rotationTab.setEnabled(self.rot_series_bool.val)
     def preview(self):
 #         try:
@@ -269,30 +264,31 @@ class EMTomographySeries(Measurement):
     def _run(self):
         #try:
         if not hasattr(self,'_m') or self._m == None: self.getScope()
-        changed = False
-        if not hasattr(self, 'prev_tiltLQRange'): 
+        tiltListChanged = False #create variable
+        if not hasattr(self, 'prev_tiltLQRange'): self.prev_tiltLQRange=self.tiltLQRange.array
+
+        #if the tiltLQRange has been changed
+        if list(self.prev_tiltLQRange)!=list(self.tiltLQRange.array): 
             self.prev_tiltLQRange=self.tiltLQRange.array
-        if list(self.prev_tiltLQRange)!=list(self.tiltLQRange.array):
-            self.prev_tiltLQRange=self.tiltLQRange.array
-            changed = True
-            print 'changed'
-        
-        if not self.workingList or changed:
-            print 'updating workinglist'
-            self.workingList = list(self.tiltLQRange.array[::-1])
-        self.paused = False
+            tiltListChanged = True
+
+        #if workingList has been exhausted or the user has updated tiltLQRange
+        if not self.workingList or tiltListChanged: self.workingList = list(self.tiltLQRange.array[::-1])
+
+        self.paused = False #it's not paused here; just started
         totalImages = len(self.workingList)*self.num_repeats.val
         if self.rot_series_bool.val: totalImages *= len(self.rotationLQRange.array)
-        imagePct = int((100.0/totalImages))
-        imagesTaken = 0
+        imagePct, imagesTaken = int((100.0/totalImages)), 0 
+
         self.set_progress(0)
-        self.toggleUI(False)
+        self.grayUI(False)
+        
         while self.workingList:
             if self.debug: print len(self.workingList)
             tiltVal = round(float(self.workingList.pop()),2)
             self.hardware.current_tilt.update_value(tiltVal)
             if self.rot_series_bool.val:
-                print 'list of rots:', self.rotationLQRange.array
+                if self.debug: print 'list of rots:', self.rotationLQRange.array
                 for i in self.rotationLQRange.array:
                     i = round(i,2)
                     self.hardware.current_stem_rotation.update_value(i,update_hardware=False,send_signal=False)
@@ -312,23 +308,23 @@ class EMTomographySeries(Measurement):
                     if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----'
                     if self.auto_pause.val: self.pauseSeries()
                     if self.paused: break
-         #except Exception as err:
-             #print self.name, "error:", err
-    def acquireSTEMImage(self):
+        #except Exception as err:
+            #print self.name, "error:", err
+    def acquireSTEMImage(self): #acquire image and calibration, return EMImage
         acquiredImageSet = self.Acq.AcquireImages()      
         itr = acquiredImageSet(0)
         self.TIA = win32com.client.Dispatch("ESVision.Application")
         window = self.TIA.ActiveDisplayWindow()
-        img = window.FindDisplay(window.DisplayNames(0)); #returns an image display object
+        img = window.FindDisplay(window.DisplayNames(0))
         units = img.SpatialUnit.unitstring 
         units = ' '+units 
-        calX = img.image.calibration.deltaX*1e9 #returns the x calibration
-        calY = img.image.calibration.deltaY*1e9
+        calX = img.image.calibration.deltaX*1e9 #x calibration
+        calY = img.image.calibration.deltaY*1e9 #y calibration
         calibration = (calX,calY,units,)
         
         stemImage = STEMImage(itr)
         stemImage.setCalibration(calibration)
-        stemImage.ID = str(round(time() - self.bootTime,2))
+        stemImage.ID = str((round(time() - self.bootTime,2))*100)
         stemImage.stemRotation = self.hardware.current_stem_rotation.val
         stemImage.binning = self.hardware.current_binning.val
         stemImage.defocus = self.hardware.current_defocus.val
@@ -336,13 +332,14 @@ class EMTomographySeries(Measurement):
         stemImage.stageAlpha = self.hardware.current_tilt.val       
         
         return stemImage
-    def postAcquisition(self):
+    def postAcquisition(self): #runs in main thread after acquisition is finished
         self.set_progress(0)
-        self.toggleUI(True)
+        self.grayUI(True)
         print '-----postacq-----'
-    def updateFigure(self,stemImage):
-        data = stemImage.data
-        print data
+    def updateFigure(self,stemImage): 
+        if self.debug: print stemImage.data
+        
+        #update information groupbox above view
         self.ui.lblXYRes_details.setText('('+str(stemImage.width)+', '+
                                          str(stemImage.height)+')')
         self.ui.lblID_details.setText(str(stemImage.ID))
@@ -360,26 +357,24 @@ class EMTomographySeries(Measurement):
         self.ui.lblXCal_details.setText(str(stemImage.xCal)+str(stemImage.calUnits))
         self.ui.lblYCal_details.setText(str(stemImage.yCal)+str(stemImage.calUnits))
         
-        #-----draft for rotating the view in step with stem coils
-        #self.viewer.rotate(-(self.current_view_rotation.val))
+        #-----untested draft for rotating the view in step with stem coils
+        #self.viewBox.rotate(-(self.current_view_rotation.val))
         #self.current_view_rotation.update_value(stemImage.stemRotation)
-        #self.viewer.rotate(self.current_view_rotation.val)
-
-        self.viewer.clear()
-        x = pg.ImageItem(data)
-        self.viewer.addItem(x)
+        #self.viewBox.rotate(self.current_view_rotation.val)
+        
+        #update displayed image
+        self.viewBox.clear()
+        self.viewBox.addItem(pg.ImageItem(stemImage.data))
         self.update_display()
-        self.dummyStuff() #fills Status Box with false values
-        print '-----postiter-----'
-    def minTilt(self):
-        self.ensureTiltChange(self.minimum_tilt.val)
-        print '-----min tilt-----'
-    def maxTilt(self):
-        self.ensureTiltChange(self.maximum_tilt.val)
-        print '-----max tilt-----'
-    def closeEvent(self,event):
-        self.dataLocker.saveAll()
-    def ensureTiltChange(self,desiredTilt):
+        self.updateDriftLabel() #fills Status Box with false values
+        if self.debug: print '-----display updated with new image-----'
+    def closeEvent(self,event): #sure the LoopLocker files are saved; otherwise caches may not be flushed
+        self.dataLocker.saveSeriesAndFloating()
+    def ensureTiltChange(self,desiredTilt): 
+        ############
+        #if a tilt change is made by a call to this function, the user must confirm if
+        # the requested shift magnitude is greater than tilt_snap_threshold
+        ############
         if abs(self.hardware.current_tilt.val-desiredTilt)>self.tilt_snap_threshold:
             reply = QtGui.QMessageBox.question(None, 
                         "Large Change", 
@@ -387,11 +382,10 @@ class EMTomographySeries(Measurement):
                         QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
             if reply == QtGui.QMessageBox.Yes:
                 self.hardware.current_tilt.update_value(desiredTilt)
-            else: pass
         else: 
             self.hardware.current_tilt.update_value(desiredTilt)
-    def binChanged(self,btnId):
-        if btnId in self.hardware.getBinnings():
+    def binButtonClicked(self,btnId): #if a binning radio button is clicked
+        if btnId in self.hardware.getBinnings(): #TEM only has 1,2,4
             res = 2048/btnId
             self.xRes = res
             self.yRes = res
