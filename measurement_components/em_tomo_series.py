@@ -1,14 +1,15 @@
 from measurement import Measurement
-from numpy import ndarray, round
+from numpy import round
 import pyqtgraph as pg
 import pythoncom
 import win32com.client
-from PySide import QtCore, QtGui
-from random import choice, random, randint
+from PySide import QtGui
+from random import choice, random
 from foundry_scope.logged_quantity import LQRange
-from time import time
+from time import time, sleep
 from foundry_scope.measurement_components.LoopLockerDisk import LoopLocker,\
     STEMImage
+import threading
 
 class EMTomographySeries(Measurement):
     tilt_snap_threshold = 5.0 #deg, if a change exceeds this, user must confirm
@@ -18,8 +19,9 @@ class EMTomographySeries(Measurement):
     bootTime = time() #used to generate unique imgIDs for each acquired image
 
     def __init__(self,gui,debug = True):
+        self.debug = debug
         Measurement.__init__(self, gui) #calls setup()
-        self.paused,self.workingList = False, [] #pausing variables
+        self.aborted,self.paused,self.workingList = False,False,[] #pausing variables
     def getHardware(self):
         self.hardware = self.gui.hardware_components['em_hardware']
         self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
@@ -37,7 +39,8 @@ class EMTomographySeries(Measurement):
         self.display_update_period = 0.1 #seconds
         self.getHardware()
         self.dataLocker = LoopLocker(self.ui.seriesView,self.ui.floatingView) #create a looplocker that uses these  treewidgets
-        self.setupUI()     
+        self.setupUI()   
+        self.customButtonClass = CustomButtonSettings()
     def setup_figure(self):
         if hasattr(self, 'graphicsLayout'):
             self.graphicsLayout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
@@ -49,6 +52,7 @@ class EMTomographySeries(Measurement):
         self.viewBox.invertY(True) #must be done
         self.viewBox.enableAutoRange(self.viewBox.XYAxes)
     def setupUI(self):
+        #tilt series LQs (main tomo stuff)
         self.minimum_tilt = self.add_logged_quantity(
                                 name = 'minimum_tilt', initial = -80.0,
                                 dtype = float, fmt="%e", ro=False,
@@ -65,7 +69,13 @@ class EMTomographySeries(Measurement):
                                 name = 'num_tilts', initial = 10,
                                 dtype = int, fmt="%e", ro=False,
                                 unit=None, vmin=2,vmax=160)
+        self.tiltLQRange = LQRange(self.minimum_tilt,self.maximum_tilt,
+                                   self.step_tilt,self.num_tilts)
         
+        #STEM Rotation series LQs (can be done at each tilt)
+        self.rot_series_bool = self.add_logged_quantity(
+                                name = 'rot_series_bool', initial = False,
+                                dtype = bool, fmt="%r", ro=False)
         self.minimum_rotation = self.add_logged_quantity(
                                 name = 'minimum_rotation', initial = -80.0,
                                 dtype = float, fmt="%e", ro=False,
@@ -82,27 +92,24 @@ class EMTomographySeries(Measurement):
                                 name = 'num_rotations', initial = 10,
                                 dtype = int, fmt="%e", ro=False,
                                 unit=None, vmin=2,vmax=160)
-        self.num_repeats = self.add_logged_quantity(
-                                name = 'num_repeats', initial = 1,
-                                dtype = int, fmt="%e", ro=False,
-                                unit=None, vmin=1,vmax=30)
         self.rotationLQRange = LQRange(self.minimum_rotation,self.maximum_rotation,
                                    self.step_rotation,self.num_rotations)
-        
-        self.tiltLQRange = LQRange(self.minimum_tilt,self.maximum_tilt,
-                                   self.step_tilt,self.num_tilts)
-        
-        self.auto_pause = self.add_logged_quantity(
-                                name = 'auto_pause', initial = False,
-                                dtype = bool, fmt="%r", ro=False)
-        self.rot_series_bool = self.add_logged_quantity(
-                                name = 'rot_series_bool', initial = False,
-                                dtype = bool, fmt="%r", ro=False)
-        
+        #cur_vi_rot: used to rotate the display [not implemented]
         self.current_view_rotation = self.add_logged_quantity(
                                 name = 'current_view_rotation', initial = 0.0,
                                 dtype = float, fmt="%e", ro=False,
                                 unit=None, vmin=0,vmax=360)
+        
+        #num_repeats: repeat each image X times; default 1
+        self.num_repeats = self.add_logged_quantity(
+                                name = 'num_repeats', initial = 1,
+                                dtype = int, fmt="%e", ro=False,
+                                unit=None, vmin=1,vmax=30)
+        
+        
+        self.auto_pause = self.add_logged_quantity(name = 'auto_pause', initial = False,
+                                dtype = bool, fmt="%r", ro=False)
+        
         try:
             self.ui.setWindowTitle('NCEM Tomography Tool')
                         
@@ -138,8 +145,16 @@ class EMTomographySeries(Measurement):
             self.ui.btnPreview_2.released.connect(self.preview)
             self.ui.btnAcq.released.connect(self.start)
             self.ui.btnPause.released.connect(self.pauseSeries)
-            self.ui.btnAbo.released.connect(self.interrupt)
+            self.ui.btnAbo.released.connect(self.abortSeries)
             self.rot_series_bool.updated_value.connect(self.grayRotTab)
+            
+            self.ui.editCustom1.released.connect(self.setupCustomButton)
+            self.ui.editCustom2.released.connect(self.setupCustomButton)
+            self.ui.editCustom3.released.connect(self.setupCustomButton)
+            
+            self.ui.btnCustom1.released.connect(self.customPreview1)
+            self.ui.btnCustom2.released.connect(self.customPreview2)
+            self.ui.btnCustom3.released.connect(self.customPreview3)
             
             #bin stuff
             self.ui.buttonGroup.setId(self.ui.bin1,1)
@@ -148,6 +163,7 @@ class EMTomographySeries(Measurement):
             self.ui.buttonGroup.setId(self.ui.bin8,8)
             self.ui.buttonGroup.buttonReleased[int].connect(self.binButtonClicked)
             self.ui.buttonGroup.button(self.hardware.current_binning.val).setChecked(True)
+            self.updateResolutionStatus()
             
             #hardware LQs
             self.hardware.current_dwell.connect_bidir_to_widget(self.ui.expBox)
@@ -182,6 +198,86 @@ class EMTomographySeries(Measurement):
         if self.sender().text() == '': color = '#ffffff' # white
         else: color = '#f6989d' # red
         self.sender().setStyleSheet('QLineEdit { background-color: %s }' % color)
+    def setupCustomButton(self):
+        sender = self.sender().objectName()
+        self.setCustomButtonBin(sender)
+        self.setCustomButtonDwell(sender)
+    def customPreview1(self):
+        prevDwell = self.hardware.current_dwell.val #.oldval not working?
+        prevBin = self.hardware.current_binning.val
+        self.hardware.current_binning.update_value(self.customButtonClass.bin1)
+        self.hardware.current_dwell.update_value(self.customButtonClass.dwell1)
+        self.preview()
+        self.hardware.current_binning.update_value(prevBin)
+        self.hardware.current_dwell.update_value(prevDwell)
+    def customPreview2(self):
+        prevDwell = self.hardware.current_dwell.val
+        prevBin = self.hardware.current_binning.val
+        self.hardware.current_binning.update_value(self.customButtonClass.bin2)
+        self.hardware.current_dwell.update_value(self.customButtonClass.dwell2)
+        self.preview()
+        self.hardware.current_binning.update_value(prevBin)
+        self.hardware.current_dwell.update_value(prevDwell)
+    def customPreview3(self):
+        prevDwell = self.hardware.current_dwell.val
+        prevBin = self.hardware.current_binning.val
+        self.hardware.current_binning.update_value(self.customButtonClass.bin3)
+        self.hardware.current_dwell.update_value(self.customButtonClass.dwell3)
+        self.preview()
+        self.hardware.current_binning.update_value(prevBin)
+        self.hardware.current_dwell.update_value(prevDwell)
+    def setCustomButtonBin(self,sender):
+        if sender == 'editCustom1':
+            binning, ok = QtGui.QInputDialog.getInt(None, "Enter Binning", 
+    "Custom Binning:")
+            if ok:
+                if binning in self.hardware.getBinnings():
+                    self.customButtonClass.bin1 = binning
+                else:
+                    self.setCustomButtonBin(sender)
+        if sender == 'editCustom2':
+            binning, ok = QtGui.QInputDialog.getInt(None, "Enter Binning", 
+    "Custom Binning:")
+            if ok:
+                if binning in self.hardware.getBinnings():
+                    self.customButtonClass.bin2 = binning
+                else:
+                    self.setCustomButtonBin(sender)
+                    
+        if sender == 'editCustom3':
+            binning, ok = QtGui.QInputDialog.getInt(None, "Enter Binning", 
+    "Custom Binning:")
+            if ok:
+                if binning in self.hardware.getBinnings():
+                    self.customButtonClass.bin3 = binning
+                else:
+                    self.setCustomButtonBin(sender)
+    def setCustomButtonDwell(self,sender):
+        if sender == 'editCustom1':
+            dwell, ok = QtGui.QInputDialog.getDouble(None, "Enter Dwell Time", 
+    "Custom Dwell Time (us):")
+            if ok:
+                if dwell > 2.0:
+                    self.customButtonClass.dwell1 = dwell
+                else:
+                    self.setCustomButtonDwell(sender)
+        if sender == 'editCustom2':
+            dwell, ok = QtGui.QInputDialog.getDouble(None, "Enter Dwell Time", 
+    "Custom Dwell Time (us):")
+            if ok:
+                if dwell > 2.0:
+                    self.customButtonClass.dwell2 = dwell
+                else:
+                    self.setCustomButtonDwell(sender)
+                    
+        if sender == 'editCustom3':
+            dwell, ok = QtGui.QInputDialog.getDouble(None, "Enter Dwell Time", 
+    "Custom Dwell Time (us):")
+            if ok:
+                if dwell > 2.0:
+                    self.customButtonClass.dwell3 = dwell
+                else:
+                    self.setCustomButtonDwell(sender)
     def updateProgressBar(self,pct):
         self.ui.progressBar.setValue(pct)
     def updateListToolTip(self,data = None):
@@ -206,6 +302,13 @@ class EMTomographySeries(Measurement):
             self.updateListToolTip(self.workingList)
         else:
             self.ui.btnAcq.released.emit() #resumes acquisition
+    def abortSeries(self):
+        self.aborted = True
+        if not self.aborted:
+            self.aborted = True
+            self.grayUI(True)
+            self.workingList = self.tiltLQRange.array
+            self.interrupt()
     def printDiag(self,junk): #allows LoopLocker to print stuff
         print junk
     def updateRotationLabel(self): #updates 'relative to: XXXX'
@@ -216,28 +319,53 @@ class EMTomographySeries(Measurement):
         lblx = choice(['','-'])
         lbly = choice(['','-'])
         self.ui.lblXYShift.setText('('+lblx+str(x)+'um, '+lbly+str(y)+'um)')
-    def grayUI(self,val): #grays most stuff while acquiring a series
+    def grayUI(self,val,preview=False): #grays most stuff while acquiring a series
+        val = not val
         self.ui.btnAcq.setEnabled(val) 
         self.ui.btnPreview_2.setEnabled(val)
         self.ui.btnCustom1.setEnabled(val)
         self.ui.btnCustom2.setEnabled(val)
         self.ui.btnCustom3.setEnabled(val)
-        self.ui.toolButton1.setEnabled(val)
-        self.ui.toolButton2.setEnabled(val)
-        self.ui.toolButton3.setEnabled(val)
+        self.ui.editCustom1.setEnabled(val)
+        self.ui.editCustom2.setEnabled(val)
+        self.ui.editCustom3.setEnabled(val)
         
 
         self.ui.lockerWidget.setEnabled(val)
         self.ui.ParamsBox.setEnabled(val)
         self.ui.StatusBox.setEnabled(val)
-                
-        if val: self.ui.progressBar.hide()
+        
+        if preview:
+            self.ui.btnAcq.setEnabled(val)
+            self.ui.btnAbo.setEnabled(val)
+            self.ui.btnPause.setEnabled(val)
+            if val:
+                self.previewBar()
+        if val: self.ui.progressBar.show()#hide()
         else: self.ui.progressBar.show()
+    def previewBar(self):
+            est = (self.res*self.res*self.hardware.current_dwell.val)+0.2
+            startTime = time()
+            while True:
+                sleep(0.02)
+                self.set_progress((time()-startTime)/est)
+                QtGui.qApp.processEvents()
+
+#             timer = QTimer
+#             self.ui.progressBar.connect(timer,SIGNAL("timeout()"),self.ui.progressBar,Slot("increaseValue()"))
+#             timer.start(est)
+        
     def grayRotTab(self): #grays rotation tab doing one
         self.ui.rotationTab.setEnabled(self.rot_series_bool.val)
     def preview(self):
-#         try:
-            print self.tiltLQRange.array
+        self.grayUI(True,preview=True)
+        self.update_display()
+        print 'starting thread'
+        self.prevThread = threading.Thread(target=self._previewThread())
+        print 'starting thread'
+        self.prevThread.start()
+    def _previewThread(self):
+        #         try:
             acquiredImageSet = self.hardware.acquire()      
             itr = acquiredImageSet(0)
             self.TIA = win32com.client.Dispatch("ESVision.Application")
@@ -245,6 +373,7 @@ class EMTomographySeries(Measurement):
             img = window.FindDisplay(window.DisplayNames(0)); #returns an image display object
             units = img.SpatialUnit.unitstring
             units = ' '+units 
+            
             calX = img.image.calibration.deltaX*1e9 #returns the x calibration
             calY = img.image.calibration.deltaY*1e9
             calibration = (calX,calY,units,)
@@ -259,13 +388,16 @@ class EMTomographySeries(Measurement):
             stemImage.stageAlpha = self.hardware.current_tilt.val       
             
             self.dataLocker.addToFloating(stemImage)
+            self.grayUI(False,preview=True)
 #         except Exception as err:
 #             print self.name, "error:", err
     def _run(self):
         #try:
         if not hasattr(self,'_m') or self._m == None: self.getScope()
-        tiltListChanged = False #create variable
-        if not hasattr(self, 'prev_tiltLQRange'): self.prev_tiltLQRange=self.tiltLQRange.array
+        
+        tiltListChanged = False #create variable        
+        if not hasattr(self, 'prev_tiltLQRange'):
+            self.prev_tiltLQRange=self.tiltLQRange.array
 
         #if the tiltLQRange has been changed
         if list(self.prev_tiltLQRange)!=list(self.tiltLQRange.array): 
@@ -273,7 +405,8 @@ class EMTomographySeries(Measurement):
             tiltListChanged = True
 
         #if workingList has been exhausted or the user has updated tiltLQRange
-        if not self.workingList or tiltListChanged: self.workingList = list(self.tiltLQRange.array[::-1])
+        if not self.workingList or tiltListChanged: 
+            self.workingList = list(self.tiltLQRange.array[::-1])
 
         self.paused = False #it's not paused here; just started
         totalImages = len(self.workingList)*self.num_repeats.val
@@ -281,7 +414,7 @@ class EMTomographySeries(Measurement):
         imagePct, imagesTaken = int((100.0/totalImages)), 0 
 
         self.set_progress(0)
-        self.grayUI(False)
+        self.grayUI(True)
         
         while self.workingList:
             if self.debug: print len(self.workingList)
@@ -300,6 +433,7 @@ class EMTomographySeries(Measurement):
                         if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----'
                         if self.auto_pause.val: self.pauseSeries()
                 if self.paused: break
+                if self.aborted: break
             else:
                 for _ in range(self.num_repeats.val):
                     self.dataLocker.addToSeries(self.acquireSTEMImage())
@@ -307,9 +441,11 @@ class EMTomographySeries(Measurement):
                     self.set_progress(imagesTaken*imagePct)
                     if self.debug: print '-----acquired @ '+str(tiltVal)+'deg-----'
                     if self.auto_pause.val: self.pauseSeries()
-                    if self.paused: break
+                if self.paused: break
+                if self.aborted: break
         #except Exception as err:
             #print self.name, "error:", err
+    
     def acquireSTEMImage(self): #acquire image and calibration, return EMImage
         acquiredImageSet = self.Acq.AcquireImages()      
         itr = acquiredImageSet(0)
@@ -334,7 +470,7 @@ class EMTomographySeries(Measurement):
         return stemImage
     def postAcquisition(self): #runs in main thread after acquisition is finished
         self.set_progress(0)
-        self.grayUI(True)
+        self.grayUI(False)
         print '-----postacq-----'
     def updateFigure(self,stemImage): 
         if self.debug: print stemImage.data
@@ -386,13 +522,23 @@ class EMTomographySeries(Measurement):
             self.hardware.current_tilt.update_value(desiredTilt)
     def binButtonClicked(self,btnId): #if a binning radio button is clicked
         if btnId in self.hardware.getBinnings(): #TEM only has 1,2,4
-            res = 2048/btnId
-            self.xRes = res
-            self.yRes = res
-            self.ui.lblXYRes.setText('('+str(res)+", "+str(res)+')')
             self.hardware.current_binning.update_value(new_val=btnId)
+            self.updateResolutionStatus()
+    def updateResolutionStatus(self):
+        self.res = 2048/self.hardware.current_binning.val
+        self.ui.lblXYRes.setText('('+str(self.res)+", "+str(self.res)+')')
     def update_display(self):        
         self.gui.app.processEvents()
+    
+class CustomButtonSettings():
+    bin1 = 1
+    bin2 = 2
+    bin3 = 8
+    
+    dwell1 = 12.0
+    dwell2 = 12.0
+    dwell3 = 12.0
+    
     
 
 
