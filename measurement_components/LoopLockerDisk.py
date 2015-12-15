@@ -26,6 +26,7 @@ class LoopLocker(QObject):
     
     def __init__(self,seriesTreeWidget,floatingTreeWidget,debug=True):
         QObject.__init__(self)
+        self.debug = debug
 
         #-----create hdf5 files-----
         self.createSeriesFile()        
