@@ -21,7 +21,8 @@ class EMTomographySeries(Measurement):
     def __init__(self,gui,debug = True):
         self.debug = debug
         Measurement.__init__(self, gui) #calls setup()
-        self.aborted,self.paused,self.workingList = False,False,[] #pausing variables
+        self.paused,self.workingList = False,[] #pausing variables
+        self.aborted = True #False when acquiring, True when idle
     def getHardware(self):
         self.hardware = self.gui.hardware_components['em_hardware']
         self._id = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch,self.hardware.Scope)
@@ -298,17 +299,27 @@ class EMTomographySeries(Measurement):
     def pauseSeries(self):
         if not self.paused:
             self.paused = True
-            self.grayUI(True)
+            self.ui.btnAcq.setEnabled(False)
+            self.ui.btnPause.setText('Resume')
             self.updateListToolTip(self.workingList)
-        else:
+        else: #let 'Pause' function as 'Resume'
+            self.ui.btnAcq.setEnabled(True)
+            self.ui.btnPause.setText('Pause')
             self.ui.btnAcq.released.emit() #resumes acquisition
     def abortSeries(self):
-        self.aborted = True
-        if not self.aborted:
-            self.aborted = True
-            self.grayUI(True)
-            self.workingList = self.tiltLQRange.array
-            self.interrupt()
+        if not self.aborted: 
+            if self.paused:
+                self.paused = False #no longer paused
+                self.aborted = True #return to idle state
+                self.ui.btnPause.setText('Pause') #from 'Resume'
+                #self.ui.btnPause.setEnabled(True) #ungrey the pause button
+                self.grayUI(False)
+            else:
+                self.aborted = True
+                self.grayUI(False)
+                self.interrupt()
+            self.workingList = list(self.tiltLQRange.array[::-1])
+
     def printDiag(self,junk): #allows LoopLocker to print stuff
         print junk
     def updateRotationLabel(self): #updates 'relative to: XXXX'
@@ -334,14 +345,23 @@ class EMTomographySeries(Measurement):
         self.ui.lockerWidget.setEnabled(val)
         self.ui.ParamsBox.setEnabled(val)
         self.ui.StatusBox.setEnabled(val)
+
+        if self.paused and val:
+            self.ui.btnAcq.setEnabled(not val)
         
         if preview:
             self.ui.btnAcq.setEnabled(val)
             self.ui.btnAbo.setEnabled(val)
+            self.ui.apCheckbox.setEnabled(val)
             self.ui.btnPause.setEnabled(val)
+            
+            #if it's a single-image preview
             if val:
-                self.previewBar()
-        if val: self.ui.progressBar.show()#hide()
+                self.previewBar() #does a pretty animation if we're previewing
+        
+        #make the bar visible or not        
+        if val: 
+            self.ui.progressBar.show()#hide()
         else: self.ui.progressBar.show()
     def previewBar(self):
             est = (self.res*self.res*self.hardware.current_dwell.val)+0.2
@@ -405,18 +425,20 @@ class EMTomographySeries(Measurement):
             tiltListChanged = True
 
         #if workingList has been exhausted or the user has updated tiltLQRange
-        if not self.workingList or tiltListChanged: 
+        if len(self.workingList)==0 or tiltListChanged: 
             self.workingList = list(self.tiltLQRange.array[::-1])
 
-        self.paused = False #it's not paused here; just started
+        self.paused, self.aborted = False, False
+        
+        #these lines are for progress bar/percentage stuff
         totalImages = len(self.workingList)*self.num_repeats.val
         if self.rot_series_bool.val: totalImages *= len(self.rotationLQRange.array)
         imagePct, imagesTaken = int((100.0/totalImages)), 0 
 
-        self.set_progress(0)
-        self.grayUI(True)
+        self.set_progress(0) #progress bar
+        self.grayUI(True) #gray stuff that shouldn't be touched during acq
         
-        while self.workingList:
+        while self.workingList: 
             if self.debug: print len(self.workingList)
             tiltVal = round(float(self.workingList.pop()),2)
             self.hardware.current_tilt.update_value(tiltVal)
@@ -471,6 +493,8 @@ class EMTomographySeries(Measurement):
     def postAcquisition(self): #runs in main thread after acquisition is finished
         self.set_progress(0)
         self.grayUI(False)
+        if not self.workingList:
+            self.updateListToolTip()
         print '-----postacq-----'
     def updateFigure(self,stemImage): 
         if self.debug: print stemImage.data
@@ -490,8 +514,10 @@ class EMTomographySeries(Measurement):
         self.ui.lblDwell_details.setText(str(stemImage.dwellTime)+' us')
         self.ui.inComment.setText(str(stemImage.comment))
         self.ui.inComment.setStyleSheet('QLineEdit { background-color: %s }' % '#ffffff')
-        self.ui.lblXCal_details.setText(str(stemImage.xCal)+str(stemImage.calUnits))
-        self.ui.lblYCal_details.setText(str(stemImage.yCal)+str(stemImage.calUnits))
+        self.ui.lblXCal_details.setText(str(round(stemImage.xCal,2))
+                                        +str(stemImage.calUnits))
+        self.ui.lblYCal_details.setText(str(round(stemImage.yCal,2))
+                                        +str(stemImage.calUnits))
         
         #-----untested draft for rotating the view in step with stem coils
         #self.viewBox.rotate(-(self.current_view_rotation.val))
