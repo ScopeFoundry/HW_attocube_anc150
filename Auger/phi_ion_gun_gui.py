@@ -1,17 +1,17 @@
 import sys
 from PySide import QtGui
 
-from base_gui import BaseMicroscopeGUI
+from ScopeFoundry import BaseMicroscopeGUI
 
 # Import Hardware Components
-from hardware_components.ion_gun import PhiIonGunHardwareComponent
+from Auger.hardware.ion_gun import PhiIonGunHardwareComponent
 
 # Import Measurement Components
-from measurement_components.ion_gun import IonGunStatus
+from measurement.ion_gun import IonGunStatus
 
 class PhiIonGunGUI(BaseMicroscopeGUI):
 
-    ui_filename = "base_gui.ui"
+    ui_filename = "../ScopeFoundry/base_gui.ui"
 
     def setup(self):
         #Add hardware components

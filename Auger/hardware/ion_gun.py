@@ -1,6 +1,6 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
-    from equipment.phi_ion_gun import PhiIonGun
+    from Auger.equipment.phi_ion_gun import PhiIonGun
 except Exception as err:
     print "Cannot load required modules for PhiIonGun", err
 
@@ -79,6 +79,11 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.dummy_mode = self.add_logged_quantity(name='dummy mode', dtype=bool, initial=False, ro=False)
 
 
+        # operations
+        self.add_operation('zero state command', self.zero_state_command)
+        self.add_operation('zero state gun on', self.zero_state_command_gunon)
+
+
     def connect(self):
         if self.debug_mode.val: print "Connecting to Phi Ion Gun"
         # Open connection to Hardware
@@ -120,6 +125,9 @@ class PhiIonGunHardwareComponent(HardwareComponent):
 
         self.bend_target.hardware_set_func = \
                 self.phiiongun.write_bend_v
+                
+        self.grid_target.hardware_set_func = \
+                self.phiiongun.write_grid_v
 
         
         # Note to self: these assignments are only part of the link between equipment level
@@ -127,7 +135,12 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         # Bidirectional gui link commands are found in measurement class. 
 
 
-        
+    
+    def zero_state_command(self):
+        self.phiiongun.State_Data_Packet()
+
+    def zero_state_command_gunon(self):
+        self.phiiongun.State_Data_Packet(Gun_Firing_On=True)
 
 
     def disconnect(self):

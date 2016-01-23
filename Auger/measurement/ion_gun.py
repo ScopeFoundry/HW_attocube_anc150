@@ -1,11 +1,11 @@
-from measurement import Measurement
+from ScopeFoundry import Measurement
 import time
 
 class IonGunStatus(Measurement):
 
 	name = "ion_gun_status"
 
-	ui_filename = "measurement_components/ion_gun.ui"
+	ui_filename = "../Auger/measurement/ion_gun.ui"
 
 	def setup(self):
 		self.update_period = 0.1 #seconds
@@ -45,7 +45,7 @@ class IonGunStatus(Measurement):
 			self.ui.float_readout_doubleSpinBox)
 		
 		self.phi_ion_gun.bend_target.connect_bidir_to_widget(
-			self.ui.bend_readout_doubleSpinBox)
+			self.ui.bend_target_doubleSpinBox)
 		# Couldn't find readout command during logging
 		
 		

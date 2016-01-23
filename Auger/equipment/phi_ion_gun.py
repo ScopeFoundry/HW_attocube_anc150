@@ -11,7 +11,9 @@ class PhiIonGun(object):
         
         if self.debug: print "Phi Ion Gun init, port=%s" % self.port
         
-        self.ser = serial.Serial(port=self.port, baudrate=9600, timeout=0.2)
+        self.ser = serial.Serial(port=self.port, baudrate=9600, timeout=1.0)
+        
+        self.initialize()
         
    
     def ask_cmd(self, cmd_id, data=None):
@@ -83,6 +85,12 @@ class PhiIonGun(object):
         return text
     
     ''' hardware commands
+    
+        0x01    get model number
+        0x02    get version number
+        
+        0x05    initialize controller electronics (required before read commands)
+    
         0x10    get condenser lens voltage
         0x11    write float voltage
         0x12    get float voltage
@@ -102,8 +110,31 @@ class PhiIonGun(object):
         0x45    write x off
         0x46    write y off
         
+        0x28    read status(after write 1C) '03 OK 00 1 1 1 1 1 1 0 F3'
+        0x48    read status(after write comfirm) '03 OK 00 0 0 0 0 0 4D'
         
+        0x32    write something (shows up in read 0x39) often set as 3
+        0x39    read status (always before 1C commmand)
+        
+        0x36    write shutdown
+                    ask_cmd write-> '~ 03 36 2C\r'
+                    ask_cmd resp-> '03 OK 00 BD'
+        
+        0x33    write something (related to internal raster)
+                ask_cmd write-> '~ 03 33 29\r'
+                ask_cmd resp-> '03 OK 00 BD'
+
+        0x34    write something (related to external raster)
+                ask_cmd write-> '~ 03 33 29\r'
+                ask_cmd resp-> '03 OK 00 BD'
+                
     '''
+    
+    def initialize(self):
+        if self.debug: 
+            print "initialize"
+        resp = self.ask_cmd(0x05)
+        return resp
 
     def read_condenser_v(self):
         resp = self.ask_cmd(0x10)
@@ -152,8 +183,9 @@ class PhiIonGun(object):
         beam_v = self.ask_cmd(0x0B, _float)
         return beam_v 
 
-    def write_grid_v(self, data):
-        _float = ("%.3f" % data)
+    def write_grid_v(self, grid_v):
+        assert 99 < grid_v < 201
+        _float = ("%.3f" % grid_v)
         grid_v = self.ask_cmd(0x13, _float)
         return grid_v
 
@@ -274,6 +306,12 @@ class PhiIonGun(object):
             print "External Raster Set!"
 
     def State_Data_Packet(self, _beamv=0, _gridv=0, _condv=0, _objv=0, _bendv=0, _emiv=0, Blanking=False, Standby=False, Neutralize=False, Sputter=False, Gun_Firing_On=False):
+        
+        """
+        ask_cmd write-> '~ 03 1C 1 0.000 0.000 0.000 0.000 0.000 0.000 0.000 51 1 0.000 0.000 0.000 0.000 F9\r'
+        ask_cmd resp-> '03 OK 00 BD'
+        """
+        
         beamv = ("%.3f " % _beamv)
         gridv = ("%.3f " % _gridv)
         objv = ("%.3f " % _objv)
@@ -327,10 +365,10 @@ class PhiIonGun(object):
         _model = self.ask_cmd(0x01)
         if self.debug:
             print(_model)
-        _firmware = self.ask_cmd(0x02)
+        _firmware = self.read_version()
         if self.debug:
             print(_firmware)
-        _initialize = self.ask_cmd(0x05)
+        _initialize = self.initialize()
         if self.debug:
             print(_initialize)
         self.Set_Internal_Raster_Mode()
