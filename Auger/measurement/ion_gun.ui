@@ -245,78 +245,10 @@
       <string>Extractor Pressure (0-50 mPa)</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="0" column="1">
-       <widget class="QDoubleSpinBox" name="Extractor_ro">
+      <item row="0" column="0">
+       <widget class="QDoubleSpinBox" name="Extractor_readout_doubleSpinBox">
         <property name="readOnly">
          <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QDoubleSpinBox" name="Extractor_pressure_spinbox"/>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="2" column="2" colspan="2">
-    <widget class="QGroupBox" name="Mode_gun_off_box">
-     <property name="font">
-      <font>
-       <family>Helvetica Neue</family>
-       <pointsize>15</pointsize>
-      </font>
-     </property>
-     <property name="title">
-      <string>Mode (Gun Off)</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
-       <widget class="QRadioButton" name="Off_button">
-        <property name="text">
-         <string>Off</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QRadioButton" name="Blanking_button">
-        <property name="text">
-         <string>Blanking</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QRadioButton" name="Standby_button">
-        <property name="text">
-         <string>Standby</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="2" column="4">
-    <widget class="QGroupBox" name="Mode_gun_on_box">
-     <property name="font">
-      <font>
-       <family>Helvetica Neue</family>
-       <pointsize>15</pointsize>
-      </font>
-     </property>
-     <property name="title">
-      <string>Mode (Gun On)</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_6">
-      <item row="0" column="0">
-       <widget class="QRadioButton" name="Neutralize_button">
-        <property name="text">
-         <string>Neutralize</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QRadioButton" name="Sputter_button">
-        <property name="text">
-         <string>Sputter</string>
         </property>
        </widget>
       </item>
@@ -336,7 +268,7 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QComboBox" name="Raster_combobox">
+       <widget class="QComboBox" name="Raster_comboBox">
         <item>
          <property name="text">
           <string>Off</string>
@@ -453,6 +385,45 @@
       </item>
       <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="Y_raster_spinbox"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="2" colspan="3">
+    <widget class="QGroupBox" name="Mode_gun_off_box">
+     <property name="font">
+      <font>
+       <family>Helvetica Neue</family>
+       <pointsize>15</pointsize>
+      </font>
+     </property>
+     <property name="title">
+      <string>Gun Mode</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <widget class="QComboBox" name="Gun_mode_comboBox">
+        <item>
+         <property name="text">
+          <string>Off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Blanking</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Standby</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Active</string>
+         </property>
+        </item>
+       </widget>
       </item>
      </layout>
     </widget>

@@ -78,10 +78,10 @@ class PhiIonGun(object):
         """ '~ 03 02 25.' ||| '03 OK 00 3.0.1(Apr 19 2011 @13:13:19) B5.'
         """
         result = self.ask_cmd(0x02, data=None)
-        list = result.split()
+        _list = result.split()
         text = "Version "
-        for str in list[3:-1]:
-            text += str + ' '
+        for _str in _list[3:-1]:
+            text += _str + ' '
         return text
     
     ''' hardware commands
@@ -100,9 +100,9 @@ class PhiIonGun(object):
         0x17    write emission current
         0x18    get emission current
         0x19    get extractor pressure
-        0x0A    write energy
-        0x0B    write beam voltage
-        0x0C    get energy
+        0x0A    write energy            #this one
+        0x0B    write beam voltage   #investigate this quantity in person
+        0x0C    get energy                #and this one.
         0x0D    write bend voltage
         0x0F    get condenser voltage
         0x43    write x size
@@ -266,91 +266,73 @@ class PhiIonGun(object):
             print "Gun active: ", Gun_on
         return Gun_on
 
-    def Set_Internal_Raster_Mode(self):
-        if self.debug:
-            print "Set_Internal_Raster_Mode"
-        _header = self.ask_cmd(0x33)
-        if self.debug:
-            print _header
-        _data = self.ask_cmd(0x1E, "1")
-        if self.debug:
-            print _data
-        _verify = self.ask_cmd(0x1F)
-        if self.debug:
-            print "Verify.", repr(_verify)
-        _verify2 = self.ask_cmd(0x1F)
-        if self.debug:
-            print "Verify Again.", repr(_verify2)
+    def Set_Raster_Mode(self, State='OFF'):
+        assert State in ['OFF', 'INTERNAL', 'EXTERNAL']
+        if State == 'INTERNAL':
+            if self.debug:
+                print "Set_Internal_Raster_Mode"
+            _header = self.ask_cmd(0x33)
+            if self.debug:
+                print _header
+            _data = self.ask_cmd(0x1E, "1")
+            if self.debug:
+                print _data
+            _verify = self.ask_cmd(0x1F)
+            if self.debug:
+                print "Verify.", repr(_verify)
+            _verify2 = self.ask_cmd(0x1F)
+            if self.debug:
+                print "Verify Again.", repr(_verify2)
+        elif State == 'EXTERNAL':
+            _data = self.ask_cmd(0x1E, "0")
+            if self.debug: 
+                print _data
+            return _data
+            _verify = self.ask_cmd(0x1F)
+            if self.debug:
+                print "verify:", repr(_verify)
+            return _verify
+            _verify2 = self.ask_cmd(0x1F)
+            if self.debug:
+                print "verify 2:", repr(_verify2)
+            return _verify2
+            _footer = self.ask_cmd(0x34)
+            if self.debug:
+                print _footer
+            return _footer
+            self.Header()
+            if self.debug:
+                print "External Raster Set!"
 
-        ## Test the following function on Portmon:
-
-    def Set_External_Raster_Mode(self):
-        _data = self.ask_cmd(0x1E, "0")
-        if self.debug: 
-            print _data
-        return _data
-        _verify = self.ask_cmd(0x1F)
-        if self.debug:
-            print "verify:", repr(_verify)
-        return _verify
-        _verify2 = self.ask_cmd(0x1F)
-        if self.debug:
-            print "verify 2:", repr(_verify2)
-        return _verify2
-        _footer = self.ask_cmd(0x34)
-        if self.debug:
-            print _footer
-        return _footer
-        self.Header()
-        if self.debug:
-            print "External Raster Set!"
-
-    def State_Data_Packet(self, _beamv=0, _gridv=0, _condv=0, _objv=0, _bendv=0, _emiv=0, Blanking=False, Standby=False, Neutralize=False, Sputter=False, Gun_Firing_On=False):
-        
-        """
-        ask_cmd write-> '~ 03 1C 1 0.000 0.000 0.000 0.000 0.000 0.000 0.000 51 1 0.000 0.000 0.000 0.000 F9\r'
-        ask_cmd resp-> '03 OK 00 BD'
-        """
-        
-        beamv = ("%.3f " % _beamv)
-        gridv = ("%.3f " % _gridv)
-        objv = ("%.3f " % _objv)
-        if Standby==True:
-            condv = ("%.3f " % _condv)
-            bendv = ("%.3f " % -7)
+##--edited below--##
+    def State_Data_Packet(self, beamv=0,gridv=0, condv=0, objv=0, bendv=0, emiv=0, State='OFF'):
+        assert State in ['OFF', 'BLANK', 'STANDBY', 'ACTIVE']
+        if State == 'STANDBY':
+            bendv = -7.0 
             Gun_Firing_On=False
-        elif Blanking == True:
-            condv = ("%.3f " % 320)
-            bendv = ("%.3f" % -35)
+        elif State == 'BLANK':
+            condv = 320.0
+            bendv = -35.0
             Gun_Firing_On=False
-        elif Neutralize==True:
-            condv = ("%.3f " % _condv)
-            bendv = ("%.3f " % float(-1*_bendv))
+        elif State == 'ACTIVE':
             Gun_Firing_On=True
-        elif Sputter==True:
-            condv = ("%.3f " % _condv)
-            bendv = ("%.3f " % float(-1*_bendv))
-            Gun_Firing_On=True
-        else:
-            condv = ("%.3f " % _condv)
-            bendv = ("%.3f " % float(-1*_bendv))
-        emiv = ("%.3f " % _emiv)
-        state_address = ""
+        elif State == 'OFF':
+            beamv = 0.0
+            gridv = 0.0
+            objv  = 0.0             
+            condv = 0.0
+            bendv = 0.0
+            emiv  = 0.0
+            Gun_Firing_On=False
         if Gun_Firing_On==False:
             States = 0,0,0,0
-            for i in States:
-                state = ("%.3f" % i)
-                state_address += state + " "
-            if self.debug:
-                print (state_address)
         else:
             States = 1,1,0,0
-            for i in States:
-                state = ("%.3f" % i)
-                state_address += state + " "
-            if self.debug:
-                print (state_address)
-        state_data = "1 " + beamv + gridv + condv + objv + bendv + "0.000 " + emiv + "51 1 " + state_address[:-1]
+        
+        state_data = "1 {beamv:.3f} {gridv:.3f} {condv:.3f} {objv:.3f}".format(beamv=beamv, gridv=gridv, condv=condv, objv=objv)
+        state_data += " {bendv:.3f} 0.000 {emiv:.3f} 51 1".format(bendv=bendv, emiv=emiv)
+        state_data += " {:.3f} {:.3f} {:.3f} {:.3f}".format(*States)
+        print(">>", state_data)
         #Note: The above function is not used to set the float voltage. Use specific command to write your float voltage.
         set_state = self.ask_cmd(0x1C, state_data)
         return set_state
@@ -388,51 +370,43 @@ class PhiIonGun(object):
         self.Footer()
 
 
-    def Off_standby_blanking(self, _beamv=0, _gridv=0, _condv=0, _objv=0, _bendv=0, _emiv=0, Standby=False, Blanking=False): 
-        self.beamv = float("%.3f" % _beamv)
-        self.gridv = float("%.3f" % _gridv)
-        self.condv = float("%.3f" % _condv)
-        self.objv = float("%.3f" % _objv)
-        self.bendv = float("%.3f" % _bendv)
-        self.emiv = float("%.3f" % _emiv) 
-        self.Header()
-        if Standby==True:   
-            self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, Standby=True) # Need non-zero value input method
-        elif Blanking==True:
-            self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, Blanking=True)
-        else:
-            self.State_Data_Packet()
-        self.Write_Confirmation()
-        self.Footer()
-        self.Gun_Inactive()
-
-
-    def Standby_to_neutralize(self, _beamv=0, _gridv=0, _condv=0, _objv=0, _bendv=0, _emiv=0): 
-        self.beamv = float("%.3f" % _beamv)
-        self.gridv = float("%.3f" % _gridv)
-        self.condv = float("%.3f" % _condv)
-        self.objv = float("%.3f" % _objv)
-        self.bendv = float("%.3f" % _bendv)
-        self.emiv = float("%.3f" % _emiv) 
-        self.Gun_Active()
-        self.Header()
-        self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, Neutralize=True, Gun_Firing_On=True) # Need non-zero value input method, Gun_Firing_On=True
-        self.Write_Confirmation()
-        self.Footer()
-        self.Set_Internal_Raster_Mode()
     
-    def Neutralize_to_standby(self, _beamv=0, _gridv=0, _condv=0, _objv=0, _bendv=0, _emiv=0): 
-        self.beamv = float("%.3f" % _beamv)
-        self.gridv = float("%.3f" % _gridv)
-        self.condv = float("%.3f" % _condv)
-        self.objv = float("%.3f" % _objv)
-        self.bendv = float("%.3f" % _bendv)
-        self.emiv = float("%.3f" % _emiv) 
-        self.Header()
-        self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, Standby=True, Gun_Firing_On=False)
-        self.Write_Confirmation()
-        self.Footer()
-        self.Gun_Inactive()
+    
+    
+    #def Off_Standby_Blanking(self, beamv=0, gridv=0, condv=0, objv=0, bendv=0, emiv=0, State='OFF'):
+    #    self.beamv = beamv
+    #    self.gridv = gridv
+    #    self.condv = condv
+    #    self.objv = objv
+    #    self.bendv = bendv
+    #    self.emiv = emiv
+    #    self.Header()
+    #    if State=='STANDBY':   
+    #        self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, State='STANDBY') # Need non-zero value input method
+    #    elif State=='BLANK':
+    #        self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, State='BLANK')
+    #    else:
+    #        self.State_Data_Packet(State='OFF')
+    #    self.Write_Confirmation()
+    #    self.Footer()
+    #    self.Gun_Inactive()
+
+
+    #def Active(self, beamv=0, gridv=0, condv=0, objv=0, bendv=0, emiv=0, State='ACTIVE'): 
+    #    self.beamv = beamv
+    #    self.gridv = gridv
+    #    self.condv = condv
+    #    self.objv = objv
+    #    self.bendv = bendv
+    #    self.emiv = emiv 
+    #    self.Gun_Active()
+    #    self.Header()
+    #    self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, State='ACTIVE') # Need non-zero value input method, Gun_Firing_On=True
+    #    self.Write_Confirmation()
+    #    self.Footer()
+    #    self.Set_Internal_Raster_Mode()
+    
+
         
         
 if __name__ == '__main__':
@@ -440,10 +414,7 @@ if __name__ == '__main__':
     #phi.ask_cmd(0x01)
     #phi.read_version()
     phi.Startup_Commands()
-    #time.sleep(2)
-    #phi.Off_standby_blanking(100, 150, 100, 71.8, 7, 25, Standby=True)
-    #time.sleep(2)
-    phi.Standby_to_neutralize(500, 150, 500, 359, 22.5, 25)
+
     #phi.read_condenser_v()
     print "Emission {:.1f} mA".format(phi.read_current())
     print "Beam {:.1f} V".format(phi.read_energy())
@@ -455,26 +426,5 @@ if __name__ == '__main__':
         time.sleep(0.1)
         print "Emission {:.2f} mA".format(phi.read_current())
     time.sleep(1)
-    #phi.Neutralize_to_standby(100, 150, 100, 71.8, 7, 25)
-    #time.sleep(1)
-    #phi.Off_standby_blanking()
-    #time.sleep(1)
-    phi.Standby_to_neutralize(1000, 150, 660, 720, 0, 25)
-    print "Beam On"
-    time.sleep(1)
-    print "Emission {:.1f} mA".format(phi.read_current())
-    print "Beam {:.1f} V".format(phi.read_energy())
-    print "Condenser {:.1f} V".format(phi.read_condenser_v())
-    print "Objective {:.1f} V".format(phi.read_objective_v())
-    print "Float {:.1f} V".format(phi.read_float())
-    time.sleep(2)
-    phi.Off_standby_blanking()
-    time.sleep(0.5)
-    print "Emission {:.1f} mA".format(phi.read_current())
-    print "Beam {:.1f} V".format(phi.read_energy())
-    print "Condenser {:.1f} V".format(phi.read_condenser_v())
-    print "Objective {:.1f} V".format(phi.read_objective_v())
-    print "Float {:.1f} V".format(phi.read_float())
-
     phi.close()
     
