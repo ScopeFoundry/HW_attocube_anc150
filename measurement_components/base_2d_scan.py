@@ -109,8 +109,10 @@ class Base2DScan(Measurement):
         # TODO Stop other timers?!
         
         print "scanning"
+        self.current_pixel_num = 0
         self.t_scan_start = time.time()
         try:
+            
             v_axis_id = self.stage.v_axis_id
             h_axis_id = self.stage.h_axis_id
             
@@ -118,11 +120,14 @@ class Base2DScan(Measurement):
             start_pos = [None, None,None]
             start_pos[v_axis_id-1] = self.v_array[0]
             start_pos[h_axis_id-1] = self.h_array[0]
+            #print "scan.."
+            
+            print start_pos
             self.nanodrive.set_pos_slow(*start_pos)
             
             # Scan!            
             line_time0 = time.time()
-            
+
             for i_v in range(self.Nv):
                 if self.interrupt_measurement_called:
                     break               
@@ -145,10 +150,12 @@ class Base2DScan(Measurement):
                     
                     # collect data
                     self.collect_pixel(i_h, i_v)            
+                    self.current_pixel_num += 1
     
                 T_pixel =  float(time.time() - line_time0)/self.Nh
                 print "line time:", time.time() - line_time0
                 line_time0 = time.time()
+                self.progress.update_value(self.current_pixel_num *100./(self.Nv*self.Nh))
                 
                 total_px = self.Nv*self.Nh
                 print "time per pixel:", T_pixel, '| estimated total time (h)', total_px*T_pixel/3600,'| Nh, Nv:', self.Nh, self.Nv,
