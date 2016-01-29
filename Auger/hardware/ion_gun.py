@@ -1,10 +1,11 @@
 from ScopeFoundry import HardwareComponent
+from Auger.equipment.phi_ion_gun import PhiIonGun
 try:
     from Auger.equipment.phi_ion_gun import PhiIonGun
 except Exception as err:
     print "Cannot load required modules for PhiIonGun", err
 
-import time
+
 
 class PhiIonGunHardwareComponent(HardwareComponent):
     
@@ -13,6 +14,21 @@ class PhiIonGunHardwareComponent(HardwareComponent):
     def setup(self):
 
         #create logged quantities
+        self.gun_state = self.add_logged_quantity("gun_state", dtype=str,
+                                                        choices = [
+                                                                ("Off", 'OFF'),
+                                                                ("Blank", 'BLANK'),
+                                                                ("Standby", 'STANDBY'),
+                                                                ("Active", 'ACTIVE')]
+                                                     )
+        
+        self.raster_mode = self.add_logged_quantity("raster_mode", dtype=str,
+                                                choices = [
+                                                        ("Off", 'OFF'),
+                                                        ("Internal", 'INTERNAL'),
+                                                        ("External", 'EXTERNAL')]
+                                             )
+        
         self.emission_current_target = self.add_logged_quantity(
                                     name = 'emission_current_target',
                                     initial = 0, dtype=float, fmt="%.3f",
@@ -22,12 +38,12 @@ class PhiIonGunHardwareComponent(HardwareComponent):
                                     initial = 0, dtype=float, fmt="%.3f",
                                     ro=True, unit="mA", vmin=0, vmax=30)
 
-        self.energy_target = self.add_logged_quantity(
-                                    name='energy_target',
+        self.beam_energy_target = self.add_logged_quantity(
+                                    name='beam_energy_target',
                                     initial=0, dtype=float, fmt="%.3f",
                                     ro=False, unit="V", vmin=0, vmax=5000)
-        self.energy_readout = self.add_logged_quantity(
-                                    name = 'energy_readout',
+        self.beam_energy_readout = self.add_logged_quantity(
+                                    name = 'beam_energy_readout',
                                     initial = 0, dtype=float, fmt="%.3f",
                                     ro=True, unit="V", vmin=0, vmax=5000)
 
@@ -40,20 +56,20 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.condenser_target = self.add_logged_quantity(
                                         name = 'condenser_target',
                                         initial=0, dtype=float, fmt="%.3f",
-                                        ro=False, unit="V", vmin=0, vmax=1400) #Check thresholds
+                                        ro=False, unit="V", vmin=0, vmax=5500)
         self.condenser_readout = self.add_logged_quantity(
                                         name = 'condenser_readout',
                                         initial=0, dtype=float, fmt="%.3f",
-                                        ro=True, unit="V", vmin=0, vmax=1400) #Check thresholds
+                                        ro=True, unit="V", vmin=0, vmax=5500)
 
         self.objective_target = self.add_logged_quantity(
                                         name = 'objective_target',
                                         initial=0, dtype=float, fmt="%.3f",
-                                        ro=False, unit="V", vmin=0, vmax=1400) #Check thresholds
+                                        ro=False, unit="V", vmin=0, vmax=5500) 
         self.objective_readout = self.add_logged_quantity(
                                         name = 'objective_readout',
                                         initial=0, dtype=float, fmt="%.3f",
-                                        ro=True, unit="V", vmin=0, vmax=1400) #Check thresholds
+                                        ro=True, unit="V", vmin=0, vmax=5500) 
 
         self.float_target = self.add_logged_quantity(
                                         name = 'float_target',
@@ -67,14 +83,32 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.bend_target = self.add_logged_quantity(
                                         name = 'bend_target',
                                         initial=0, dtype=float, fmt="%.3f",
-                                        ro=False, unit="V", vmin=-100, vmax=0) # Check thresholds
+                                        ro=False, unit="V", vmin=-350, vmax=0) # Check thresholds. Checked.
 
         self.grid_target = self.add_logged_quantity(
                                         name = 'grid_target',
                                         initial=0, dtype=float, fmt="%.3f", 
                                         ro=False, unit="V", vmin=120, vmax=200)
         
+        self.extractor_readout = self.add_logged_quantity(name = 'extractor_pressure',
+                                        initial=0, dtype=float, fmt="%.3f",
+                                        ro=True, unit="mPa", vmin=0, vmax=50)
+
+        self.xsize_target = self.add_logged_quantity(name='xsize_target',
+                                        initial = 0, dtype=float, fmt="%.3f",
+                                        ro=False, unit="mm", vmin=-10, vmax=10)
         
+        self.ysize_target = self.add_logged_quantity(name='ysize_target',
+                                        initial=0, dtype=float, fmt="%.3f",
+                                        ro=False, unit='mm', vmin=-10, vmax=10)
+        
+        self.xoff_target = self.add_logged_quantity(name='xoff_target',
+                                        initial=0, dtype=float, fmt="%.3f",
+                                        ro=False, unit='mm', vmin=-10, vmax=10)
+        
+        self.yoff_target = self.add_logged_quantity(name='yoff_target',
+                                        initial=0, dtype=float, fmt="%.3f",
+                                        ro=False, unit='mm', vmin=-10, vmax=10)
 
         self.dummy_mode = self.add_logged_quantity(name='dummy mode', dtype=bool, initial=False, ro=False)
 
@@ -99,9 +133,9 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.emission_current_target.hardware_set_func = \
                 self.phiiongun.write_emission_current
 
-        self.energy_readout.hardware_read_func = \
+        self.beam_energy_readout.hardware_read_func = \
                 self.phiiongun.read_energy
-        self.energy_target.hardware_set_func = \
+        self.beam_energy_target.hardware_set_func = \
                 self.phiiongun.write_energy
 
         #self.beam_energy_target.hardware_set_func = \
@@ -128,20 +162,48 @@ class PhiIonGunHardwareComponent(HardwareComponent):
                 
         self.grid_target.hardware_set_func = \
                 self.phiiongun.write_grid_v
+                
+        self.extractor_readout.hardware_set_func = \
+                self.phiiongun.read_extractor_p
 
         
         # Note to self: these assignments are only part of the link between equipment level
         # commands and the GUI. These are hardware class associations.
         # Bidirectional gui link commands are found in measurement class. 
 
+        self.gun_state.hardware_set_func = \
+                self.Set_gun_state
+        #Runs single command for 4 possible states using stored values in hardware class.
+        self.raster_mode.hardware_set_func = \
+                self.Set_raster_mode
+                
+        self.xsize_target.hardware_set_func = \
+                self.phiiongun.xsize
 
+        self.ysize_target.hardware_set_func = \
+                self.phiiongun.ysize
+        
+        self.xoff_target.hardware_set_func = \
+                self.phiiongun.xoff
+        
+        self.yoff_target.hardware_set_func = \
+                self.phiiongun.yoff
+        
+        
     
     def zero_state_command(self):
-        self.phiiongun.State_Data_Packet()
+        self.phiiongun.State_Data_Packet(Gun_Firing_On=False)
 
     def zero_state_command_gunon(self):
         self.phiiongun.State_Data_Packet(Gun_Firing_On=True)
-
+        
+    def Set_gun_state(self, state):
+        self.phiiongun.State_Data_Packet(beamv=self.beam_energy_target.val, gridv=self.grid_target.val, condv=self.condenser_target.val, 
+                                                objv=self.objective_target.val, bendv=self.bend_target.val, emiv=self.emission_current_target.val, State=state)
+        #Reads logged quantity values stored in hardware class
+        
+    def Set_raster_mode(self, state):
+        self.phiiongun.Set_Raster_Mode(State=state)
 
     def disconnect(self):
         #disconnect hardware

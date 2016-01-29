@@ -1,5 +1,4 @@
 from ScopeFoundry import Measurement
-import time
 
 class IonGunStatus(Measurement):
 
@@ -21,9 +20,9 @@ class IonGunStatus(Measurement):
 		self.phi_ion_gun.emission_current_readout.connect_bidir_to_widget(
 			self.ui.emission_current_readout_doubleSpinBox)
 
-		self.phi_ion_gun.energy_target.connect_bidir_to_widget(
+		self.phi_ion_gun.beam_energy_target.connect_bidir_to_widget(
 			self.ui.energy_target_doubleSpinBox)
-		self.phi_ion_gun.energy_readout.connect_bidir_to_widget(
+		self.phi_ion_gun.beam_energy_readout.connect_bidir_to_widget(
 			self.ui.energy_readout_doubleSpinBox)
 		
 		self.phi_ion_gun.grid_target.connect_bidir_to_widget(
@@ -48,6 +47,24 @@ class IonGunStatus(Measurement):
 			self.ui.bend_target_doubleSpinBox)
 		# Couldn't find readout command during logging
 		
+		self.phi_ion_gun.extractor_readout.connect_bidir_to_widget(
+			self.ui.Extractor_readout_doubleSpinBox)
 		
+		self.phi_ion_gun.gun_state.connect_bidir_to_widget(
+			self.ui.Gun_mode_comboBox)
 		
+		self.phi_ion_gun.raster_mode.connect_bidir_to_widget(
+			self.ui.Raster_comboBox)
+		
+		self.phi_ion_gun.xsize_target.connect_bidir_to_widget(
+			self.ui.X_raster_spinbox)
+		
+		self.phi_ion_gun.ysize_target.connect_bidir_to_widget(
+			self.ui.Y_raster_spinbox)
+		
+		self.phi_ion_gun.xoff_target.connect_bidir_to_widget(
+			self.ui.X_offset_spinbox)
+		
+		self.phi_ion_gun.yoff_target.connect_bidir_to_widget(
+			self.ui.Y_offset_spinbox)
 

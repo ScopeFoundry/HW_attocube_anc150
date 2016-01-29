@@ -1,7 +1,7 @@
 import sys
 from PySide import QtGui
 
-from ScopeFoundry import BaseMicroscopeGUI
+from ScopeFoundry.base_gui import BaseMicroscopeGUI
 
 # Import Hardware Components
 from Auger.hardware.ion_gun import PhiIonGunHardwareComponent
