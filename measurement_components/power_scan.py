@@ -168,7 +168,7 @@ class PowerScanMotorized(Measurement):
 
 
     def pre_measure_single_pixel(self):
-
+        print 'pre measure single pixel'
         self.power_wheel = self.gui.power_wheel_arduino_hc.power_wheel
         
         self.move_to_min_pos()
@@ -184,7 +184,9 @@ class PowerScanMotorized(Measurement):
             ccd = self.ccd = self.gui.andor_ccd_hc.andor_ccd        
             ccd_width_px = ccd.Nx_ro
             t_acq = self.gui.andor_ccd_hc.exposure_time.val #in seconds
-            self.ccd_wait_time = np.min(1.0,np.max(0.05*t_acq, 0.05)) # limit update period to 50ms (in ms) or as slow as 1sec
+            print 'tacq', t_acq
+            self.ccd_wait_time = min(1.0,np.max(0.05*t_acq, 0.05)) # limit update period to 50ms (in ms) or as slow as 1sec
+            print 'ccd_wait', self.ccd_wait_time
             self.ccd_do_bgsub = bool(self.gui.ui.andor_ccd_bgsub_checkBox.checkState())
             if self.ccd_do_bgsub:
                 self.ccd_do_bgsub = self.gui.andor_ccd_hc.is_background_valid()
@@ -198,7 +200,7 @@ class PowerScanMotorized(Measurement):
                 self.ccd_bg = None
         if self.collect_lifetime.val:
             ph = self.picoharp = self.gui.picoharp_hc.picoharp
-            self.ph_sleep_time = np.min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
+            self.ph_sleep_time = min(np.max(0.1*ph.Tacq*1e-3, 0.010), 0.100) # check every 1/10 of Tacq with limits of 10ms and 100ms
             self.ph_hist_chan = ph.HISTCHAN
             
         # Use a shutter if it is installed; NOTE:  shutter is assumed to be after the OO
