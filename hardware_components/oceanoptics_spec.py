@@ -8,7 +8,7 @@
 #         self.oo_spectrometer.start_threaded_acquisition()
 
 
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.ocean_optics_seabreeze import OceanOpticsSpectrometer
 except Exception as err:

@@ -4,7 +4,7 @@ from PySide import QtCore
 import pyqtgraph as pg
 import random
 
-from .measurement import Measurement
+from ScopeFoundry import Measurement
 
 class MonochromatorSweep(Measurement):
     

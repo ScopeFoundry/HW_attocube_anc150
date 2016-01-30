@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.thorlabs_pm100d import ThorlabsPM100D
 except Exception as err:

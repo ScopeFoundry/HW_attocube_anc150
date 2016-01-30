@@ -3,7 +3,7 @@ Created on Jun 27, 2014
 
 @author: Edward Barnard
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 
 try:
     from equipment.flip_mirror_arduino import FlipMirrorArduino

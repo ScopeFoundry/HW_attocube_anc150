@@ -9,7 +9,7 @@ import time
 from PySide import QtCore
 import h5py
 
-from .measurement import Measurement 
+from ScopeFoundry import Measurement 
 from .base_3d_scan import Base3DScan
 from .base_2d_scan import Base2DScan
 

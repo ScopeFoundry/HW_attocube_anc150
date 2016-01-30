@@ -3,7 +3,7 @@ Created on May 28, 2014
 
 @author: Edward Barnard
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.acton_spec import ActonSpectrometer
 except Exception as err:

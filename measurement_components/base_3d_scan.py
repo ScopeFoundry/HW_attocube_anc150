@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from .measurement import Measurement 
+from ScopeFoundry import Measurement 
 
 
 def ijk_generator(dims, axis_order=(0,1,2)):

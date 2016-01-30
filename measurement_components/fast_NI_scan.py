@@ -2,7 +2,7 @@ import numpy as np
 import time
 from PySide import QtCore
 
-from .measurement import Measurement 
+from ScopeFoundry import Measurement
 
 class fastNIScan(Measurement):
     

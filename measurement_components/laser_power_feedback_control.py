@@ -1,4 +1,4 @@
-from .measurement import Measurement 
+from ScopeFoundry import Measurement
 import time
 
 class LaserPowerFeedbackControl(Measurement):

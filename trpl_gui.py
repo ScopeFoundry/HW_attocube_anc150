@@ -1,7 +1,7 @@
 import sys
 from PySide import QtGui
 
-from base_gui import BaseMicroscopeGUI
+from ScopeFoundry import BaseMicroscopeGUI
 from hardware_components.picoharp import PicoHarpHardwareComponent
 from hardware_components.apd_counter import APDCounterHardwareComponent
 from hardware_components.andor_ccd import AndorCCDHardwareComponent

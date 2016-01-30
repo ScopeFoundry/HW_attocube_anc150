@@ -2,8 +2,8 @@ import numpy as np
 import time
 from PySide import QtCore
 
-import h5_io
-from .measurement import Measurement 
+from ScopeFoundry import h5_io
+from ScopeFoundry import Measurement 
  
         
 class Base2DScan(Measurement):

@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.ni_freq_counter import NI_FreqCounter
 except Exception as err:

@@ -3,7 +3,7 @@ Created on Oct 27, 2014
 
 @author: Edward Barnard
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 
 try:
     from equipment.shutter_servo_arduino import ShutterServoArduino

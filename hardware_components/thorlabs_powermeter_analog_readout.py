@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 from IPython.html.nbconvert.handlers import respond_zip
 try:
     from equipment.NI_Daq import Adc

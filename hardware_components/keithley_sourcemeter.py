@@ -3,7 +3,7 @@ Created on 31.08.2014
 
 @author: Benedikt
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 
 try:
     from equipment.keithley_sourcemeter import KeithleySourceMeter

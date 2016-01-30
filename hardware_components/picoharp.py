@@ -4,7 +4,7 @@ Created on Apr 1, 2014
 @author: esbarnard
 '''
 
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.pypicoharp import PicoHarp300
 except Exception as err:

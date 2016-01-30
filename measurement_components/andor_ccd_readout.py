@@ -4,12 +4,12 @@ import threading
 from PySide import QtCore
 import pyqtgraph as pg
 
-from .measurement import Measurement 
+from ScopeFoundry import Measurement 
 
 import matplotlib.gridspec as gridspec 
 from time import sleep
 
-import h5_io
+from ScopeFoundry import h5_io
 
 ROW0 = 240
 ROW1 = 271

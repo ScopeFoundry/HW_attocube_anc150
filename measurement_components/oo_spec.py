@@ -1,5 +1,5 @@
 import numpy as np
-from .measurement import Measurement 
+from ScopeFoundry import Measurement
 
 class OOSpecLive(Measurement):
 

@@ -3,7 +3,7 @@ Created on Jul 24, 2014
 
 @author: Edward Barnard
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.attocube_ecc100 import AttoCubeECC100
 except Exception as err:

@@ -1,4 +1,4 @@
-from measurement import Measurement
+from ScopeFoundry import Measurement
 import numpy as np
 import pyqtgraph as pg
 import time

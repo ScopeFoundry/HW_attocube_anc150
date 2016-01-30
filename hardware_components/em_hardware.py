@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 
 try:
     from equipment.NCEMscope import ScopeWrapper

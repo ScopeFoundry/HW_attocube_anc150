@@ -4,7 +4,7 @@ Created on May 29, 2014
 
 @author: Edward Barnard
 '''
-#from .measurement import Measurement 
+#from ScopeFoundry import Measurement
 from .base_2d_scan import Base2DScan
 import numpy as np
 import time

@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 
 try:
     from equipment.srslockin import SRSlockin

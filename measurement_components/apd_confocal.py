@@ -4,7 +4,7 @@ from PySide import QtCore, QtGui
 import pyqtgraph as pg
 import random
 
-from .measurement import Measurement 
+from ScopeFoundry import Measurement 
 from measurement_components.base_3d_scan import Base3DScan
 from measurement_components.base_2d_scan import Base2DScan
 

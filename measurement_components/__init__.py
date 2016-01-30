@@ -1,1 +1,1 @@
-from measurement import Measurement
+from ScopeFoundry import Measurement

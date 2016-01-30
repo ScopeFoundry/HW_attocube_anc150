@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.ni_analog_input import NI_AnalogInput
 except Exception as err:

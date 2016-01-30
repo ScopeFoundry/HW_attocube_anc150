@@ -30,7 +30,7 @@
 #        self.ui.aotf_power_doubleSpinBox.valueChanged.connect(self.aotf_power.update_value)
 #        self.aotf_power.read_from_hardware()
 
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.crystaltech_dds import CrystalTechDDS
 except Exception as err:

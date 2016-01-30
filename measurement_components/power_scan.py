@@ -8,7 +8,7 @@ import time
 import pyqtgraph as pg
 
 
-from .measurement import Measurement 
+from ScopeFoundry import Measurement
 from .base_2d_scan import Base2DScan
 from .andor_ccd_readout import pixel2wavelength
 

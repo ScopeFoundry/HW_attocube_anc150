@@ -11,7 +11,7 @@ import threading
 from PySide import QtCore
 from scipy import interpolate
 
-from .measurement import Measurement 
+from ScopeFoundry import Measurement 
 
 
 

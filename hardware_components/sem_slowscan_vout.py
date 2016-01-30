@@ -3,7 +3,7 @@ Created on Oct 29, 2015
 
 @author: NIuser
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 from equipment.NI_Daq import Dac
 import random
 

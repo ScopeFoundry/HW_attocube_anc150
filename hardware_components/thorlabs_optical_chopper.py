@@ -4,7 +4,7 @@ Created on Sep 18, 2014
 @author: Benedikt Ursprung
 '''
 
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 
 try:
     from equipment.thorlabs_optical_chopper import ThorlabsOpticalChopper

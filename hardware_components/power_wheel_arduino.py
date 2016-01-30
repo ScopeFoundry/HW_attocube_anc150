@@ -3,7 +3,7 @@ Created on Sep 23, 2014
 
 @author: Benedikt 
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 import time
 
 try:

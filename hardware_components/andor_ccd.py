@@ -3,7 +3,7 @@ Created on May 6, 2014
 
 @author: lab
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.andor_ccd import AndorCCD, AndorReadMode, DEFAULT_TEMPERATURE
 except Exception as err:

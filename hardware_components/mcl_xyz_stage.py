@@ -3,7 +3,7 @@ Created on Jul 27, 2014
 
 @author: Edward Barnard
 '''
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.mcl_nanodrive import MCLNanoDrive
 except Exception as err:

@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 try:
     from equipment.NI_Daq import Adc
 except Exception as err:

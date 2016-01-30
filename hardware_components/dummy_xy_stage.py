@@ -1,4 +1,4 @@
-from . import HardwareComponent
+from ScopeFoundry import HardwareComponent
 import random
 
 class DummmyXYStageEquipment(object):

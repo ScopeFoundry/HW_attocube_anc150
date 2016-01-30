@@ -4,7 +4,7 @@ Created on Aug 5, 2015
 @author: Edward Barnard and Benedikt Ursprung
 '''
 import time
-from .measurement import Measurement 
+from ScopeFoundry import Measurement
 
 class LaserLineWriter(Measurement):
     name = 'laser_line_writer'
