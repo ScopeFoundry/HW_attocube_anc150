@@ -52,6 +52,9 @@ class AndorCCDHardwareComponent(HardwareComponent):
         self.hs_speed_conventional = self.add_logged_quantity("hs_chan_conventional", 
                                                               dtype=int, choices=[('', 0)], initial=0)
         
+        self.vs_speed = self.add_logged_quantity("vertical_shift_speed",
+                                                dtype=int, choices=[('', 0)], initial=0 )
+        
         self.shutter_open = self.add_logged_quantity("shutter_open", dtype=bool, 
                                                      ro=False, initial=False)
         
@@ -135,6 +138,7 @@ class AndorCCDHardwareComponent(HardwareComponent):
         self.output_amp.hardware_set_func = self.andor_ccd.set_output_amp
         self.ad_chan.hardware_set_func = self.andor_ccd.set_ad_channel
         self.hs_speed_em.hardware_set_func = self.andor_ccd.set_hs_speed_em
+        self.vs_speed.hardware_set_func = self.andor_ccd.set_vs_speed
         self.hs_speed_conventional.hardware_set_func = self.andor_ccd.set_hs_speed_conventional
         self.shutter_open.hardware_set_func  = self.andor_ccd.set_shutter_open
         self.trigger_mode.hardware_set_func = self.andor_ccd.set_trigger_mode
@@ -183,6 +187,14 @@ class AndorCCDHardwareComponent(HardwareComponent):
                                 speed[0]))
         self.hs_speed_conventional.change_choice_list(choices)
         
+        # Choices for the vertical shift speeds in conventional mode
+        choices = []
+        for speed_i in range(self.andor_ccd.numVSSpeeds):    
+            choices.append((
+                            str.format("Speed {} - {:.2f} us", speed_i, self.andor_ccd.VSSpeeds[speed_i]),
+                            speed_i))
+        self.vs_speed.change_choice_list(choices)
+        
         # Choices for the AD channels
         choices = []
         for chan_i in range(self.andor_ccd.numADChan):
@@ -202,6 +214,7 @@ class AndorCCDHardwareComponent(HardwareComponent):
             self.output_amp.update_value(0)        #EMCCD mode
             self.ad_chan.update_value(0)           #14-bit AD Chan
             self.hs_speed_em.update_value(0)       #10 MHz readout speed
+            self.vs_speed.update_value(self.andor_ccd.numVSSpeeds-1)          #Slowest vertical shift speed
             self.hflip.update_value(True)          #Default to true horizontal flip
             self.exposure_time.update_value(1)     #Default to a 1 s integration
             self.shutter_open.update_value(False)  #Close the shutter.

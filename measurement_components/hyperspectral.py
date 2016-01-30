@@ -61,10 +61,6 @@ class SpectrumScan2DMeasurement(Base2DScan):
 
     def pre_scan_setup(self):
         
-  
-
-        
-        
         # hypserspectral scan specific setup
         self.display_update_period = 0.10 #seconds
 
@@ -89,12 +85,22 @@ class SpectrumScan2DMeasurement(Base2DScan):
         #create data arrays
         self.integrated_count_map = np.zeros((self.Nv, self.Nh), dtype=int)
         self.spec_map = np.zeros( (self.Nv, self.Nh, self.N_spec), dtype=int)
+        
+        self.spec_map_h5 = self.h5_meas_group.create_dataset(
+                          'spec_map', (self.Nv, self.Nh, self.N_spec), dtype=int, compression='gzip')
+
+        self.integrated_count_map_h5 = self.h5_meas_group.create_dataset(
+                          'integrated_count_map', (self.Nv, self.Nh), dtype=int, compression='gzip')
+
+
+        self.wls_h5 = self.h5_meas_group.create_dataset('wls', data=self.wls)
 
         self.background_data = None 
         
         self.bg_sub = self.bg_subtract.val
         if self.bg_sub:
             self.background_data = self.andor_ccd_hc.background
+            self.h5_meas_group.create_dataset('background_data', data=self.background_data)
         
         #TODO disable bg checkbox during run
         #TODO need to store background
@@ -145,8 +151,15 @@ class SpectrumScan2DMeasurement(Base2DScan):
                           
         # store in arrays
         self.spec_map[i_v,i_h,:] = self.spectra_data
+        self.spec_map_h5[i_v,i_h,:] = self.spectra_data
+        
+        
         self.integrated_count_map[i_v,i_h] = np.sum(self.spectra_data)
+        self.integrated_count_map_h5[i_v,i_h] = np.sum(self.spectra_data)
         print self.integrated_count_map[i_v,i_h]
+
+
+        self.h5_file.flush()
 
         if True:
             t1 = time.time()

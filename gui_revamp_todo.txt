@@ -12,3 +12,13 @@
 
 * measurement rerun setup figure
 
+* settings save as and load as buttons
+
+* remove readonly lq's from ini files
+
+* create default measurement gui with tree and graphlayout or mpl figure
+
+Refactoring:
+ * rename lq dict to be obj.settings
+ * gui.hardware_components -> gui.hardware
+ 

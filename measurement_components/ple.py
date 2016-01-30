@@ -60,10 +60,10 @@ class PLEPointMeasurement(Measurement):
         # ground state from one excitation energy to the next.  This only works if a shutter
         # is installed.  Set to 0 to disable.  Value is in seconds.
         WAIT_TIME_BETWEEN_STEPS = 0.01       
-        SHUTTER_ENABLE          = False
+        SHUTTER_ENABLE          = True
         COLLECT_INIT_SPEC       = False
-        MOVE_OBJECTIVE          = True
-        SAVE_STAGE_POS          = True       
+        MOVE_OBJECTIVE          = False
+        SAVE_STAGE_POS          = False       
         
         # check the type of detector selected in GUI
         use_ccd = self.gui.ui.ple_point_scan_detector_comboBox.currentText() == "Andor CCD"

@@ -48,7 +48,18 @@ class MonochromatorSweep(Measurement):
         self.ax.set_xlabel("Time (ns)")
         self.ax.set_ylabel("Counts")
         """
-        pass
+        
+        self.graph_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
+        self.graph_layout.show()
+        self.graph_layout.setWindowTitle("monochromator_sweep")
+        
+        self.plot = self.graph_layout.addPlot(title="monochromator_sweep")
+        self.plot_line = self.plot.plot([1,3,2,4,3,5])
+
+    def update_display(self):
+        self.plot_line.setData(self.wavelengths, self.apd_count_rates)
+        self.gui.app.processEvents()
+    
     
     def _run(self):
         
@@ -92,6 +103,7 @@ class MonochromatorSweep(Measurement):
                 time.sleep(1.0) # wait for shutter to open
 
             for ii in range(N):
+                self.set_progress((100.*ii)/N)
                 if self.interrupt_measurement_called:
                     break
                 
@@ -167,5 +179,3 @@ class MonochromatorSweep(Measurement):
         return self.picoharp.histogram_data, elapsed_meas_time
 
                
-    def update_display(self):
-        pass
