@@ -11,7 +11,7 @@ except Exception as err:
     print "Cannot load required modules for ShutterServoArduino:", err
 
 
-SHUTTER_SERVO_ARDUINO_PORT = "COM23"
+SHUTTER_SERVO_ARDUINO_PORT = "COM6"
 
 class ShutterServoHardwareComponent(HardwareComponent):
     

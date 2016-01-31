@@ -11,7 +11,7 @@ except Exception as err:
     print "Cannot load required modules for FlipMirrorArduino:", err
 
 
-FLIP_MIRROR_PORT = "COM3"
+FLIP_MIRROR_PORT = "COM8"
 
 class FlipMirrorHardwareComponent(HardwareComponent):
     

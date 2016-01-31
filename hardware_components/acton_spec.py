@@ -15,7 +15,7 @@ from PySide import QtCore
 
 class ActonSpectrometerHardwareComponent(HardwareComponent):
     
-    ACTON_SPEC_PORT = "COM4"
+    ACTON_SPEC_PORT = "COM9"
 
     
     def setup(self):

@@ -39,7 +39,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
 
     def connect(self):
         
-        PowerWheelArduinoPort = 'COM22'
+        PowerWheelArduinoPort = 'COM4'
         
         if self.debug: print "connecting to arduino power wheel"
         
