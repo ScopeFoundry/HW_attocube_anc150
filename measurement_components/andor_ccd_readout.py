@@ -263,7 +263,7 @@ class AndorCCDStepAndGlue(Measurement):
         
         h5m.attrs['time_id'] = self.t0
         h5_io.h5_save_measurement_settings(self, h5m)
-
+        h5_io.h5_save_hardware_lq(self.gui, h5m)
 
         #setup data arrays (in h5 file)
         
