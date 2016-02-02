@@ -1,15 +1,16 @@
-from measurement import Measurement
+from ScopeFoundry import Measurement
 import numpy as np
 import pyqtgraph as pg
 import time
+import os
 
 class APDOptimizerMeasurement(Measurement):
 
     name = "apd_optimizer"
 
-    ui_filename = "measurement_components/apd_optimizer.ui"
+    ui_filename = os.path.join(os.path.dirname(__file__), "apd_optimizer.ui")
 
-    def setup(self):        
+    def setup(self):       
         self.display_update_period = 0.001 #seconds
 
         # create data array
