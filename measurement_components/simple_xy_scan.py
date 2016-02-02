@@ -1,17 +1,21 @@
-from measurement import Measurement
+from ScopeFoundry import Measurement
 import numpy as np
 import pyqtgraph as pg
 import time
-import h5_io
+import ScopeFoundry.h5_io as h5_io
 from hardware_components import apd_counter
 from PySide import QtCore
-from logged_quantity import LQRange
+from ScopeFoundry import LQRange
+import os
 
 class SimpleXYScan(Measurement):
     name = "simple_xy_scan"
-    ui_filename = "measurement_components/simple_xy_scan.ui"
     
     def setup(self):
+        
+        self.ui_filename = os.path.join(os.path.dirname(__file__),"simple_xy_scan.ui")
+        self.load_ui()
+        
         self.display_update_period = 0.001 #seconds
 
         #connect events        
@@ -145,9 +149,10 @@ class SimpleXYScan(Measurement):
                     # each pixel:
                     # acquire signal and save to data array
                     self.pixel_i += 1
-                    self.apd_count_rate.read_from_hardware()
-                    self.apd_map[jj,ii] = self.apd_count_rate.val
-                    self.apd_map_h5['data'][jj,ii] = self.apd_count_rate.val
+                    
+                    self.acquire_pixel(self.pixel_i, ii,jj)
+
+
                     self.progress.update_value(100.0*self.pixel_i / (self.Nh.val*self.Nv.val))
         finally:
             # set all logged quantities writable
@@ -155,6 +160,19 @@ class SimpleXYScan(Measurement):
                 self.logged_quantities[lqname].change_readonly(False)
             
             self.h5_file.close()
+            
+    def acquire_pixel(self, pixel_i, ii, jj):
+        
+        x = self.stage.x_position.val
+        y = self.stage.y_position.val
+        
+        apd_count = self.apd_count_rate.read_from_hardware()
+        
+        apd_count = 0.1*((x-35)**2 + (y-30)**2)
+        
+        self.apd_map[jj,ii] = apd_count
+        self.apd_map_h5['data'][jj,ii] = apd_count        
+        
             
     def clear_qt_attr(self, attr_name):
         if hasattr(self, attr_name):
@@ -169,12 +187,20 @@ class SimpleXYScan(Measurement):
         self.graph_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
         self.ui.plot_groupBox.layout().addWidget(self.graph_layout)
         
+        self.old_img_items = []
+        
         self.clear_qt_attr('img_plot')
         self.img_plot = self.graph_layout.addPlot()
         self.img_item = pg.ImageItem()
         self.img_plot.addItem(self.img_item)
         self.img_plot.showGrid(x=True, y=True)
         self.img_plot.setAspectLocked(lock=True, ratio=1)
+        
+        #self.img_item.setLookupTable(pg., update)
+        
+        self.hist_lut = pg.HistogramLUTItem()
+        self.graph_layout.addItem(self.hist_lut)
+        self.hist_lut.setImageItem(self.img_item)
         
         
         #self.clear_qt_attr('current_stage_pos_arrow')
@@ -228,8 +254,12 @@ class SimpleXYScan(Measurement):
     
     def update_display(self):
         if self.initial_scan_setup_plotting:
+            self.old_img_items.append(self.img_item)
             self.img_item = pg.ImageItem()
             self.img_plot.addItem(self.img_item)
+            
+            self.hist_lut.setImageItem(self.img_item)
+
             #self.hist_lut.setImageItem(self.img_item)
     
             self.img_item.setImage(self.apd_map.T)
@@ -239,7 +269,7 @@ class SimpleXYScan(Measurement):
             
             self.initial_scan_setup_plotting = False
         else:
-            self.img_item.setImage(self.apd_map.T, autoRange=False, autoLevels=False)
+            self.img_item.setImage(np.log(self.apd_map.T), autoRange=False, autoLevels=False)
             #self.hist_lut.imageChanged(autoLevel=True)        
     
     def mouseMoved(self,evt):
