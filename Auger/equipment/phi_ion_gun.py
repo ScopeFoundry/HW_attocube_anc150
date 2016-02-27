@@ -1,7 +1,5 @@
 import serial
 import time
-import chunk
-
 
 class PhiIonGun(object):
     
@@ -120,9 +118,9 @@ class PhiIonGun(object):
         0x17    write emission current
         0x18    get emission current
         0x19    get extractor pressure
-        0x0A    write energy            #this one
+        0x0A    write beam_v            #this one (was previously called energy)
         0x0B    write beam voltage   #investigate this quantity in person
-        0x0C    get energy                #and this one.
+        0x0C    get beam_v                #and this one.
         0x0D    write bend voltage
         0x0F    get condenser voltage
         0x43    write x size
@@ -178,10 +176,10 @@ class PhiIonGun(object):
         if self.debug: print "current (mA):", resp
         return float(value)
     
-    def read_energy(self):
+    def read_beam_v(self):
         resp = self.ask_cmd(0x0C) 
         value = self.parse_data(resp)
-        if self.debug: print "read_energy:", resp
+        if self.debug: print "read_beam_v:", resp
         return float(value)
     
     def read_extractor_p(self):
@@ -202,19 +200,22 @@ class PhiIonGun(object):
         if self.debug: print "objective_v:", resp
         return float(value)
     
-    def write_energy(self, data):
+
+
+    def write_beam_v(self, data): #was previously write_energy
         _float = ("%.3f" % data)
-        _energy = self.ask_cmd(0x0A, _float)
-        if self.debug: print "write_energy"
-        return _energy
+        _beam_v = self.ask_cmd(0x0A, _float)
+        if self.debug: print "write_beam_v"
+        return _beam_v
     
-    def write_beam_v(self, data):
+    """def write_beam_v(self, data):
         _float = ("%.3f" % data)
         beam_v = self.ask_cmd(0x0B, _float)
         if self.debug:
             print "write_beam_v"
         return beam_v 
-
+    """
+    
     def write_grid_v(self, grid_v):
         assert 99 < grid_v < 201
         _float = ("%.3f" % grid_v)
@@ -460,7 +461,7 @@ if __name__ == '__main__':
 
     #phi.read_condenser_v()
     #print "Emission {:.1f} mA".format(phi.read_current())
-    #print "Beam {:.1f} V".format(phi.read_energy())
+    #print "Beam {:.1f} V".format(phi.read_beam_v())
     #print "Condenser {:.1f} V".format(phi.read_condenser_v())
     #print "Objective {:.1f} V".format(phi.read_objective_v())
     #print "Float {:.1f} V".format(phi.read_float())
