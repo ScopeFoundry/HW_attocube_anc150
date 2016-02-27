@@ -59,7 +59,7 @@ class SEMSingleChanSignal(HardwareComponent):
         
     def read_signal(self):
         if not self.dummy_mode.val:
-            x = 0
+            x = 0.0
             for i in range(self.sem_signal_nsamples.val):
                 x += self.adc.get()
             return x / self.sem_signal_nsamples.val

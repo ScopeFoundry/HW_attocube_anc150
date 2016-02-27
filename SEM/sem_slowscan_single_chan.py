@@ -3,21 +3,25 @@ Created on Oct 29, 2015
 
 @author: NIuser
 '''
-from measurement import Measurement
+from ScopeFoundry import Measurement
 import numpy as np
 import pyqtgraph as pg
 import time
-import h5_io
+from ScopeFoundry import h5_io
 from PySide import QtCore
-from logged_quantity import LQRange
+from ScopeFoundry import LQRange
+import os
 
 class SEMSlowscanSingleChan(Measurement):
     name = "sem_slowscan_single_chan"
-    ui_filename = "measurement_components/sem_slowscan_single_chan.ui"
+    
+    #ui_filename = os.path.join(os.path.dirname(__file__), "sem_slowscan_single_chan.ui")
+    ui_filename =  "sem_slowscan_single_chan.ui"
     
     def setup(self):
-        self.display_update_period = 0.001 #seconds
+        self.display_update_period = 0.05 #seconds
 
+                                   
         #connect events        
 
         # local logged quantities
@@ -91,13 +95,17 @@ class SEMSlowscanSingleChan(Measurement):
                 
     
     def _run(self):
+        self.display_update_period = 0.5 #seconds
+
         #Hardware
         #self.apd_counter_hc = self.gui.hardware_components['apd_counter']
         #self.apd_count_rate = self.apd_counter_hc.apd_count_rate
         self.sem_signal_hc = self.gui.hardware_components['sem_singlechan_signal']
         self.sem_signal_lq = self.sem_signal_hc.sem_signal
         self.stage = self.gui.hardware_components['sem_slowscan_vout']
-
+        #self.sem_signal_hc.adc.stop()
+        #self.sem_signal_hc.adc.start()
+        
         # Data File
         # H5
 
@@ -132,25 +140,38 @@ class SEMSlowscanSingleChan(Measurement):
                                         dim_units=['[V]','[V]'],
                                         compression='gzip'
                                         )
-            
+            self.sem_signal_hc.adc.start()
+                    
             # start scan
+            print "start scan"
             self.pixel_i = 0
-            for jj, y in enumerate(self.v_array):
-                if self.interrupt_measurement_called: break
-                self.stage.y_position.update_value(y)
-                self.h5_file.flush() # flush data to file every line
-                for ii, x in enumerate(self.h_array):
-                    if self.interrupt_measurement_called: break                    
-                    self.stage.x_position.update_value(x)
-                    # each pixel:
-                    # acquire signal and save to data array
-                    self.pixel_i += 1
-                    self.sem_signal_lq.read_from_hardware()
-                    #print self.sem_signal_lq.val
-                    #print self.sem_map[0:5,0:5]
-                    self.sem_map[jj,ii] = self.sem_signal_lq.val
-                    #self.sem_map_h5['data'][jj,ii] = self.sem_signal_lq.val
-                self.progress.update_value(100.0*self.pixel_i / (self.Nh.val*self.Nv.val))
+            
+            while not self.interrupt_measurement_called:
+                t0 = time.clock()
+            
+                for jj, y in enumerate(self.v_array):
+                    if self.interrupt_measurement_called: break
+                    #self.stage.y_position.update_value(y)
+                    #self.h5_file.flush() # flush data to file every line
+                    for ii, x in enumerate(self.h_array):
+                        #if self.interrupt_measurement_called: break                    
+                        #self.stage.x_position.update_value(x)
+                        self.stage.write_xy(x,y)
+                        # each pixel:
+                        # acquire signal and save to data array
+                        self.pixel_i += 1
+                        #self.sem_signal_lq.read_from_hardware(send_signal=False)
+                        #z = self.sem_signal_hc.read_signal()
+                        z = self.sem_signal_hc.adc.get()
+                        #time.sleep(0.1)
+                        #print self.sem_signal_lq.val
+                        #print self.sem_map[0:5,0:5]
+                        #self.sem_map[jj,ii] = self.sem_signal_lq.val
+                        self.sem_map[jj,ii] = z
+                        #self.sem_map_h5['data'][jj,ii] = self.sem_signal_lq.val
+                    #self.progress.update_value(100.0*self.pixel_i / (self.Nh.val*self.Nv.val))
+                t1 = time.clock() - t0
+                print "raster scan took %f seconds. per pixel time: %s us" % (t1, 1e6*(t1)/(self.Nv.val*self.Nh.val))
         finally:
             self.h5_file.close()
             
@@ -225,6 +246,8 @@ class SEMSlowscanSingleChan(Measurement):
         self.current_stage_pos_arrow.setPos(x,y)
     
     def update_display(self):
+        self.display_update_period = 0.5#seconds
+
         if self.initial_scan_setup_plotting:
             self.img_item = pg.ImageItem()
             self.img_plot.addItem(self.img_item)
@@ -237,7 +260,7 @@ class SEMSlowscanSingleChan(Measurement):
             
             self.initial_scan_setup_plotting = False
         else:
-            self.img_item.setImage(self.sem_map.T, autoRange=False, autoLevels=True)
+            self.img_item.setImage(self.sem_map.T, autoRange=True, autoLevels=True)
             """try:
                 vmin = np.min(self.sem_map[np.nonzero(self.sem_map)])
                 vmax = np.max(self.sem_map[np.nonzero(self.sem_map)])
@@ -245,6 +268,7 @@ class SEMSlowscanSingleChan(Measurement):
                 vmin=0
                 vmax=1
             """
+            #5self.img_item.setLevels([1.5,2.5], update=True)
             #self.img_item.setLevels([vmin,vmax], update=True)
             #self.hist_lut.imageChanged(autoLevel=True)        
     

@@ -6,7 +6,8 @@ Created on Oct 29, 2015
 import sys
 from PySide import QtGui
 
-from base_gui import BaseMicroscopeGUI
+from ScopeFoundry import BaseMicroscopeGUI
+
 
 # Import Hardware Components
 from hardware_components.sem_singlechan_signal import SEMSingleChanSignal
@@ -14,12 +15,12 @@ from hardware_components.sem_slowscan_vout import SEMSlowscanVout
 
 # Import Measurement Components
 #from measurement_components.apd_optimizer_simple import APDOptimizerMeasurement
-from measurement_components.sem_slowscan_single_chan import SEMSlowscanSingleChan
+from SEM.sem_slowscan_single_chan import SEMSlowscanSingleChan
 
 
 class SEMSlowscanGUI(BaseMicroscopeGUI):
 
-    ui_filename = "base_gui.ui"
+    ui_filename = "../ScopeFoundry/base_gui.ui"
 
     def setup(self):
         #Add hardware components
