@@ -14,6 +14,8 @@ class PhiIonGunHardwareComponent(HardwareComponent):
     def setup(self):
 
         #create logged quantities
+        self.configure = self.add_operation("Configure", self.Initial_gun_state)
+
         self.gun_state = self.add_logged_quantity("gun_state", dtype=str,
                                                         choices = [
                                                                 ("Off", 'OFF'),
@@ -38,38 +40,52 @@ class PhiIonGunHardwareComponent(HardwareComponent):
                                     initial = 0, dtype=float, fmt="%.3f",
                                     ro=True, unit="mA", vmin=0, vmax=30)
 
-        self.beam_energy_target = self.add_logged_quantity(
-                                    name='beam_energy_target',
-                                    initial=0, dtype=float, fmt="%.3f",
+        self.beam_voltage_target = self.add_logged_quantity(
+                                    name='beam_voltage_target',
+                                    initial=0, dtype=float, fmt="%.0f",
                                     ro=False, unit="V", vmin=0, vmax=5000)
-        self.beam_energy_readout = self.add_logged_quantity(
-                                    name = 'beam_energy_readout',
-                                    initial = 0, dtype=float, fmt="%.3f",
+        self.beam_voltage_target.spinbox_decimals = 0
+        self.beam_voltage_readout = self.add_logged_quantity(
+                                    name = 'beam_voltage_readout',
+                                    initial = 0, dtype=float, fmt="%.0f",
                                     ro=True, unit="V", vmin=0, vmax=5000)
-
-        #self.beam_energy_target = self.add_logged_quantity(
-        #                            name='beam_energy_target'
-        #                            initial=0, dtype=float, fmt="%.3f",
-        #                            ro=False, unit="V", vmin=0, vmax=5000) 
-        # Find out more about this function before use
-
-        self.condenser_target = self.add_logged_quantity(
-                                        name = 'condenser_target',
+        self.beam_voltage_readout.spinbox_decimals = 0
+        
+        self.condenser_voltage_target = self.add_logged_quantity(
+                                        name = 'condenser_voltage_target',
                                         initial=0, dtype=float, fmt="%.3f",
                                         ro=False, unit="V", vmin=0, vmax=5500)
-        self.condenser_readout = self.add_logged_quantity(
-                                        name = 'condenser_readout',
+        self.condenser_voltage_readout = self.add_logged_quantity(
+                                        name = 'condenser_voltage_readout',
                                         initial=0, dtype=float, fmt="%.3f",
                                         ro=True, unit="V", vmin=0, vmax=5500)
+        
+        self.condenser_percentage_target = self.add_logged_quantity(
+                                        name = 'condenser_percentage_target',
+                                        initial=0, dtype=float, fmt="%.1f",
+                                        ro=False, unit="%", vmin=0, vmax=110)
+        self.condenser_percentage_readout = self.add_logged_quantity(
+                                        name = 'condenser_percentage_readout',
+                                        initial=0, dtype=float, fmt="%.1f",
+                                        ro=True, unit="%", vmin=0, vmax=110)
 
-        self.objective_target = self.add_logged_quantity(
-                                        name = 'objective_target',
+        self.objective_voltage_target = self.add_logged_quantity(
+                                        name = 'objective_voltage_target',
                                         initial=0, dtype=float, fmt="%.3f",
                                         ro=False, unit="V", vmin=0, vmax=5500) 
-        self.objective_readout = self.add_logged_quantity(
-                                        name = 'objective_readout',
+        self.objective_voltage_readout = self.add_logged_quantity(
+                                        name = 'objective_voltage_readout',
                                         initial=0, dtype=float, fmt="%.3f",
-                                        ro=True, unit="V", vmin=0, vmax=5500) 
+                                        ro=True, unit="V", vmin=0, vmax=5500)
+        
+        self.objective_percentage_target = self.add_logged_quantity(
+                                        name = 'objective_percentage_target',
+                                        initial=0, dtype=float, fmt="%.1f",
+                                        ro=False, unit="%", vmin=0, vmax=110) 
+        self.objective_percentage_readout = self.add_logged_quantity(
+                                        name = 'objective_percentage_readout',
+                                        initial=0, dtype=float, fmt="%.1f",
+                                        ro=True, unit="%", vmin=0, vmax=110)       
 
         self.float_target = self.add_logged_quantity(
                                         name = 'float_target',
@@ -113,11 +129,52 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.dummy_mode = self.add_logged_quantity(name='dummy mode', dtype=bool, initial=False, ro=False)
 
 
+        # Connect Percent LQ's to voltage (hardware-connected) LQ's
+        self.objective_percentage_target.updated_value.connect(self.on_objective_percent_target_updated)
+        self.objective_voltage_target.updated_value.connect(self.on_objective_voltage_target_updated)
+
+        self.condenser_percentage_target.updated_value.connect(self.on_condenser_percent_target_updated)
+        self.condenser_voltage_target.updated_value.connect(self.on_condenser_voltage_target_updated)
+        
+        self.beam_voltage_target.updated_value.connect(self.on_beam_voltage_target_updated)
+
+
         # operations
         self.add_operation('zero state command', self.zero_state_command)
         self.add_operation('zero state gun on', self.zero_state_command_gunon)
 
+    def on_beam_voltage_target_updated(self):
+        self.on_objective_percent_target_updated()
+        self.on_condenser_percent_target_updated()
 
+    def on_objective_percent_target_updated(self):
+        pct = self.objective_percentage_target.val
+        beam_v = self.beam_voltage_target.val
+        self.objective_voltage_target.update_value(0.01*pct*beam_v)
+    
+    def on_objective_voltage_target_updated(self):
+        beam_v = self.beam_voltage_target.val
+        obj_v = self.objective_voltage_target.val
+        if beam_v == 0:
+            return
+        else:
+            pct = 100*obj_v/beam_v
+            self.objective_percentage_target.update_value(pct)
+            
+    def on_condenser_percent_target_updated(self):
+        pct = self.condenser_percentage_target.val
+        beam_v = self.beam_voltage_target.val
+        self.condenser_voltage_target.update_value(0.01*pct*beam_v)
+    
+    def on_condenser_voltage_target_updated(self):
+        beam_v = self.beam_voltage_target.val
+        obj_v = self.condenser_voltage_target.val
+        if beam_v == 0:
+            return
+        else:
+            pct = 100*obj_v/beam_v
+            self.condenser_percentage_target.update_value(pct)
+            
     def connect(self):
         if self.debug_mode.val: print "Connecting to Phi Ion Gun"
         # Open connection to Hardware
@@ -133,23 +190,20 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.emission_current_target.hardware_set_func = \
                 self.phiiongun.write_emission_current
 
-        self.beam_energy_readout.hardware_read_func = \
-                self.phiiongun.read_energy
-        self.beam_energy_target.hardware_set_func = \
-                self.phiiongun.write_energy
+        self.beam_voltage_readout.hardware_read_func = \
+                self.phiiongun.read_beam_v
+        self.beam_voltage_target.hardware_set_func = \
+                self.phiiongun.write_beam_v
 
-        #self.beam_energy_target.hardware_set_func = \
-        #        self.phiiongun.write_beam_v
-        # See corresponding logged quantity above.
-
-        self.condenser_readout.hardware_read_func = \
+        self.condenser_voltage_readout.hardware_read_func = \
                 self.phiiongun.read_condenser_v
-        self.condenser_target.hardware_set_func = \
+        self.condenser_voltage_target.hardware_set_func = \
                 self.phiiongun.write_condenser_v
 
-        self.objective_readout.hardware_read_func = \
+
+        self.objective_voltage_readout.hardware_read_func = \
                 self.phiiongun.read_objective_v
-        self.objective_target.hardware_set_func = \
+        self.objective_voltage_target.hardware_set_func = \
                 self.phiiongun.write_objective_v
 
         self.float_readout.hardware_read_func = \
@@ -163,7 +217,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.grid_target.hardware_set_func = \
                 self.phiiongun.write_grid_v
                 
-        self.extractor_readout.hardware_set_func = \
+        self.extractor_readout.hardware_read_func = \
                 self.phiiongun.read_extractor_p
 
         
@@ -192,14 +246,17 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         
     
     def zero_state_command(self):
-        self.phiiongun.State_Data_Packet(Gun_Firing_On=False)
+        self.phiiongun.State_Data_Packet()
 
     def zero_state_command_gunon(self):
         self.phiiongun.State_Data_Packet(Gun_Firing_On=True)
+    
+    def Initial_gun_state(self):
+        self.phiiongun.State_Data_Packet(beamv=float(500), gridv=float(150), condv=float(500), objv=float(350), bendv=float(-7), emiv=float(25), State='STANDBY')
         
     def Set_gun_state(self, state):
-        self.phiiongun.State_Data_Packet(beamv=self.beam_energy_target.val, gridv=self.grid_target.val, condv=self.condenser_target.val, 
-                                                objv=self.objective_target.val, bendv=self.bend_target.val, emiv=self.emission_current_target.val, State=state)
+        self.phiiongun.State_Data_Packet(beamv=self.beam_voltage_target.val, gridv=self.grid_target.val, condv=self.condenser_voltage_target.val, 
+                                                objv=self.objective_voltage_target.val, bendv=self.bend_target.val, emiv=self.emission_current_target.val, State=state)
         #Reads logged quantity values stored in hardware class
         
     def Set_raster_mode(self, state):

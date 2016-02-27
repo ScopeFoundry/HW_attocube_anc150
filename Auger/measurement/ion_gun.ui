@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>765</width>
-    <height>461</height>
+    <height>467</height>
    </rect>
   </property>
   <property name="font">
@@ -92,7 +92,7 @@
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="energy_label">
+       <widget class="QLabel" name="beam_voltage_label">
         <property name="font">
          <font>
           <family>Helvetica Neue</family>
@@ -100,19 +100,19 @@
          </font>
         </property>
         <property name="text">
-         <string>Energy (0-5000 V)</string>
+         <string>Voltage (0-5000 V)</string>
         </property>
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="energy_target_doubleSpinBox">
+       <widget class="QDoubleSpinBox" name="beam_voltage_target_doubleSpinBox">
         <property name="maximum">
          <double>5000.000000000000000</double>
         </property>
        </widget>
       </item>
       <item row="1" column="2">
-       <widget class="QDoubleSpinBox" name="energy_readout_doubleSpinBox">
+       <widget class="QDoubleSpinBox" name="beam_voltage_readout_doubleSpinBox">
         <property name="readOnly">
          <bool>true</bool>
         </property>
@@ -133,33 +133,6 @@
       <string>Column</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <widget class="QLabel" name="condenser_label">
-        <property name="font">
-         <font>
-          <family>Helvetica Neue</family>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Condenser (0-110%)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QDoubleSpinBox" name="condenser_target_doubleSpinBox">
-        <property name="maximum">
-         <double>110.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QDoubleSpinBox" name="condenser_readout_doubleSpinBox">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="objective_label">
         <property name="font">
@@ -173,15 +146,8 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="objective_target_doubleSpinBox">
-        <property name="maximum">
-         <double>110.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QDoubleSpinBox" name="objective_readout_doubleSpinBox">
+      <item row="0" column="2">
+       <widget class="QDoubleSpinBox" name="condenser_readout_doubleSpinBox">
         <property name="readOnly">
          <bool>true</bool>
         </property>
@@ -214,8 +180,29 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="bend_label">
+      <item row="1" column="2">
+       <widget class="QDoubleSpinBox" name="objective_readout_doubleSpinBox">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="objective_target_doubleSpinBox">
+        <property name="maximum">
+         <double>110.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="condenser_target_doubleSpinBox">
+        <property name="maximum">
+         <double>110.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="condenser_label">
         <property name="font">
          <font>
           <family>Helvetica Neue</family>
@@ -223,12 +210,9 @@
          </font>
         </property>
         <property name="text">
-         <string>Bend</string>
+         <string>Condenser (0-110%)</string>
         </property>
        </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QDoubleSpinBox" name="bend_target_doubleSpinBox"/>
       </item>
      </layout>
     </widget>
