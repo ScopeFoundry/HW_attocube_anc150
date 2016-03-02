@@ -132,7 +132,9 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         # Connect Percent LQ's to voltage (hardware-connected) LQ's
         self.objective_percentage_target.updated_value.connect(self.on_objective_percent_target_updated)
         self.objective_voltage_target.updated_value.connect(self.on_objective_voltage_target_updated)
-
+        self.objective_voltage_readout.updated_value.connect(self.on_objective_voltage_readout_updated)
+        self.condenser_voltage_readout.updated_value.connect(self.on_condenser_voltage_readout_updated)
+    
         self.condenser_percentage_target.updated_value.connect(self.on_condenser_percent_target_updated)
         self.condenser_voltage_target.updated_value.connect(self.on_condenser_voltage_target_updated)
         
@@ -152,6 +154,12 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         beam_v = self.beam_voltage_target.val
         self.objective_voltage_target.update_value(0.01*pct*beam_v)
     
+    def on_objective_voltage_readout_updated(self):
+        obj_v = self.objective_voltage_readout.val
+        beam_v = self.beam_voltage_readout.val
+        if beam_v:
+            self.objective_percentage_readout.update_value(100*obj_v/beam_v)
+        
     def on_objective_voltage_target_updated(self):
         beam_v = self.beam_voltage_target.val
         obj_v = self.objective_voltage_target.val
@@ -166,6 +174,12 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         beam_v = self.beam_voltage_target.val
         self.condenser_voltage_target.update_value(0.01*pct*beam_v)
     
+    def on_condenser_voltage_readout_updated(self):
+        cond_v = self.condenser_voltage_readout.val
+        beam_v = self.beam_voltage_readout.val
+        if beam_v:
+            self.condenser_percentage_readout.update_value(100*cond_v/beam_v)
+        
     def on_condenser_voltage_target_updated(self):
         beam_v = self.beam_voltage_target.val
         obj_v = self.condenser_voltage_target.val
@@ -174,6 +188,12 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         else:
             pct = 100*obj_v/beam_v
             self.condenser_percentage_target.update_value(pct)
+            
+    ## To do:        
+    ## Update signals such that percentages can be updated in the phi_ion_gun gui:
+    
+    
+    
             
     def connect(self):
         if self.debug_mode.val: print "Connecting to Phi Ion Gun"

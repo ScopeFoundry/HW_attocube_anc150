@@ -311,39 +311,50 @@ class PhiIonGun(object):
 
     def Set_Raster_Mode(self, State='OFF'):
         assert State in ['OFF', 'INTERNAL', 'EXTERNAL']
+        t = 0.2
+        
         if State == 'INTERNAL':
             if self.debug:
                 print "Set_Internal_Raster_Mode"
             _header = self.ask_cmd(0x33)
+            time.sleep(t)
             if self.debug:
                 print _header
             _data = self.ask_cmd(0x1E, "1")
+            time.sleep(t)
             if self.debug:
                 print _data
             _verify = self.ask_cmd(0x1F)
+            time.sleep(t)
             if self.debug:
                 print "Verify.", repr(_verify)
             _verify2 = self.ask_cmd(0x1F)
+            time.sleep(t)
             if self.debug:
                 print "Verify Again.", repr(_verify2)
+            time.sleep(t)
         elif State == 'EXTERNAL':
             _data = self.ask_cmd(0x1E, "0")
             if self.debug: 
                 print _data
             return _data
+            time.sleep(t)
             _verify = self.ask_cmd(0x1F)
             if self.debug:
                 print "verify:", repr(_verify)
             return _verify
+            time.sleep(t)
             _verify2 = self.ask_cmd(0x1F)
             if self.debug:
                 print "verify 2:", repr(_verify2)
             return _verify2
+            time.sleep(t)
             _footer = self.ask_cmd(0x34)
             if self.debug:
                 print _footer
             return _footer
-            self.Header()
+            time.sleep(t)
+            self.Header() #0x39
             if self.debug:
                 print "External Raster Set!"
 
