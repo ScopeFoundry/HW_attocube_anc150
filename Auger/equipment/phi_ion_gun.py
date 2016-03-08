@@ -338,13 +338,9 @@ class PhiIonGun(object):
             if self.debug: 
                 print _data
             time.sleep(t)
-            _verify = self.ask_cmd(0x1F)
-            if self.debug:
-                print "verify:", repr(_verify)
-            time.sleep(t)
-            _verify2 = self.ask_cmd(0x1F)
-            if self.debug:
-                print "verify 2:", repr(_verify2)
+            while self.parse_data(self.ask_cmd(0x1F)) != str(0):
+                self.ask_cmd(0x1F)
+            
             time.sleep(t)
             _footer = self.ask_cmd(0x34)
             if self.debug:
@@ -386,6 +382,9 @@ class PhiIonGun(object):
             print(">>", state_data)
         #Note: The above function is not used to set the float voltage. Use specific command to write your float voltage.
         set_state = self.ask_cmd(0x1C, state_data)
+        
+        if self.debug:
+            print(set_state)
         return set_state
         
 
