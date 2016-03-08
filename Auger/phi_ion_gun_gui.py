@@ -1,7 +1,10 @@
 import sys
 from PySide import QtGui
 
-from ScopeFoundry.base_gui import BaseMicroscopeGUI
+#There is an issue with import on certain systems. Works fine on PXI in 1211.
+from ScopeFoundry.base_gui import BaseMicroscopeGUI  
+
+
 
 # Import Hardware Components
 from Auger.hardware.ion_gun import PhiIonGunHardwareComponent

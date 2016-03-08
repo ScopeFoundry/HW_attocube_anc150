@@ -5,6 +5,7 @@ try:
 except Exception as err:
     print "Cannot load required modules for PhiIonGun", err
 
+import time
 
 
 class PhiIonGunHardwareComponent(HardwareComponent):
@@ -22,14 +23,22 @@ class PhiIonGunHardwareComponent(HardwareComponent):
                                                                 ("Blank", 'BLANK'),
                                                                 ("Standby", 'STANDBY'),
                                                                 ("Active", 'ACTIVE')]
-                                                     )
-        
+                                                )
+        self.gun_state2 = self.add_logged_quantity("gun_state2", dtype=str,
+                                                        choices = [
+                                                                ("Off", 'OFF'),
+                                                                ("Blank", 'BLANK'),
+                                                                ("Standby", 'STANDBY'),
+                                                                ("Active", 'ACTIVE')]
+                                                )
+
+
         self.raster_mode = self.add_logged_quantity("raster_mode", dtype=str,
                                                 choices = [
                                                         ("Off", 'OFF'),
                                                         ("Internal", 'INTERNAL'),
                                                         ("External", 'EXTERNAL')]
-                                             )
+                                                )
         
         self.emission_current_target = self.add_logged_quantity(
                                     name = 'emission_current_target',
@@ -128,6 +137,9 @@ class PhiIonGunHardwareComponent(HardwareComponent):
 
         self.dummy_mode = self.add_logged_quantity(name='dummy mode', dtype=bool, initial=False, ro=False)
 
+        self.timer = self.add_logged_quantity(name='timer', dtype=float, fmt="%.2f",
+                                        ro=False, unit='s', vmin=0, vmax=3600) 
+                                        #set to an hour.. not sure what users want in terms of maximum times.
 
         # Connect Percent LQ's to voltage (hardware-connected) LQ's
         self.objective_percentage_target.updated_value.connect(self.on_objective_percent_target_updated)
@@ -140,7 +152,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         
         self.beam_voltage_target.updated_value.connect(self.on_beam_voltage_target_updated)
 
-
+        self.add_operation('timer start', self.timed_state)
         # operations
         self.add_operation('zero state command', self.zero_state_command)
         self.add_operation('zero state gun on', self.zero_state_command_gunon)
@@ -248,6 +260,12 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.gun_state.hardware_set_func = \
                 self.Set_gun_state
         #Runs single command for 4 possible states using stored values in hardware class.
+
+        self.gun_state2.hardware_set_func = \
+                self.Set_gun_state
+
+        # start button?
+
         self.raster_mode.hardware_set_func = \
                 self.Set_raster_mode
                 
@@ -263,7 +281,28 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.yoff_target.hardware_set_func = \
                 self.phiiongun.yoff
         
-        
+    
+    def timed_state(self):
+        self.old_state = self.gun_state.val
+        self.new_state = self.gun_state2.val
+        self.time = self.timer.val
+        t0 = time.time()
+        while time.time() < t0 + self.time:
+            self.gun_state.update_value(self.new_state)
+            #I'm very much hesitant to implement this update command:
+            '''choices = [("Off", 'OFF')]''' 
+            #(Given that this is a tuple, and not the usual integer or float datatype)
+        else:
+            self.gun_state.update_value(self.old_state)
+            #See above comments. 
+
+
+
+
+
+
+
+
     
     def zero_state_command(self):
         self.phiiongun.State_Data_Packet()

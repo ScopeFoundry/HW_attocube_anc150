@@ -159,7 +159,7 @@ class PhiIonGun(object):
         self.ask_cmd(0x1F)
         self.ask_cmd(0x32, 3)
         self.ask_cmd(0x39)
-        self.ask_cmd(0x3C)
+        self.ask_cmd(0x3C, "1.000 1.000")
         self.ask_cmd(0x39)
         self.State_Data_Packet()
         
@@ -337,22 +337,18 @@ class PhiIonGun(object):
             _data = self.ask_cmd(0x1E, "0")
             if self.debug: 
                 print _data
-            return _data
             time.sleep(t)
             _verify = self.ask_cmd(0x1F)
             if self.debug:
                 print "verify:", repr(_verify)
-            return _verify
             time.sleep(t)
             _verify2 = self.ask_cmd(0x1F)
             if self.debug:
                 print "verify 2:", repr(_verify2)
-            return _verify2
             time.sleep(t)
             _footer = self.ask_cmd(0x34)
             if self.debug:
                 print _footer
-            return _footer
             time.sleep(t)
             self.Header() #0x39
             if self.debug:
@@ -398,7 +394,7 @@ class PhiIonGun(object):
     ## In this case, the blanking function would be under "Off_standby_blanking" function, the only differences are the values
     ## within State_Data_Packet.
 
-    def Startup_Commands(self):
+'''    def Startup_Commands(self):
         _model = self.ask_cmd(0x01)
         if self.debug:
             print(_model)
@@ -423,7 +419,7 @@ class PhiIonGun(object):
         if self.debug:
             print(_unknown3)
         self.Footer()
-
+'''
 
     
     
@@ -468,7 +464,7 @@ if __name__ == '__main__':
     phi = PhiIonGun(debug=False)
     #phi.ask_cmd(0x01)
     #phi.read_version()
-    phi.Startup_Commands()
+    phi.initialize()
 
     #phi.read_condenser_v()
     #print "Emission {:.1f} mA".format(phi.read_current())

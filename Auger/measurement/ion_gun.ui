@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>765</width>
-    <height>467</height>
+    <height>529</height>
    </rect>
   </property>
   <property name="font">
@@ -26,7 +26,115 @@
    <string>Ion Gun Control</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" colspan="5">
+   <item row="4" column="2" colspan="3">
+    <widget class="QGroupBox" name="Mode_gun_off_box">
+     <property name="font">
+      <font>
+       <family>Helvetica Neue</family>
+       <pointsize>15</pointsize>
+      </font>
+     </property>
+     <property name="title">
+      <string>Gun Mode</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <widget class="QComboBox" name="Gun_mode_comboBox">
+        <item>
+         <property name="text">
+          <string>Off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Blanking</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Standby</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Active</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="1" colspan="2">
+    <widget class="QGroupBox" name="Offset_box">
+     <property name="font">
+      <font>
+       <family>Helvetica Neue</family>
+       <pointsize>15</pointsize>
+      </font>
+     </property>
+     <property name="title">
+      <string>Offset (mm)</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_7">
+      <item row="0" column="0">
+       <widget class="QLabel" name="X_off_label">
+        <property name="font">
+         <font>
+          <family>Helvetica Neue</family>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>X:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="X_offset_spinbox"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="Y_off_label">
+        <property name="font">
+         <font>
+          <family>Helvetica Neue</family>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Y:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="Y_offset_spinbox"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="2" colspan="3">
+    <widget class="QGroupBox" name="Extractor_box">
+     <property name="font">
+      <font>
+       <family>Helvetica Neue</family>
+       <pointsize>15</pointsize>
+      </font>
+     </property>
+     <property name="title">
+      <string>Extractor Pressure (0-50 mPa)</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="0" column="0">
+       <widget class="QDoubleSpinBox" name="Extractor_readout_doubleSpinBox">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="5">
     <widget class="QGroupBox" name="Source_box">
      <property name="font">
       <font>
@@ -38,19 +146,6 @@
       <string>Source</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
-       <widget class="QLabel" name="emission_current_label">
-        <property name="font">
-         <font>
-          <family>Helvetica Neue</family>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Current (0-30mA)</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QDoubleSpinBox" name="emission_current_target_doubleSpinBox">
         <property name="toolTip">
@@ -61,10 +156,10 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
-       <widget class="QDoubleSpinBox" name="emission_current_readout_doubleSpinBox">
-        <property name="readOnly">
-         <bool>true</bool>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="beam_voltage_target_doubleSpinBox">
+        <property name="maximum">
+         <double>5000.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -81,6 +176,26 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="emission_current_label">
+        <property name="font">
+         <font>
+          <family>Helvetica Neue</family>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Current (0-30mA)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QDoubleSpinBox" name="emission_current_readout_doubleSpinBox">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="4">
        <widget class="QDoubleSpinBox" name="grid_target_doubleSpinBox">
         <property name="minimum">
@@ -88,6 +203,13 @@
         </property>
         <property name="maximum">
          <double>200.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QDoubleSpinBox" name="beam_voltage_readout_doubleSpinBox">
+        <property name="readOnly">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -104,24 +226,97 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="beam_voltage_target_doubleSpinBox">
-        <property name="maximum">
-         <double>5000.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QDoubleSpinBox" name="beam_voltage_readout_doubleSpinBox">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QGroupBox" name="Raster_mode_box">
+     <property name="font">
+      <font>
+       <family>Helvetica Neue</family>
+       <pointsize>15</pointsize>
+      </font>
+     </property>
+     <property name="title">
+      <string>Raster Mode</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QComboBox" name="Raster_comboBox">
+        <item>
+         <property name="text">
+          <string>Off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Internal Raster</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>External Raster</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>
     </widget>
    </item>
-   <item row="1" column="0" rowspan="2" colspan="2">
+   <item row="5" column="3" colspan="2">
+    <widget class="QGroupBox" name="Raster_size_box">
+     <property name="font">
+      <font>
+       <family>Helvetica Neue</family>
+       <pointsize>14</pointsize>
+      </font>
+     </property>
+     <property name="title">
+      <string>Raster Size (mm)</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_8">
+      <item row="0" column="0">
+       <widget class="QLabel" name="X_Raster_label">
+        <property name="font">
+         <font>
+          <family>Helvetica Neue</family>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>X:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="X_raster_spinbox">
+        <property name="font">
+         <font>
+          <pointsize>15</pointsize>
+         </font>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="Y_Raster_label">
+        <property name="font">
+         <font>
+          <family>Helvetica Neue</family>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Y:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="Y_raster_spinbox"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0" rowspan="2" colspan="2">
     <widget class="QGroupBox" name="Column_box">
      <property name="font">
       <font>
@@ -217,197 +412,51 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="2" colspan="3">
-    <widget class="QGroupBox" name="Extractor_box">
-     <property name="font">
-      <font>
-       <family>Helvetica Neue</family>
-       <pointsize>15</pointsize>
-      </font>
-     </property>
+   <item row="0" column="0" colspan="5">
+    <widget class="QGroupBox" name="Timed_sputter">
      <property name="title">
-      <string>Extractor Pressure (0-50 mPa)</string>
+      <string>GroupBox</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_4">
+     <layout class="QGridLayout" name="gridLayout_6">
       <item row="0" column="0">
-       <widget class="QDoubleSpinBox" name="Extractor_readout_doubleSpinBox">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QGroupBox" name="Raster_mode_box">
-     <property name="font">
-      <font>
-       <family>Helvetica Neue</family>
-       <pointsize>15</pointsize>
-      </font>
-     </property>
-     <property name="title">
-      <string>Raster Mode</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <widget class="QComboBox" name="Raster_comboBox">
-        <item>
-         <property name="text">
-          <string>Off</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Internal Raster</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>External Raster</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="3" column="1" colspan="2">
-    <widget class="QGroupBox" name="Offset_box">
-     <property name="font">
-      <font>
-       <family>Helvetica Neue</family>
-       <pointsize>15</pointsize>
-      </font>
-     </property>
-     <property name="title">
-      <string>Offset (mm)</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_7">
-      <item row="0" column="0">
-       <widget class="QLabel" name="X_off_label">
-        <property name="font">
-         <font>
-          <family>Helvetica Neue</family>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
+       <widget class="QLabel" name="Alt_gun_mode_label">
         <property name="text">
-         <string>X:</string>
+         <string>Alternate Gun Mode</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QDoubleSpinBox" name="X_offset_spinbox"/>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="Y_off_label">
-        <property name="font">
-         <font>
-          <family>Helvetica Neue</family>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
+       <widget class="QLabel" name="Timer_label">
         <property name="text">
-         <string>Y:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="Y_offset_spinbox"/>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="3" column="3" colspan="2">
-    <widget class="QGroupBox" name="Raster_size_box">
-     <property name="font">
-      <font>
-       <family>Helvetica Neue</family>
-       <pointsize>14</pointsize>
-      </font>
-     </property>
-     <property name="title">
-      <string>Raster Size (mm)</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_8">
-      <item row="0" column="0">
-       <widget class="QLabel" name="X_Raster_label">
-        <property name="font">
-         <font>
-          <family>Helvetica Neue</family>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>X:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QDoubleSpinBox" name="X_raster_spinbox">
-        <property name="font">
-         <font>
-          <pointsize>15</pointsize>
-         </font>
+         <string>Timer</string>
         </property>
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="Y_Raster_label">
-        <property name="font">
-         <font>
-          <family>Helvetica Neue</family>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Y:</string>
-        </property>
-       </widget>
+       <widget class="QComboBox" name="Alt_gun_mode_comboBox"/>
       </item>
       <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="Y_raster_spinbox"/>
+       <widget class="QDoubleSpinBox" name="Timer_doubleSpinBox"/>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="2" column="2" colspan="3">
-    <widget class="QGroupBox" name="Mode_gun_off_box">
-     <property name="font">
-      <font>
-       <family>Helvetica Neue</family>
-       <pointsize>15</pointsize>
-      </font>
-     </property>
-     <property name="title">
-      <string>Gun Mode</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
-       <widget class="QComboBox" name="Gun_mode_comboBox">
-        <item>
-         <property name="text">
-          <string>Off</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Blanking</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Standby</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Active</string>
-         </property>
-        </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="Start_pushButton">
+        <property name="text">
+         <string>Start</string>
+        </property>
        </widget>
+      </item>
+      <item row="0" column="2">
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>
