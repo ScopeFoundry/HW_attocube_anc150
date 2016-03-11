@@ -3,9 +3,12 @@ from ctypes import create_string_buffer, c_int, c_double, byref
 import time
 import numpy
 import platform
+import os
 
 if platform.architecture()[0] == '64bit':
-    phlib = ctypes.WinDLL("phlib64.dll")
+    #phlib = ctypes.WinDLL("phlib64.dll")
+    phlib = ctypes.WinDLL(os.path.join(os.path.dirname(__file__), "phlib64.dll"))
+
 else:
     phlib = ctypes.WinDLL("phlib.dll")
 
