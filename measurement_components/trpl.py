@@ -334,7 +334,7 @@ class TRPLScanMeasurement(Base2DScan):
         #self.time_trace_plotline.set_ydata(1+self.time_trace_map[j,i-1:])
         
         # integrated map
-        if False:
+        if True:
             C = (self.integrated_count_map)
             self.imgplot.set_data(C)         
             try:
@@ -357,7 +357,8 @@ class TRPLScanMeasurement(Base2DScan):
             C = self.time_array[np.argmin(np.abs(np.cumsum(t, axis=2)/np.sum(t, axis=2).reshape(self.Nv*1,self.Nh*1,1)-x), axis=2)]
             # 
             self.imgplot.set_data(C)
-            c0,c1 = np.percentile(C,1), np.percentile(C,99)
+            c0,c1 = np.percentile(C,10), np.percentile(C,90)
+            c0,c1 = 0.3, 1.0
             self.imgplot.set_clim(c0, c1)
             self.imgplot.set_cmap('hot')
             self.aximg.set_title("color range: {} -> {} ns".format(c0,c1))
@@ -371,6 +372,7 @@ class TRPLScan3DMeasurement(Base3DScan):
     
     def scan_specific_setup(self):
         self.stored_histogram_channels = self.add_logged_quantity("stored_histogram_channels", dtype=int, vmin=1, vmax=2**16, initial=4000)
+        self.initial_scan_setup_plotting = True
         
     def setup_figure(self):
         pass
@@ -406,18 +408,6 @@ class TRPLScan3DMeasurement(Base3DScan):
         
         #update figure
         #self.time_trace_plotline.set_xdata(self.time_array)
-        self.fig = self.gui.trpl_scan_measure.fig
-        self.time_trace_plotline = self.gui.trpl_scan_measure.time_trace_plotline
-        
-        visual_slice = [np.s_[:], np.s_[:], np.s_[:]]
-        visual_slice[self.slow_axis_id] = 0
-        print self.integrated_count_map.shape
-        print visual_slice
-        print self.integrated_count_map[visual_slice[::-1]].shape
-        self.imgplot = self.gui.trpl_scan_measure.aximg.imshow( self.integrated_count_map[visual_slice[::-1]],
-                                                                origin='lower',
-                                                                interpolation='none',
-                                                                extent = self.fast_imshow_extent)    
         
         
     def collect_pixel(self, i, j, k):
@@ -460,10 +450,23 @@ class TRPLScan3DMeasurement(Base3DScan):
         return savedict
           
     def update_display(self):
-        
-        self.fig = self.gui.trpl_scan_measure.fig
-        self.time_trace_plotline = self.gui.trpl_scan_measure.time_trace_plotline
-        
+        #self.initial_scan_setup_plotting =True
+        if self.initial_scan_setup_plotting:
+
+            self.fig = self.gui.trpl_scan_measure.fig
+            self.time_trace_plotline = self.gui.trpl_scan_measure.time_trace_plotline
+            
+            visual_slice = [np.s_[:], np.s_[:], np.s_[:]]
+            visual_slice[self.slow_axis_id] = 0
+            print self.integrated_count_map.shape
+            print visual_slice
+            print self.integrated_count_map[visual_slice[::-1]].shape
+            self.imgplot = self.gui.trpl_scan_measure.aximg.imshow( self.integrated_count_map[visual_slice[::-1]],
+                                                                    origin='lower',
+                                                                    interpolation='none',
+                                                                    extent = self.fast_imshow_extent)    
+            self.initial_scan_setup_plotting = False
+                
         self.time_trace_plotline.set_ydata(1+self.picoharp.histogram_data[0:self.stored_histogram_channels.val]) # FIXME
         
         visual_slice = [np.s_[:], np.s_[:], np.s_[:]]
