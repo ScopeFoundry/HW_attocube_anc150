@@ -181,6 +181,8 @@ class APDConfocalScanMeasurement(Base2DScan):
 
         #scan specific setup
         
+        #stop APD optimizer measurement
+        self.gui.apd_optimizer_measure.interrupt()
         
         # create data arrays
         self.count_rate_map = np.zeros((self.Nv, self.Nh), dtype=float)
