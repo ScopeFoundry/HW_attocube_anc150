@@ -1,5 +1,6 @@
 from ScopeFoundry import HardwareComponent
 from Auger.equipment.phi_ion_gun import PhiIonGun
+from sympy.functions.special.polynomials import _x
 try:
     from Auger.equipment.phi_ion_gun import PhiIonGun
 except Exception as err:
@@ -160,6 +161,8 @@ class PhiIonGunHardwareComponent(HardwareComponent):
     def on_beam_voltage_target_updated(self):
         self.on_objective_percent_target_updated()
         self.on_condenser_percent_target_updated()
+        self.refresh_xy_offset()
+        self.refresh_xy_size()
 
     def on_objective_percent_target_updated(self):
         pct = self.objective_percentage_target.val
@@ -200,7 +203,24 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         else:
             pct = 100*obj_v/beam_v
             self.condenser_percentage_target.update_value(pct)
+    
+    def refresh_xy_offset(self):
+        beam_v = self.beam_voltage_target.val
+        _xoffset = self.xoff_target.val
+        _yoffset = self.yoff_target.val
+        if beam_v:
+            self.xoff_target.update_value(_xoffset)
+            self.yoff_target.update_value(_yoffset)
             
+    def refresh_xy_size(self):
+        beam_v = self.beam_voltage_target.val
+        _xsize = self.xsize_target.val
+        _ysize = self.ysize_target.val
+        if beam_v:
+            self.xsize_target.update_value(_xsize)
+            self.ysize_target.update_value(_ysize)
+        
+
     ## To do:        
     ## Update signals such that percentages can be updated in the phi_ion_gun gui:
     

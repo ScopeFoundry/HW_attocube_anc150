@@ -324,14 +324,8 @@ class PhiIonGun(object):
             time.sleep(t)
             if self.debug:
                 print _data
-            _verify = self.ask_cmd(0x1F)
-            time.sleep(t)
-            if self.debug:
-                print "Verify.", repr(_verify)
-            _verify2 = self.ask_cmd(0x1F)
-            time.sleep(t)
-            if self.debug:
-                print "Verify Again.", repr(_verify2)
+            while self.parse_data(self.ask_cmd(0x1F)) != str(1):
+                self.ask_cmd(0x1F)
             time.sleep(t)
         elif State == 'EXTERNAL':
             _data = self.ask_cmd(0x1E, "0")
@@ -349,6 +343,10 @@ class PhiIonGun(object):
             self.Header() #0x39
             if self.debug:
                 print "External Raster Set!"
+        
+        elif State == 'OFF':
+            self.ask_cmd(0x36)
+            
 
 ##--edited below--##
     def State_Data_Packet(self, beamv=0, gridv=0, condv=0, objv=0, bendv=0, emiv=0, State='OFF'):
