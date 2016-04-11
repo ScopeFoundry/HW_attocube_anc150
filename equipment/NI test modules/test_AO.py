@@ -21,7 +21,7 @@ sampleCount = 1
 timeOut = 1.0
 minVal = -10
 maxVal = 10
-autoStart = mx.bool32( 1 )
+autoStart = mx.bool32( 0 )
 
 data0[0] = data1[1] = 0.5
 wait = 0.001
@@ -32,13 +32,13 @@ try:
     # CreateAOVoltageChan ( const char physicalChannel[], const char nameToAssignToChannel[], 
     #    float64 minVal, float64 maxVal, int32 units, const char customScaleName[]);
     taskAO.CreateAOVoltageChan( AOchan, "", minVal, maxVal, mx.DAQmx_Val_Volts, "" )
-    taskAO.TaskControl(mx.DAQmx_Val_Task_Commit )
+    #taskAO.TaskControl(mx.DAQmx_Val_Task_Commit )
     taskAO.TaskControl(mx.DAQmx_Val_Task_Start )
     
     #  WriteAnalogF64 (int32 numSampsPerChan, bool32 autoStart, float64 timeout, 
     #    bool32 dataLayout, float64 writeArray[], int32 *sampsPerChanWritten, bool32 *reserved)
     elapsed = 0
-    count = 10000
+    count = 1000
     time.clock();
     for x in range(count):
         taskAO.WriteAnalogF64( sampleCount, autoStart, timeOut,

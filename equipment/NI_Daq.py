@@ -396,8 +396,8 @@ class Dac(NI):
         except mx.DAQError as err:
             self.error(err)
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
-        assert writeCount.value == 1, \
-            "sample count {} transfer count {}".format( 1, writeCount.value )
+        if not( writeCount.value == 1):
+            print "sample count {} transfer count {}".format( 1, writeCount.value )
 
 class Counter( NI ):
     '''
