@@ -19,9 +19,8 @@ class SEMSlowscanSingleChan(Measurement):
     ui_filename =  "sem_slowscan_single_chan.ui"
     
     def setup(self):
-        self.display_update_period = 0.05 #seconds
-
-                                   
+        self.display_update_period =1.0 #seconds
+                                 
         #connect events        
 
         # local logged quantities
@@ -98,14 +97,10 @@ class SEMSlowscanSingleChan(Measurement):
         self.display_update_period = 0.5 #seconds
 
         #Hardware
-        #self.apd_counter_hc = self.gui.hardware_components['apd_counter']
-        #self.apd_count_rate = self.apd_counter_hc.apd_count_rate
         self.sem_signal_hc = self.gui.hardware_components['sem_singlechan_signal']
         self.sem_signal_lq = self.sem_signal_hc.sem_signal
         self.stage = self.gui.hardware_components['sem_slowscan_vout']
-        #self.sem_signal_hc.adc.stop()
-        #self.sem_signal_hc.adc.start()
-        
+       
         # Data File
         # H5
 
@@ -143,7 +138,7 @@ class SEMSlowscanSingleChan(Measurement):
             self.sem_signal_hc.adc.start()
                     
             # start scan
-            print "start scan"
+            #print "start scan"
             self.pixel_i = 0
             
             while not self.interrupt_measurement_called:
@@ -171,7 +166,7 @@ class SEMSlowscanSingleChan(Measurement):
                         #self.sem_map_h5['data'][jj,ii] = self.sem_signal_lq.val
                     #self.progress.update_value(100.0*self.pixel_i / (self.Nh.val*self.Nv.val))
                 t1 = time.clock() - t0
-                print "raster scan took %f seconds. per pixel time: %s us" % (t1, 1e6*(t1)/(self.Nv.val*self.Nh.val))
+                #print "raster scan took %f seconds. per pixel time: %s us" % (t1, 1e6*(t1)/(self.Nv.val*self.Nh.val))
         finally:
             self.h5_file.close()
             

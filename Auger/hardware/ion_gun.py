@@ -153,6 +153,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         
         self.beam_voltage_target.updated_value.connect(self.on_beam_voltage_target_updated)
 
+
         self.add_operation('timer start', self.timed_state)
         # operations
         self.add_operation('zero state command', self.zero_state_command)
