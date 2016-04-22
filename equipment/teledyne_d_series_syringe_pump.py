@@ -165,20 +165,35 @@ def _dasnet_tests():
 
 class TeledyneDSeriesSyringePump(object):
     
-    def __init__(self, port, unitnum=6, baud=9600):
+    def __init__(self, port, unitnum=6, baud=9600, debug=False):
         self.port = port
         self.unitnum = int(unitnum)
+        self.debug = debug
         
-        self.ser = serial.Serial(port=self.port, baud=baud, timeout=0.5)
+        self.ser = serial.Serial(port=self.port, baudrate=baud, timeout=1)
     
     
     def ask(self, cmd):
         dasnet_cmd = dasnet_convert(self.unitnum, cmd)
         if self.debug: print "TdyneD ask:", repr(cmd), "-->", repr(dasnet_cmd)
         self.ser.write(dasnet_cmd)
-        resp = self.ser.readline()
+        resp =self.read_resp()
         resp = dasnet_validate(resp)
         
+    def read_resp(self):
+        eol = b'\r'
+        leneol = len(eol)
+        line = bytearray()
+        while True:
+            c = self.ser.read(1)
+            if c:
+                line += c
+                if line[-leneol:] == eol:
+                    break
+            else:
+                break
+        if self.debug: print "read_resp", repr(line) 
+        return bytes(line)
 
     def poll(self):
         return self.ask("R")
@@ -211,7 +226,11 @@ class TeledyneDSeriesSyringePump(object):
 if __name__ == '__main__':
     _dasnet_tests()
     
-    for ii in range(16):
+    #for ii in range(16):
         #print hex(ii), 
-        print dasnet_convert(None, "SERIES=1240-021, Model 260D PUMP, REV %X" % ii)
-        if dasnet_convert(None, "SERIES=1240-0221, Model 260D PUMP, REV %02X" % ii)[-3:-1] == 'B4': print "="*20, ii
+        #print dasnet_convert(None, "SERIES=1240-021, Model 260D PUMP, REV %X" % ii)
+        #if dasnet_convert(None, "SERIES=1240-0221, Model 260D PUMP, REV %02X" % ii)[-3:-1] == 'B4': print "="*20, ii
+        
+    pump = TeledyneDSeriesSyringePump(port='COM13', debug=True)
+    
+    print pump.identify()
