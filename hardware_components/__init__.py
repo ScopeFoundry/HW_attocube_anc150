@@ -16,12 +16,15 @@ class HardwareComponent(QtCore.QObject):
         """
         self.operations[name] = op_func   
             
-    def __init__(self, gui, debug=False):
+    def __init__(self, gui, name=None, debug=False):
         """type gui: BaseGUI
         """        
         QtCore.QObject.__init__(self)
 
         self.gui = gui
+        
+        if name:
+            self.name=name
 
         self.logged_quantities = OrderedDict()
         self.operations = OrderedDict()
