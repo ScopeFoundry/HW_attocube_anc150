@@ -22,16 +22,16 @@ class OmegaPtPIDController(minimalmodbus.Instrument):
         return self.read_float(0x210) # CURRENT_INPUT_VALUE
     
     def read_setpoint1(self):
-        return self.read_float(0x220)
+        return self.read_float(0x220) #CURRENT_SETPOINT_1
 
     def write_setpoint1(self, value):
-        return self.write_float(0x220, float(value))
+        return self.write_float(0x2E2, float(value)) #SETPOINT_1
 
     def read_setpoint2(self):
         return self.read_float(0x222)
     
     def write_setpoint2(self, value):
-        return self.write_float(0x222, float(value))
+        return self.write_float(0x222, float(value)) #cHECK ME
     
     def read_control_setpoint(self):
         return self.read_float(0x224)
@@ -50,16 +50,16 @@ class OmegaPtPIDController(minimalmodbus.Instrument):
         return self.read_float(0x2A6)
 
     def read_pid_D(self):
-        return self.read_float(0x2A8)
+        return self.read_float(0x02A8)
 
     def write_pid_P(self, value):
-        return self.read_float(0x2A4, value)
+        return self.read_float(0x2A4, float(value))
 
     def write_pid_I(self, value):
-        return self.read_float(0x2A6, value)
+        return self.read_float(0x2A6, float(value))
 
     def write_pid_D(self, value):
-        return self.read_float(0x2A8, value)
+        return self.read_float(0x2A8, float(value))
 
     def read_device_id(self):
         return self.read_long(0x0200)

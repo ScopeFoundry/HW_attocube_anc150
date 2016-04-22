@@ -16,6 +16,7 @@ class OmegaPtPIDControllerHardware(HardwareComponent):
         self.setpoint1 = self.add_logged_quantity('setpoint1', dtype=float, ro=False, unit='C', si=False, vmin=-300, vmax=200 )
         self.setpoint2 = self.add_logged_quantity('setpoint2', dtype=float, ro=False, unit='C', si=False, vmin=-300, vmax=200 )
         self.temp = self.add_logged_quantity('temp', dtype=float, ro=True, unit='C', si=False)
+        self.pid_output = self.add_logged_quantity('pid_output', dtype=float, ro=True, unit='%', si=False)
         
         self.run_mode = self.add_logged_quantity('run_mode', dtype=str, ro=True)
         
@@ -26,14 +27,21 @@ class OmegaPtPIDControllerHardware(HardwareComponent):
         self.port = self.add_logged_quantity('port', dtype=str, initial='COM8')
         self.address = self.add_logged_quantity('address', dtype=int, initial=1)
 
+        # Operations
+        self.add_operation('run', self.run_mode_run)
+        self.add_operation('stop', self.run_mode_stop)
+
+
         # connect to gui
             # none for now
 
     def connect(self):
-        if self.debug_mode.val: print "connecting to", self.name
+        if self.debug_mode.val: print "connecting to", self.name, self.port.val
         
         # Open connection to hardware
         self.pid = OmegaPtPIDController(self.port.val, self.address.val)            
+        
+        self.pid.debug = True#self.debug_mode.val
         
         # connect logged quantities
         self.setpoint1.hardware_read_func = self.pid.read_setpoint1
@@ -42,6 +50,8 @@ class OmegaPtPIDControllerHardware(HardwareComponent):
         self.setpoint2.hardware_set_func = self.pid.write_setpoint2
         
         self.temp.hardware_read_func = self.pid.read_temp
+        
+        self.pid_output.hardware_read_func = self.pid.read_pid_output
         
         self.run_mode.hardware_read_func = self.pid.read_run_mode
         
@@ -63,7 +73,7 @@ class OmegaPtPIDControllerHardware(HardwareComponent):
     def disconnect(self):
         print "disconnect" + self.name
         #disconnect hardware
-        self.pid.close()
+        #self.pid.serial.close()
 
         self.port.change_readonly(False)
         self.address.change_readonly(False)
@@ -76,6 +86,14 @@ class OmegaPtPIDControllerHardware(HardwareComponent):
         
         # clean up hardware object
         del self.pid
+
+    def run_mode_run(self):
+        self.pid.write_run_mode('RUN')
+        self.run_mode.read_from_hardware()
+
+    def run_mode_stop(self):
+        self.pid.write_run_mode('STOP')
+        self.run_mode.read_from_hardware()
 
 if __name__ == '__main__':
     from PySide import QtGui
