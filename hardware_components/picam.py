@@ -41,9 +41,9 @@ class PicamHardware(HardwareComponent):
         supported_pnames = self.cam.get_param_names()
 
         for pname in supported_pnames:
-            if pname in self.logged_quantities:
+            if pname in self.settings.as_dict():
                 print "connecting", pname
-                lq = self.logged_quantities[pname]
+                lq = self.settings.as_dict()[pname]
                 print "lq.name", lq.name
                 lq.hardware_read_func = lambda pname=pname: self.cam.read_param(pname)
                 print lq.read_from_hardware()
