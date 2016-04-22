@@ -1,11 +1,11 @@
 import sys
 from PySide import QtGui
 
-from base_gui import BaseMicroscopeGUI
+from ScopeFoundry import BaseMicroscopeApp
 
 # Import Hardware Components
 from hardware_components.apd_counter import APDCounterHardwareComponent
-from hardware_components.dummy_xy_stage import DummyXYStage
+#from hardware_components.dummy_xy_stage import DummyXYStage
 from hardware_components.picam import PicamHardware
 from hardware_components.mcl_xyz_stage import MclXYZStage
 
@@ -16,11 +16,14 @@ from measurement_components.picam_readout import PicamReadout
 from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
 
 
-class HiPMicroscopeGUI(BaseMicroscopeGUI):
+class HiPMicroscopeApp(BaseMicroscopeApp):
 
-    ui_filename = "base_gui.ui"
+    name = "HiP_Microscope"
+
+    #ui_filename = "base_gui.ui"
 
     def setup(self):
+        
         #Add hardware components
         print "Adding Hardware Components"
         #self.add_hardware_component(APDCounterHardwareComponent(self))
@@ -44,13 +47,13 @@ class HiPMicroscopeGUI(BaseMicroscopeGUI):
         #Add additional logged quantities
 
         # Connect to custom gui
+        
+        self.ui.show()
+        self.ui.activateWindow()
 
 
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
-    app.setApplicationName("Example XY slowscan App")
 
-    gui = HiPMicroscopeGUI(app)
-    gui.show()
-
+    app = HiPMicroscopeApp(sys.argv)
+    
     sys.exit(app.exec_())

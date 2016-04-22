@@ -1,4 +1,4 @@
-from measurement_components import Measurement
+from ScopeFoundry import Measurement
 from PySide import QtGui
 import pyqtgraph as pg
 import numpy as np
