@@ -55,14 +55,9 @@ class IonGunStatus(Measurement):
 		self.phi_ion_gun.gun_state.connect_bidir_to_widget(
 			self.ui.Gun_mode_comboBox)
 
-		# Timer module:
-		self.phi_ion_gun.gun_state2.connect_bidir_to_widget(
-			self.ui.Alt_gun_mode_comboBox)
 
-		self.phi_ion_gun.timer.connect_bidir_to_widget(
-			self.ui.Timer_doubleSpinBox)
 
-		# start button?
+
 
 		
 		self.phi_ion_gun.raster_mode.connect_bidir_to_widget(
