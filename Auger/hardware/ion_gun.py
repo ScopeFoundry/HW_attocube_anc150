@@ -14,7 +14,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
     name = "phi_ion_gun"
 
     def setup(self):
-
+        """This section is where logged quantities and signals are defined for uses specific to our PHI ion gun."""
         #create logged quantities
         self.configure = self.add_operation("Configure", self.Initial_gun_state)
 
@@ -160,23 +160,36 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.add_operation('zero state gun on', self.zero_state_command_gunon)
 
     def on_beam_voltage_target_updated(self):
+        """Once the beam voltage is altered by the user, this signal triggers objective and 
+        condensor voltage update (as a percentage), and a raster offset and size update."""
         self.on_objective_percent_target_updated()
         self.on_condenser_percent_target_updated()
         self.refresh_xy_offset()
         self.refresh_xy_size()
 
     def on_objective_percent_target_updated(self):
+        """Takes an updated objective lens voltage percentage and updates the logged quantity
+        as a voltage."""
         pct = self.objective_percentage_target.val
         beam_v = self.beam_voltage_target.val
         self.objective_voltage_target.update_value(0.01*pct*beam_v)
     
     def on_objective_voltage_readout_updated(self):
+        """Updates the read-only logged quantity with the percentage value of this quantity:
+        Objective voltage as a fraction of beam voltage.
+
+        This is the case because lens system voltages are calculated as a fraction of ion beam 
+        voltage, which is in turn, dependent on float voltage according to manufacturer 
+        specifications.
+        """
         obj_v = self.objective_voltage_readout.val
         beam_v = self.beam_voltage_readout.val
         if beam_v:
             self.objective_percentage_readout.update_value(100*obj_v/beam_v)
         
     def on_objective_voltage_target_updated(self):
+        """When the user updates the objective voltage value, this signal is issued, 
+        and the voltage is converted to a percentage and displayed as a logged quantity"""
         beam_v = self.beam_voltage_target.val
         obj_v = self.objective_voltage_target.val
         if beam_v == 0:
@@ -186,26 +199,36 @@ class PhiIonGunHardwareComponent(HardwareComponent):
             self.objective_percentage_target.update_value(pct)
             
     def on_condenser_percent_target_updated(self):
+        """When the user updates the condensor percentage value, this signal is issued, 
+        and the voltage is converted from the input percentage to a voltage."""
         pct = self.condenser_percentage_target.val
         beam_v = self.beam_voltage_target.val
         self.condenser_voltage_target.update_value(0.01*pct*beam_v)
     
     def on_condenser_voltage_readout_updated(self):
+        """When the user updates the condensor voltage value, this signal is issued, 
+        and the voltage is converted to a percentage and displayed as a logged quantity"""
         cond_v = self.condenser_voltage_readout.val
         beam_v = self.beam_voltage_readout.val
         if beam_v:
             self.condenser_percentage_readout.update_value(100*cond_v/beam_v)
         
     def on_condenser_voltage_target_updated(self):
+        """When the user updates the condensor voltage, this signal is issued,
+        and the condensor voltage as a fraction of beam voltage is converted to a percentage."""
         beam_v = self.beam_voltage_target.val
-        obj_v = self.condenser_voltage_target.val
+        cond_v = self.condenser_voltage_target.val
         if beam_v == 0:
             return
         else:
-            pct = 100*obj_v/beam_v
+            pct = 100*cond_v/beam_v
             self.condenser_percentage_target.update_value(pct)
     
     def refresh_xy_offset(self):
+        """This function is triggered by a signal 'on_beam_voltage_target_updated.'
+        The function simply refreshes the raster offset values to ensure they're 
+        properly registered with their respective logged quantities.
+        """
         beam_v = self.beam_voltage_target.val
         _xoffset = self.xoff_target.val
         _yoffset = self.yoff_target.val
@@ -214,6 +237,10 @@ class PhiIonGunHardwareComponent(HardwareComponent):
             self.yoff_target.update_value(_yoffset)
             
     def refresh_xy_size(self):
+        """This function is triggered by a signal 'on_beam_voltage_target_updated.'
+        The function simply refreshes the raster size values to ensure they're 
+        properly registered with their respective logged quantities.
+        """
         beam_v = self.beam_voltage_target.val
         _xsize = self.xsize_target.val
         _ysize = self.ysize_target.val
@@ -229,6 +256,8 @@ class PhiIonGunHardwareComponent(HardwareComponent):
     
             
     def connect(self):
+        """This function links logged quantities at hardware control
+        level to their respective functions at equipment level (where basic commands are defined)"""
         if self.debug_mode.val: print "Connecting to Phi Ion Gun"
         # Open connection to Hardware
 
@@ -326,23 +355,29 @@ class PhiIonGunHardwareComponent(HardwareComponent):
 
     
     def zero_state_command(self):
+        """Sets ion gun Power Supply Unit voltages to zero across the board. 
+        This function simply issues the Set_gun_state function with every value set to zero."""
         self.phiiongun.State_Data_Packet()
-
-    def zero_state_command_gunon(self):
-        self.phiiongun.State_Data_Packet(Gun_Firing_On=True)
     
     def Initial_gun_state(self):
+        """Sets the ion gun PSU voltages to arbitrarily defined voltages as a modifiable starting point for the user.
+        Float = 500 V    Grid = 150 V     Cond = 500 V      Obj = 350 V       Bend = -7 V   Emission = 25 mA"""
         self.phiiongun.State_Data_Packet(beamv=float(500), gridv=float(150), condv=float(500), objv=float(350), bendv=float(-7), emiv=float(25), State='STANDBY')
         
     def Set_gun_state(self, state):
+        """The State_Data_Packet function is a single function which issues a series of voltage and current values at once.
+        """
         self.phiiongun.State_Data_Packet(beamv=self.beam_voltage_target.val, gridv=self.grid_target.val, condv=self.condenser_voltage_target.val, 
                                                 objv=self.objective_voltage_target.val, bendv=self.bend_target.val, emiv=self.emission_current_target.val, State=state)
         #Reads logged quantity values stored in hardware class
         
     def Set_raster_mode(self, state):
+        """This function sets ion gun raster mode to any of the following choices:
+        Internal, External, or Off."""
         self.phiiongun.Set_Raster_Mode(State=state)
 
     def disconnect(self):
+        """This function properly closes out our program and removes leftover objects."""
         #disconnect hardware
         self.phiiongun.close() #changed
         

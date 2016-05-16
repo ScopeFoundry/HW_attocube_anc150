@@ -13,10 +13,14 @@ from Auger.hardware.ion_gun import PhiIonGunHardwareComponent
 from measurement.ion_gun import IonGunStatus
 
 class PhiIonGunGUI(BaseMicroscopeGUI):
-
+    """Class specifies which ui file to use and which hardware and measurement components 
+    to load in :func:`setup()`
+    """
     ui_filename = "../ScopeFoundry/base_gui.ui"
 
     def setup(self):
+        """Loads hardware and measurement components into gui turning over control
+        to the user in the form of a Graphical User Interface."""
         #Add hardware components
         print "Adding Hardware Components"
 

@@ -8,6 +8,8 @@ class IonGunStatus(Measurement):
 	ui_filename = "../Auger/measurement/ion_gun.ui"
 
 	def setup(self):
+		""":func:`self.update_period` is set to 0.05 seconds. 
+		Connects logged quantities to their respective slots in the gui."""
 		self.update_period = 0.05 #seconds
 		self.gui # What is this, can I eat it?
 		
@@ -76,6 +78,9 @@ class IonGunStatus(Measurement):
 			self.ui.Y_offset_spinbox)
 
 	def _run(self):
+		"""This is a routine which cycles through each logged quantity readout using logged quantity 
+		function :func:`read_from_hardware()` every 0.1 seconds.
+		"""
 		t = 0.1
 		while not self.interrupt_measurement_called:
 			#print "phi_ion_gun_status loop"
