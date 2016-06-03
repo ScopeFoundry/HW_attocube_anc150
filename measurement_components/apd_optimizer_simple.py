@@ -66,4 +66,4 @@ class APDOptimizerMeasurement(Measurement):
         #print "display update", ii, self.optimize_history[ii]
         self.vLine.setPos(ii)
         self.optimize_plot_line.setData(self.optimize_history)
-        self.gui.app.processEvents()
+        #self.gui.app.processEvents()
