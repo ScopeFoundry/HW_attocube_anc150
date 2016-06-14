@@ -190,6 +190,24 @@ class NI_FPGA(object):
         pointer = self.data.ctypes.data_as(ctypes.POINTER(ctypes.c_char))
         err = fpga_dll.NiFpgaDll_WriteArrayBool(self.session, indicator, pointer, size)
         return err
+
+
+    def Write_Bool(self, indicator, value):
+        self.data = value
+        err = fpga_dll.NiFpgaDll_WriteBool(self.session, indicator, value)
+        return err
+
+    def Write_I16(self, indicator, value):
+        self.data = value
+        err = fpga_dll.NiFpgaDll_WriteI16(self.session, indicator, value)
+        return err
+        
+    def Write_U32(self, indicator, value):
+        self.data = value
+        err = fpga_dll.NiFpgaDll_WriteU32(self.session, indicator, value)
+        return err
+
+
 ### -----------End Read/Write Functions ------###
 
 

@@ -72,7 +72,8 @@ class Counter_DAC(NI_FPGA):
     def CtrFIFO(self, _bool="0"):
         self.control= ctypes.c_uint32(0x8132)
         self.value = ctypes.c_char(_bool)
-        #err, value = self.FPGA.Write             ###Update definitions in subordinate NI_FPGA python file###   
+        #
+        err, value = self.FPGA.Write_Bool(self.control)        ###Update definitions in subordinate NI_FPGA python file###   
         #err = self.handle_err(fpga_dll.NiFpgaDll_WriteBool(self.session, self.control, self.value))
         print "Status:" + str(err)
         if err == 0:
@@ -82,7 +83,7 @@ class Counter_DAC(NI_FPGA):
     def Offset1(self, _Offset=0):
         self.control= ctypes.c_uint32(0x811E)
         self.value = ctypes.c_int16(_Offset)
-        err = self.handle_err(fpga_dll.NiFpgaDll_WriteI16(self.session, self.control, self.value))
+        err = self.FPGA.Write_I16(self.control, self.value)
         print "Status:" + str(err)
         if err == 0:
             print "Offset1 Set"
@@ -90,7 +91,7 @@ class Counter_DAC(NI_FPGA):
     def Offset2(self, _Offset=0):
         self.control= ctypes.c_uint32(0x811A)
         self.value = ctypes.c_int16(_Offset)
-        err = self.handle_err(fpga_dll.NiFpgaDll_WriteI16(self.session, self.control, self.value))
+        err = self.FPGA.Write_I16(self.control, self.value)
         print "Status:" + str(err)
         if err == 0:
             print "Offset2 Set"
@@ -98,7 +99,7 @@ class Counter_DAC(NI_FPGA):
     def Scale1(self, _scale=0):
         self.control= ctypes.c_uint32(0x8116)
         self.value = ctypes.c_int16(_scale)
-        err = self.handle_err(fpga_dll.NiFpgaDll_WriteI16(self.session, self.control, self.value))
+        err = self.FPGA.Write_I16(self.control, self.value)
         print "Status:" + str(err)
         if err == 0:
             print "Scale1 Set"
@@ -106,7 +107,7 @@ class Counter_DAC(NI_FPGA):
     def Scale2(self, _scale=0):
         self.control= ctypes.c_uint32(0x8112)
         self.value = ctypes.c_int16(_scale)
-        err = self.handle_err(fpga_dll.NiFpgaDll_WriteI16(self.session, self.control, self.value))
+        err = self.FPGA.Write_I16(self.control, self.value)
         print "Status:" + str(err)
         if err == 0:
             print "Scale1 Set"
@@ -114,7 +115,7 @@ class Counter_DAC(NI_FPGA):
     def Counter_ticks(self, _counterticks=40000):
         self.control= ctypes.c_uint32(0x8120)
         self.value = ctypes.c_uint32(_counterticks)
-        err = self.handle_err(fpga_dll.NiFpgaDll_WriteU32(self.session, self.control, self.value))
+        err = self.FPGA.Write_U32(self.control, self.value)
         print "Status:" + str(err)
         if err == 0:
             print "Counter Ticks Set"
@@ -123,7 +124,7 @@ class Counter_DAC(NI_FPGA):
     def Rate(self, _rate=400):
         self.control= ctypes.c_uint32(0x810C)
         self.value = ctypes.c_uint32(_rate)
-        err = self.handle_err(fpga_dll.NiFpgaDll_WriteU32(self.session, self.control, self.value))
+        err = self.FPGA.Write_U32(self.control, self.value)
         print "Status:" + str(err)
         if err == 0:
             print "Rate Set"
@@ -131,7 +132,7 @@ class Counter_DAC(NI_FPGA):
 
     def DIO811_Read(self):
         self.size = 4
-        err, array = self.Read_ArrayBool(0x813A, self.size)
+        err, array = self.FPGA.Read_ArrayBool(0x813A, self.size)
         if err == 0:
             print "DIO811 Read:", array
         else:
@@ -141,7 +142,7 @@ class Counter_DAC(NI_FPGA):
 ### each entry represents the counter value on each of 8 channels.
     def Counts(self):
         self.size = 8
-        err, array = self.Read_ArrayU32(0x813C, self.size)
+        err, array = self.FPGA.Read_ArrayU32(0x813C, self.size)
         if err == 0:
             print "Counts Read:", array
         else:
@@ -154,7 +155,7 @@ class Counter_DAC(NI_FPGA):
         self.array = bool_array
         self.indicator= ctypes.c_uint32(0x815A)
         self.size = 8
-        err = self.Write_ArrayBool(self.indicator, self.array, self.size)
+        err = self.FPGA.Write_ArrayBool(self.indicator, self.array, self.size)
         print "Status:" + str(err)
         if err == 0:
             print "\"DAC1 add\" array successfully written:", self.array
@@ -163,7 +164,7 @@ class Counter_DAC(NI_FPGA):
         self.array = bool_array
         self.indicator= ctypes.c_uint32(0x8156)
         self.size = 8
-        err = self.Write_ArrayBool(self.indicator, self.array, self.size)
+        err = self.FPGA.Write_ArrayBool(self.indicator, self.array, self.size)
         print "Status:" + str(err)
         if err == 0:
             print "\"DAC1 sub\" array successfully written:", self.array
@@ -172,7 +173,7 @@ class Counter_DAC(NI_FPGA):
         self.array = bool_array
         self.indicator= ctypes.c_uint32(0x8152)
         self.size = 8
-        err = self.Write_ArrayBool(self.indicator, self.array, self.size)
+        err = self.FPGA.Write_ArrayBool(self.indicator, self.array, self.size)
         print "Status:" + str(err)
         if err == 0:
             print "\"DAC2 add\" array successfully written:", self.array
@@ -181,7 +182,7 @@ class Counter_DAC(NI_FPGA):
         self.array = bool_array
         self.indicator= ctypes.c_uint32(0x814E)
         self.size = 8
-        err = self.Write_ArrayBool(self.indicator, self.array, self.size)
+        err = self.FPGA.Write_ArrayBool(self.indicator, self.array, self.size)
         print "Status:" + str(err)
         if err == 0:
             print "\"DAC2 sub\" array successfully written:", self.array
@@ -190,7 +191,7 @@ class Counter_DAC(NI_FPGA):
         self.array = bool_array
         self.indicator= ctypes.c_uint32(0x8136)
         self.size = 4
-        err = self.Write_ArrayBool(self.indicator, self.array, self.size)
+        err = self.FPGA.Write_ArrayBool(self.indicator, self.array, self.size)
         print "Status:" + str(err)
         if err == 0:
             print "\"DIO1215 Write\" array successfully written:", self.array
