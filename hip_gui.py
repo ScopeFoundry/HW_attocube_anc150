@@ -16,7 +16,7 @@ from measurement_components.picam_readout import PicamReadout
 from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
 from hardware_components.omega_pt_pid_controller import OmegaPtPIDControllerHardware
 from measurement_components.hip_dual_temperature import HiPMicroscopeDualTemperature
-
+from HiP_microscope.hyperspec_picam_mcl import HyperSpecXYScan
 
 class HiPMicroscopeApp(BaseMicroscopeApp):
 
@@ -39,7 +39,9 @@ class HiPMicroscopeApp(BaseMicroscopeApp):
         #self.add_measurement_component(APDOptimizerMeasurement(self))
         #self.add_measurement_component(SimpleXYScan(self))
         self.add_measurement_component(PicamReadout(self))
+        self.add_measurement_component(HyperSpecXYScan(self))
         self.add_measurement_component(HiPMicroscopeDualTemperature(self))
+        
                 
         #set some default logged quantities
         #self.hardware_components['apd_counter'].debug_mode.update_value(True)

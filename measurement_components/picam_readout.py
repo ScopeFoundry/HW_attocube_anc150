@@ -17,7 +17,7 @@ class PicamReadout(Measurement):
 
     def _run(self):
 
-        picam_hc = self.gui.hardware_components['picam']
+        picam_hc = self.app.hardware.picam
         cam = picam_hc.cam
 
         print "rois|-->", cam.read_rois()
