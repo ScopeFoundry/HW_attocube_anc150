@@ -47,6 +47,15 @@ class PicamHardware(HardwareComponent):
                 print "lq.name", lq.name
                 lq.hardware_read_func = lambda pname=pname: self.cam.read_param(pname)
                 print lq.read_from_hardware()
+                rw = self.cam.get_param_readwrite(pname)
+                print "picam param rw", lq.name, rw
+                if rw in ['ReadWriteTrivial', 'ReadWrite']:
+                    lq.hardware_set_func = lambda x, pname=pname: self.cam.write_param(pname, x)
+                elif rw == 'ReadOnly':
+                    lq.change_readonly(True)
+                else:
+                    raise ValueError("picam param rw not understood", rw)
+                
                 
 
     def disconnect(self):
