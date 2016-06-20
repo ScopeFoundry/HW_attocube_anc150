@@ -16,7 +16,8 @@ fpga_dll = windll.LoadLibrary('NIFpga.dll')
 ###--------------End Basic Command Section----------------###
 
 class NI_FPGA(object):        
-    def __init__(self, bitfilename, signature, resource="RIO0"):
+    def __init__(self, bitfilename, signature, resource="RIO0", debug=False):
+        self.debug = debug
         self.session = ctypes.c_uint32(0)
         self.bitfilename = bitfilename
         self.signature = signature
@@ -55,53 +56,54 @@ class NI_FPGA(object):
         attribute = NiFpga_OpenAttribute_NoRun
         session=self.session
         err = self.handle_err(fpga_dll.NiFpgaDll_Open(self.bitfilename, self.signature, self.resource, attribute, ctypes.byref(session)))
-        print "Connection Status:" + str(err), self.session
+        if self.debug: print "Connection Status:" + str(err), self.session
         if err == 0:
-            print "Connected, FPGA configured to automatically run."
+            if self.debug: print "Connected, FPGA configured to automatically run."
+        return err
             
     def unload(self):
         err = self.handle_err(fpga_dll.NiFpgaDll_Finalize())
-        print "Unload Status:" + str(err), self.session
+        if self.debug: print "Unload Status:" + str(err), self.session
         if err == 0:
-            print "FPGA Library unloaded (caveat: not thread safe)."
+            if self.debug: print "FPGA Library unloaded (caveat: not thread safe)."
             
     def disconnect(self):
         err = self.handle_err(fpga_dll.NiFpgaDll_Close(self.session, 0))
-        print "Disconnect Status:" + str(err)
+        if self.debug: print "Disconnect Status:" + str(err)
         if err == 0:
-            print "FPGA session disconnected (closed)."
+            if self.debug: print "FPGA session disconnected (closed)."
         
     def run(self):
         self.attribute = 0
         err = self.handle_err(fpga_dll.NiFpgaDll_Run(self.session, self.attribute))
-        print "Status:" + str(err)
+        if self.debug: print "Status:" + str(err)
         if err == 0:
-            print "Running FPGA VI on target."
+            if self.debug: print "Running FPGA VI on target."
     #Runs the FPGA VI on the target. If you use 
     #NiFpga_RunAttribute_WaitUntilDone, 
     #NiFpga_Run blocks the thread until the FPGA finishes running.
     
     def abort(self):
         err = self.handle_err(fpga_dll.NiFpgaDll_Abort(self.session))
-        print "Status:" + str(err)
+        if self.debug: print "Status:" + str(err)
         if err == 0:
-            print "FPGA VI successfully aborted."
+            if self.debug: print "FPGA VI successfully aborted."
     #Aborts the FPGA VI.
     
     
     def reset(self):
         err = fpga_dll.NiFpgaDll_Reset(self.session)
-        print "Status:" + str(err)
+        if self.debug: print "Status:" + str(err)
         if err == 0:
-            print "FPGA VI successfully reset."
+            if self.debug: print "FPGA VI successfully reset."
     #Resets the FPGA VI.
     
     
     def download(self):
             err = self.handle_err(fpga_dll.NiFpgaDll_Download(self.session))
-            print "Status:" + str(err)
+            if self.debug: print "Status:" + str(err)
             if err == 0:
-                print "FPGA VI successfully downloaded."
+                if self.debug: print "FPGA VI successfully downloaded."
     #Redownloads FPGA to target.
 
 ###--------------End Basic Command Section----------------###
@@ -115,38 +117,102 @@ class NI_FPGA(object):
 # NOTE: CounterFifo declared in last lines of
 #       NiFpga_CountertoDAC.h as I32 datatype with value of 0
 
+    """
+     * Acquiring, reading, and releasing FIFO elements prevents the need to copy
+     * the contents of elements from the host memory buffer to a separate
+     * user-allocated buffer before reading. The FPGA target cannot write to
+     * elements acquired by the host. Therefore, the host must release elements
+     * after reading them. The number of elements acquired may differ from the
+     * number of elements requested if, for example, the number of elements
+     * requested reaches the end of the host memory buffer. Always release all
+     * acquired elements before closing the session. Do not attempt to access FIFO
+     * elements after the elements are released or the session is closed.
+     """
+
     def Configure_Fifo2(self, reqDepth=8000):
         self.requested_depth = ctypes.c_size_t(reqDepth)
         self.actual_depth = ctypes.c_size_t(0)
-        err = fpga_dll.NiFpgaDll_ConfigureFifo2(self.session, self.fifo, self.requested_depth, self.actual_depth)
-        print "FIFO Configure Status:" + str(err)
+        err = fpga_dll.NiFpga_ConfigureFifo2(self.session, self.fifo, self.requested_depth, self.actual_depth)
+        if self.debug: print "FIFO Configure Status:" + str(err)
         if err == 0:
-            print "FIFO Configured"
+            if self.debug: print "FIFO Configured"
     
     ##Optional Method:  
     def Start_Fifo(self):
         err = fpga_dll.NiFpgaDll_StartFifo(self.session, self.fifo)
-        print "Start FIFO Status:" + str(err)
+        if self.debug: print "Start FIFO Status:" + str(err)
         if err == 0:
-            print "FIFO Started"
+            if self.debug: print "FIFO Started"
 
-    def Read_Fifo(self, timeout=5000):
+    def Read_Fifo(self, numberOfElements=8, timeout=10000):
         self.data = ctypes.c_uint32(0)
-        self.size = ctypes.c_size_t(8)
-        self.timeout = ctypes.c_uint32(timeout)
-        self.remaining = ctypes.c_size_t(0)
-        err = fpga_dll.NiFpgaDll_ReadFifoU32(self.session, self.fifo, self.data, self.size, self.timeout, self.remaining)
-        print "Read FIFO Status:" + str(err)
+        buffer = np.zeros(numberOfElements, dtype=np.uint32)
+        bufpointer = buffer.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
+        remaining = ctypes.c_size_t(0)
+        """
+         * @param session handle to a currently open session
+         * @param fifo target-to-host FIFO from which to read
+         * @param data outputs the data that was read
+         * @param numberOfElements number of elements to read
+         * @param timeout timeout in milliseconds, or NiFpga_InfiniteTimeout
+         * @param elementsRemaining if non-NULL, outputs the number of elements
+         *                          remaining in the host memory part of the DMA FIFO
+         * @return result of the call
+         
+         NiFpga_Status NiFpga_ReadFifoU32(NiFpga_Session session,
+                                 uint32_t       fifo,
+                                 uint32_t*      data,
+                                 size_t         numberOfElements,
+                                 uint32_t       timeout,
+                                 size_t*        elementsRemaining);
+
+         
+        """
+        err = fpga_dll.NiFpgaDll_ReadFifoU32(
+                                             self.session, 
+                                             self.fifo,
+                                             bufpointer,
+                                             numberOfElements,
+                                             timeout,
+                                             ctypes.byref(remaining))
+        if self.debug: print "Read FIFO Status:" + str(err)
         if err == 0:
-            print "FPGA FIFO Read."
+            if self.debug: print "FPGA FIFO Read."
+            if self.debug: print remaining, buffer
         #Returns Data as "Last" I32
+        return remaining.value, buffer
+    
+
+    def ReleaseFifoElements(self, numberOfElements=8):
+        """
+        /**
+         * Releases previously acquired FIFO elements.
+         *
+         * The FPGA target cannot read elements acquired by the host. Therefore, the
+         * host must release elements after acquiring them. Always release all acquired
+         * elements before closing the session. Do not attempt to access FIFO elements
+         * after the elements are released or the session is closed.
+         *
+         * @param session handle to a currently open session
+         * @param fifo FIFO from which to release elements
+         * @param elements number of elements to release
+         * @return result of the call
+         */
+        NiFpga_Status NiFpga_ReleaseFifoElements(NiFpga_Session session,
+                                                 uint32_t       fifo,
+                                                 size_t         elements);
+        """
+                                                 
+        err = fpga_dll.NiFpgaDll_ReleaseFifoElements(self.session, self.fifo, numberOfElements)
+        if self.debug: print "Release FIFO Status:" + str(err)
+        return err
 
     ##Optional Method:
     def Stop_Fifo(self):
         err = fpga_dll.NiFpgaDll_StopFifo(self.session, self.fifo)
-        print "Stop FIFO Status:" + str(err)
+        if self.debug: print "Stop FIFO Status:" + str(err)
         if err == 0:
-            print "FPGA VI successfully reset."
+            if self.debug: print "FPGA VI successfully reset."
 
 ##### -----------End FIFO Functions ---------######
 ### -----------Begin Read/Write Functions ------###
