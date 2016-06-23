@@ -12,8 +12,6 @@ class PicamHardware(HardwareComponent):
     name = "picam"
 
     def setup(self):
-        pass
-
         # Create logged quantities
         self.status = self.add_logged_quantity(name='ccd_satus', dtype=str, fmt="%s",ro=True)
     
@@ -30,6 +28,8 @@ class PicamHardware(HardwareComponent):
                     choice_names = enum_obj.bysname.keys()
                     self.add_logged_quantity(name=param.short_name, dtype=str, choices=zip(choice_names, choice_names))
 
+        # operations
+        self.add_operation('commit_parameters', self.commit_parameters)
     
         #connect to custom gui - NOTE:  these are not disconnected! 
 
@@ -72,3 +72,7 @@ class PicamHardware(HardwareComponent):
         del self.cam
         
         #self.is_connected = False
+    
+    def commit_parameters(self):
+        self.cam.commit_parameters()
+    
