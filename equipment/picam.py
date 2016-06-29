@@ -101,6 +101,26 @@ class PiCAM(object):
         else:
             raise ValueError("PI write_param ptype not understood: {}".format(repr(ptype)))
 
+    def get_param_readwrite(self, pname):
+        
+        """
+        PICAM_API Picam_GetParameterValueAccess(
+        PicamHandle       camera,
+        PicamParameter    parameter,
+        PicamValueAccess* access );
+        
+        ##
+        PicamValueAccess_ReadOnly         = 1,
+        PicamValueAccess_ReadWriteTrivial = 3,
+        PicamValueAccess_ReadWrite        = 2     
+        """
+        param = picam_ctypes.PicamParameter["PicamParameter_" + pname]       
+        access = ctypes.c_int(0)
+        
+        self._err(PI.Picam_GetParameterValueAccess(self.camera_handle, param.enum, byref(access)))
+        print "get_param_readwrite", pname, access, access.value
+        return picam_ctypes.PicamValueAccess[access.value].split('_')[-1]        
+
     def commit_parameters(self):
 
         failed_param_array = ctypes.POINTER(ctypes.c_int)()

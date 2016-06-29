@@ -12,8 +12,6 @@ class PicamHardware(HardwareComponent):
     name = "picam"
 
     def setup(self):
-        pass
-
         # Create logged quantities
         self.status = self.add_logged_quantity(name='ccd_satus', dtype=str, fmt="%s",ro=True)
     
@@ -30,6 +28,8 @@ class PicamHardware(HardwareComponent):
                     choice_names = enum_obj.bysname.keys()
                     self.add_logged_quantity(name=param.short_name, dtype=str, choices=zip(choice_names, choice_names))
 
+        # operations
+        self.add_operation('commit_parameters', self.commit_parameters)
     
         #connect to custom gui - NOTE:  these are not disconnected! 
 
@@ -41,12 +41,21 @@ class PicamHardware(HardwareComponent):
         supported_pnames = self.cam.get_param_names()
 
         for pname in supported_pnames:
-            if pname in self.logged_quantities:
+            if pname in self.settings.as_dict():
                 print "connecting", pname
-                lq = self.logged_quantities[pname]
+                lq = self.settings.as_dict()[pname]
                 print "lq.name", lq.name
                 lq.hardware_read_func = lambda pname=pname: self.cam.read_param(pname)
                 print lq.read_from_hardware()
+                rw = self.cam.get_param_readwrite(pname)
+                print "picam param rw", lq.name, rw
+                if rw in ['ReadWriteTrivial', 'ReadWrite']:
+                    lq.hardware_set_func = lambda x, pname=pname: self.cam.write_param(pname, x)
+                elif rw == 'ReadOnly':
+                    lq.change_readonly(True)
+                else:
+                    raise ValueError("picam param rw not understood", rw)
+                
                 
 
     def disconnect(self):
@@ -63,3 +72,7 @@ class PicamHardware(HardwareComponent):
         del self.cam
         
         #self.is_connected = False
+    
+    def commit_parameters(self):
+        self.cam.commit_parameters()
+    

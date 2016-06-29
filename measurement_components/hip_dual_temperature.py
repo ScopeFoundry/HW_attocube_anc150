@@ -4,7 +4,7 @@ Created on Nov 23, 2015
 @author: lab
 '''
 
-from .measurement import Measurement 
+from ScopeFoundry import Measurement 
 import time
 import numpy as np
 
