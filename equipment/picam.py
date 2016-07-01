@@ -159,6 +159,9 @@ class PiCAM(object):
         rois.roi_array = ctypes.cast(roi_np_array.ctypes.data, ctypes.POINTER(picam_ctypes.PicamRoi))
         rois.roi_count = len(roi_np_array)
         self._err(PI.Picam_SetParameterRoisValue(self.camera_handle, param.enum, byref(rois)))
+        
+    def write_single_roi(self, x, width, x_binning, y, height, y_binning):
+        return self.write_rois( [ROI_tuple(x, width, x_binning, y, height, y_binning)] )
     
     def acquire(self, readout_count=1, readout_timeout=-1):
         readout_count = picam_ctypes.pi64s(readout_count)
