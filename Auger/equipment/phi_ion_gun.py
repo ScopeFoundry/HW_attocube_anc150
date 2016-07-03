@@ -1,8 +1,14 @@
+"""
+Controls written collaboratively by Alan Buckley, Ed Barnard, Frank Ogletree
+"""
+
 import serial
 import time
 
 class PhiIonGun(object):
-    
+    """
+    Class Description: Equipment level controls written for ion gun control via RS232/USB
+    """
     def __init__(self, port="COM7", address=3, debug = False):
         self.port = port
         self.debug = debug
@@ -19,10 +25,13 @@ class PhiIonGun(object):
    
     def ask_cmd(self, cmd_id, data=None):
         '''
-        serial command format, starts with '~ ' then "address" (03) for muliple devices on one com
+        Serial command format, starts with '~ ' then "address" (03) for muliple devices on one com
         port, then internal ion gun electronics register number "cmd id" then data (if any)
         then hex checksum and 'CR' 
-        All commands return status ('address' OK 00 ) and optional data plus checksum
+        All commands return status ('address' OK 00 ) and optional data plus checksum.
+
+        Module handles synthesis and submission of user commands. 
+        Creates and submits command if self.ask_in_progress flag is True. 
         '''
         
         for i in range(10):
@@ -65,7 +74,8 @@ class PhiIonGun(object):
         self.ser.close()
 
     def my_readline(self):
-        '''serial class does not handle CR end of line'''
+        '''Serial class doesn't affix CR as an end of line.
+        This function was written to affix a CR character at the end of each command.'''
         _input = ''
         line = ''
         while _input != '\r':
@@ -75,12 +85,14 @@ class PhiIonGun(object):
         return line
         
     def parse_data(self, response):
+        '''This is a slicing function meant to extract numeric values from RS232 messages received from the ion gun.'''
         chunk = response.split()[3]
         return chunk
         if self.debug:
             print "Chunk:", chunk
              
     def checksum_func(self, data):
+        '''Function calculates the checksum of each message and affixes it to said message.'''
         checksum = 0x00
         for b in data:
             #print b
@@ -93,8 +105,7 @@ class PhiIonGun(object):
     
     
     def read_version(self):
-        """ '~ 03 02 25.' ||| '03 OK 00 3.0.1(Apr 19 2011 @13:13:19) B5.'
-        """
+        """Function returns the ion gun firmware timestamp. Tells you the age of the installed firmware."""
         result = self.ask_cmd(0x02, data=None)
         _list = result.split()
         text = "Version "
@@ -102,53 +113,11 @@ class PhiIonGun(object):
             text += _str + ' '
         return text
     
-    ''' hardware commands
-    
-        0x01    get model number
-        0x02    get version number
         
-        0x05    initialize controller electronics (required before read commands)
-    
-        0x10    get condenser lens voltage
-        0x11    write float voltage
-        0x12    get float voltage
-        0x13    write grid supply voltage
-        0x15    write objective lens voltage
-        0x16    get objective voltage
-        0x17    write emission current
-        0x18    get emission current
-        0x19    get extractor pressure
-        0x0A    write beam_v            #this one (was previously called energy)
-        0x0B    write beam voltage   #investigate this quantity in person
-        0x0C    get beam_v                #and this one.
-        0x0D    write bend voltage
-        0x0F    get condenser voltage
-        0x43    write x size
-        0x44    write y size
-        0x45    write x off
-        0x46    write y off
-        
-        0x28    read status(after write 1C) '03 OK 00 1 1 1 1 1 1 0 F3'
-        0x48    read status(after write comfirm) '03 OK 00 0 0 0 0 0 4D'
-        
-        0x32    write something (shows up in read 0x39) often set as 3
-        0x39    read status (always before 1C commmand)
-        
-        0x36    write shutdown
-                    ask_cmd write-> '~ 03 36 2C\r'
-                    ask_cmd resp-> '03 OK 00 BD'
-        
-        0x33    write something (related to internal raster)
-                ask_cmd write-> '~ 03 33 29\r'
-                ask_cmd resp-> '03 OK 00 BD'
 
-        0x34    write something (related to external raster)
-                ask_cmd write-> '~ 03 33 29\r'
-                ask_cmd resp-> '03 OK 00 BD'
-                
-    '''
     
     def initialize(self):
+        """Standard startup routine upon startup and RS232 transmission start."""
         if self.debug: 
             print "initialize"
         self.ask_cmd(0x01)
@@ -165,36 +134,42 @@ class PhiIonGun(object):
         
 
     def read_condenser_v(self):
+        """Inquires after the condenser lens voltage. A response is given in volts."""
         resp = self.ask_cmd(0x10)
         value = self.parse_data(resp)
         if self.debug:  print "read_condenser_v: ",value 
         return float(value)
     
-    def read_emission_current(self): 
+    def read_emission_current(self):
+        """Inquires after the ion gun emission current. A response is given in milliamperes."""
         resp = self.ask_cmd(0x18)
         value = self.parse_data(resp)
         if self.debug: print "current (mA):", resp
         return float(value)
     
     def read_beam_v(self):
+        """Inquires after the ion beam voltage. A response is given in volts."""
         resp = self.ask_cmd(0x0C) 
         value = self.parse_data(resp)
         if self.debug: print "read_beam_v:", resp
         return float(value)
     
     def read_extractor_p(self):
+        """Inquires after the extractor pressure value in millipascals (mPa)."""
         resp = self.ask_cmd(0x19)
         value = self.parse_data(resp)
         if self.debug: print "extractor pressure:", resp
         return float(value)
     
     def read_float(self):
+        """Inquires after the value of the ion gun's float voltage. A response is given in volts."""
         resp = self.ask_cmd(0x12)
         value = self.parse_data(resp)
         if self.debug: print "float_v:", resp
         return float(value)
     
     def read_objective_v(self):
+        """Inquires after the value of the ion gun's objective lens voltage. A response is given in volts."""
         resp = self.ask_cmd(0x16)
         value = self.parse_data(resp)
         if self.debug: print "objective_v:", resp
@@ -202,21 +177,25 @@ class PhiIonGun(object):
     
 
 
-    def write_beam_v(self, data): #was previously write_energy
+    def write_beam_v(self, data): 
+        #was previously write_energy
+        #"""def write_beam_v(self, data):
+        #_float = ("%.3f" % data)
+        #beam_v = self.ask_cmd(0x0B, _float)
+        #if self.debug:
+        #    print "write_beam_v"
+        #return beam_v 
+        #"""
+        """Sets the ion beam potential in volts."""
         _float = ("%.3f" % data)
         _beam_v = self.ask_cmd(0x0A, _float)
         if self.debug: print "write_beam_v"
         return _beam_v
     
-    """def write_beam_v(self, data):
-        _float = ("%.3f" % data)
-        beam_v = self.ask_cmd(0x0B, _float)
-        if self.debug:
-            print "write_beam_v"
-        return beam_v 
-    """
+
     
     def write_grid_v(self, grid_v):
+        """Sets grid voltage of a charged mesh which encloses ion beam origin."""
         assert 99 < grid_v < 201
         _float = ("%.3f" % grid_v)
         grid_v = self.ask_cmd(0x13, _float)
@@ -224,24 +203,28 @@ class PhiIonGun(object):
         return grid_v
 
     def write_condenser_v(self, data):
+        """Sets ion gun condenser lens voltage"""
         _float = ("%.3f" % data)
         cond_v = self.ask_cmd(0x0F, _float)
         if self.debug: print "write_condenser_v"
         return cond_v
 
     def write_objective_v(self, data):
+        """Sets ion gun objective lens voltage."""
         _float = ("%.3f" % data)
         obj_v = self.ask_cmd(0x15, _float)
         if self.debug: print "write_objective_v"
         return obj_v
 
     def write_bend_v(self, data):
+        """Sets ion gun bend voltage, which affects the beam by electrostatic repulsion. Bending of the beam is dependent on electric field strength determined by this voltage."""
         _float = ("%.3f" % float(-1*data))
         bend_v = self.ask_cmd(0x0D, _float)
         if self.debug: print "write_bend_v"
         return bend_v
     
     def write_emission_current(self, data):
+        """Sets the ion gun emission current value in milliamperes."""
         #Note: This is the same function listed as "Current" in other program
         _float = ("%.3f" % data)
         emi_i = self.ask_cmd(0x17, _float)
@@ -249,30 +232,35 @@ class PhiIonGun(object):
         return emi_i
 
     def write_float_v(self, data):
+        """Sets ion gun float voltage in volts"""
         _float = ("%.3f" % float(-1*data))
         float_v = self.ask_cmd(0x11, _float)
         if self.debug: print "write_float_v"
         return float_v
 
     def xsize(self, data):
+        """Sets raster size along the (horizontal) x-axis in millimeters."""
         _float = ("%.2f" % data)
         xmm = self.ask_cmd(0x43, _float)
         if self.debug: print "set_xsize"
         return xmm
     
     def ysize(self, data):
+        """Sets raster size along the (vertical) y-axis in millimeters."""
         _float = ("%.2f" % data)
         ymm = self.ask_cmd(0x44, _float)
         if self.debug: print "set_ysize"
         return ymm
     
     def xoff(self, data):
+        """Sets the value of raster offset along the (horizontal) x-axis in millimeters."""   
         _float = ("%.3f" % data)
         _xoff = self.ask_cmd(0x45, _float)
         if self.debug: print "set_xoff"
         return _xoff
 
     def yoff(self, data):
+        """Sets the value of raster offset along the (vertical) y-axis in millimeters."""
         _float = ("%.3f" % data)
         _yoff = self.ask_cmd(0x46, _float)
         if self.debug: print "set_yoff"
@@ -280,36 +268,46 @@ class PhiIonGun(object):
 
 ##---------- Commonly found entities----------##
     def Header(self):
+        """Command is issued by convention in certain versions of the manufacturer software."""
         _header = self.ask_cmd(0x39)
         if self.debug:
             print "Header:", _header
         return _header
         
     def Footer(self):
+        """Command is issued by convention in certain versions of the manufacturer software."""
         _footer = self.ask_cmd(0x48)
         if self.debug:
             print "Footer:", _footer
         return _footer
 
     def Write_Confirmation(self):
+        """Command is not necessary for operation of the ion gun. In manufacturer software, 
+        this command is issued as a means of command delivery verification"""
         statement = self.ask_cmd(0x28)
         if self.debug:
             print "Write confirm:", statement
         return statement
 
     def Gun_Inactive(self):
+        """We suspect this function sets a flag at the hardware level denoting the ion gun is inactive."""
+
         Gun_off = self.ask_cmd(0x36)
         if self.debug:
             print "Gun Inactive:", Gun_off
         return Gun_off
 
     def Gun_Active(self):
+        """We suspect this function sets a flag at the hardware level denoting the ion gun is active."""
         Gun_on = self.ask_cmd(0x35)
         if self.debug:
             print "Gun Active: ", Gun_on
         return Gun_on
 
     def Set_Raster_Mode(self, State='OFF'):
+        """Allows user to switch between available raster modes in ion gun software. 
+        Options are as follows: OFF, INTERNAL, EXTERNAL.
+        """
         assert State in ['OFF', 'INTERNAL', 'EXTERNAL']
         t = 0.2
         
@@ -350,6 +348,13 @@ class PhiIonGun(object):
 
 ##--edited below--##
     def State_Data_Packet(self, beamv=0, gridv=0, condv=0, objv=0, bendv=0, emiv=0, State='OFF'):
+        """Allows user to switch between available modes of operation in ion gun software. 
+        Options are as follows: OFF, BLANK, STANDBY, ACTIVE.
+
+        Ion gun is meant to bombard sample with ionized particles when gun is set to ACTIVE.
+        See operating manual for details on other modes of operation.
+        """
+
         assert State in ['OFF', 'BLANK', 'STANDBY', 'ACTIVE']
         if State == 'STANDBY':
             bendv = -7.0 
@@ -386,73 +391,10 @@ class PhiIonGun(object):
         return set_state
         
 
-    ## The following functions initialize writes to equipment, setting the conditions for which the functions are named.
-    ## For example: If you wish to switch to blanking, enter the values you wish to set into the appropriately named function.
-    ## In this case, the blanking function would be under "Off_standby_blanking" function, the only differences are the values
-    ## within State_Data_Packet.
-
-'''    def Startup_Commands(self):
-        _model = self.ask_cmd(0x01)
-        if self.debug:
-            print(_model)
-        _firmware = self.read_version()
-        if self.debug:
-            print(_firmware)
-        _initialize = self.initialize()
-        if self.debug:
-            print(_initialize)
-        self.Set_Internal_Raster_Mode()
-        _unknown1 = self.ask_cmd(0x32)
-        if self.debug:
-            print(_unknown1)
-        self.Header()
-        _unknown2 = self.ask_cmd(0x3C, "1.000 1.000")
-        if self.debug:
-            print(_unknown2)
-        self.Header()
-        self.State_Data_Packet()
-        self.Write_Confirmation()
-        _unknown3 = self.ask_cmd(0x1A, "0")
-        if self.debug:
-            print(_unknown3)
-        self.Footer()
-'''
-
-    
-    
-    
-    #def Off_Standby_Blanking(self, beamv=0, gridv=0, condv=0, objv=0, bendv=0, emiv=0, State='OFF'):
-    #    self.beamv = beamv
-    #    self.gridv = gridv
-    #    self.condv = condv
-    #    self.objv = objv
-    #    self.bendv = bendv
-    #    self.emiv = emiv
-    #    self.Header()
-    #    if State=='STANDBY':   
-    #        self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, State='STANDBY') # Need non-zero value input method
-    #    elif State=='BLANK':
-    #        self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, State='BLANK')
-    #    else:
-    #        self.State_Data_Packet(State='OFF')
-    #    self.Write_Confirmation()
-    #    self.Footer()
-    #    self.Gun_Inactive()
 
 
-    #def Active(self, beamv=0, gridv=0, condv=0, objv=0, bendv=0, emiv=0, State='ACTIVE'): 
-    #    self.beamv = beamv
-    #    self.gridv = gridv
-    #    self.condv = condv
-    #    self.objv = objv
-    #    self.bendv = bendv
-    #    self.emiv = emiv 
-    #    self.Gun_Active()
-    #    self.Header()
-    #    self.State_Data_Packet(self.beamv, self.gridv, self.condv, self.objv, self.bendv, self.emiv, State='ACTIVE') # Need non-zero value input method, Gun_Firing_On=True
-    #    self.Write_Confirmation()
-    #    self.Footer()
-    #    self.Set_Internal_Raster_Mode()
+
+
     
 
         
