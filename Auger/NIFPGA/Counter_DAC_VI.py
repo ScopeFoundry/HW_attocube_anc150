@@ -1,15 +1,24 @@
+"""Written by Frank Ogletree, Ed Barnard, and Alan Buckley"""
+
 ## Labview VI Functions 
+
 from NI_FPGA_dll import NI_FPGA
+from ScopeFoundry import HardwareComponent, LoggedQuantity
+#this logged quantity system is archaic, need updated ScopeFoundry framework.
+import numpy as np
 import ctypes
 import os
 
-class Counter_DAC(object):        
+class Counter_DAC_FPGA_VI(object):        
     
     #bitfilename = r"C:\Users\NIuser\Documents\Programs LV\R Series\builds\Omicron_R_1\Omicron Auger\data\NiFpga_CountertoDAC.lvbitx"
     bitfilename = os.path.join(os.path.dirname(__file__),"OmicronR1_FPGATarget_CountertoDAC_DtX8ivVB-f4.lvbitx")
     signature = "146CFF8F04265BED0C2F87F8C0A0672A"
     resource = "RIO0"
     session = ctypes.c_uint32(0)
+    
+
+    
     
     def __init__(self, debug=False):
         self.debug = debug
@@ -134,8 +143,10 @@ class Counter_DAC(object):
         err, array = self.FPGA.Read_ArrayBool(0x813A, self.size)
         if err == 0:
             if self.debug: print  "DIO811 Read:", array
+            return array
         else:
             if self.debug: print  "DIO811 Status:" + str(err)
+        
 
 ## Lists cumulative counter hit number as a row of 8 integer vales, 
 ### each entry represents the counter value on each of 8 channels.
@@ -144,6 +155,7 @@ class Counter_DAC(object):
         err, array = self.FPGA.Read_ArrayU32(0x813C, self.size)
         if err == 0:
             if self.debug: print  "Counts Read:", array
+            return array
         else:
             if self.debug: print  "Counts Status:" + str(err)
 
@@ -159,6 +171,7 @@ class Counter_DAC(object):
         if err == 0:
             if self.debug: print  "\"DAC1 add\" array successfully written:", self.array
 
+        
     def DAC1_sub(self, bool_array):
         self.array = bool_array
         self.indicator= ctypes.c_uint32(0x8156)
@@ -198,7 +211,7 @@ class Counter_DAC(object):
 
 
 def test1():
-    vi = Counter_DAC(debug=True)
+    vi = Counter_DAC_FPGA_VI(debug=True)
     fpga = vi.FPGA
     fpga.connect()
     fpga.reset()
@@ -211,7 +224,7 @@ def test1():
 def test2():
     import time
     "plot DAC1, DAC2"
-    vi = Counter_DAC(debug=True)
+    vi = Counter_DAC_FPGA_VI(debug=True)
     fpga = vi.FPGA
     fpga.connect()
     fpga.reset()
@@ -256,7 +269,7 @@ def test3():
     "FIFO Test"
     import matplotlib.pyplot as plt
     
-    vi = Counter_DAC(debug=True)
+    vi = Counter_DAC_FPGA_VI(debug=True)
     fpga = vi.FPGA
     try:
         fpga.connect()
@@ -283,7 +296,7 @@ def test4():
     import matplotlib.pyplot as plt
     import numpy  as np
     
-    vi = Counter_DAC(debug=True)
+    vi = Counter_DAC_FPGA_VI(debug=True)
     fpga = vi.FPGA
     try:
         fpga.connect()
@@ -317,6 +330,107 @@ def test4():
                 chan_data =buf[i::8]
                 chan_plotlines[i].set_data(x_array[:len(chan_data)], chan_data)
                 chan_plotlines[i].axes.set_ylim(0,np.max(buf))
+                
+            ax.autoscale_view(True,True,True)
+            ax.figure.canvas.draw()     
+            
+        timer = fig.canvas.new_timer(interval=10)
+        timer.add_callback(update_fig, ax)
+        timer.start()
+        
+        
+        plt.show()
+    finally:
+        print "finally"
+        fpga.Stop_Fifo()
+        fpga.disconnect()
+                
+def test5():
+    "FIFO Test live"
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    vi = Counter_DAC_FPGA_VI(debug=True)
+    fpga = vi.FPGA
+    try:
+        fpga.connect()
+        fpga.reset()
+        fpga.run()
+        
+        vi.Counter_ticks(40000)
+        fpga.Start_Fifo()
+        vi.CtrFIFO(True)
+        
+        N_elements = 500*8
+
+        x_array = np.arange(N_elements)
+
+        fig = plt.figure()
+        
+        chan_plotlines = []
+        for i in range(8):
+            ax = fig.add_subplot(8,1,i+1)
+            chan_plotlines.append(ax.plot(x_array, x_array)[0])
+
+        def append_fifo_data_to_array(buff, col_offset, memory):
+
+            #buf_read = np.array(buff)#function reads buffer object and separate
+            
+            #s elements into their respective rows and outputs an (8 x n) block
+            
+            #returns the integer depth of the block, then the data block itself.
+            
+            chan_data = []
+            
+            for i in range(8):
+                #reads every 8th element, outputs results as rows
+                #channel by channel
+                chan_data.append(buff[i::8])
+            new_block = np.array(chan_data, dtype=int)
+            depth = np.shape(new_block)[1]
+            data = new_block
+            memory[:,col_offset:col_offset+depth] = data[:,:]
+            print "col off func bef:", col_offset
+            col_offset += depth
+            print "col off func af:", col_offset
+            return memory, col_offset
+            
+        
+        def update_fig(ax):
+            print "update fig"
+            
+            remaining, buf = fpga.Read_Fifo(numberOfElements=0)
+            #buf =fpga.Read_Fifo(numberOfElements=N_elements)
+            remaining, buf = fpga.Read_Fifo(numberOfElements=remaining)
+            #fpga.ReleaseFifoElements(N_elements)
+            print "done with data acq"
+            #elapsed = np.empty((8,1), int)
+            for i in range(8):
+                #chan_data_in = buf[i::8]
+                #chan_size = len(chan_data_in)
+                #chan_data_out = np.empty((1,chan_size), int)
+
+                #if i==0:
+                #    np.delete(chan_data_out, 0, axis=0)
+                #    print("deleted 1 row, np shape chan_data_out", np.shape(chan_data_out), chan_data_out)
+                #    chan_write_block = chan_data_out
+                #    chan_data_out = np.empty((1,chan_size), int)
+                #    print("before elapsed append", np.shape(elapsed))
+                #    elapsed = np.append(elapsed, chan_write_block, axis=1)
+                #    print("after elapsed append", np.shape(elapsed))
+                #    dummy = np.empty((1,chan_size), int)
+                #    chan_data_out = np.append(dummy, chan_data_in, axis=0)
+                #if i > 0:
+                
+                    #chan_data_out = np.append(chan_data_out, chan_data_in, axis=0)
+                    
+                #print("elapsed:", np.shape(elapsed))
+            
+                
+                #chan_data_out = np.append(dummy, chan_data_in)
+                chan_plotlines[i].set_data(x_array[:len(chan_data_in)], chan_data_in)
+                chan_plotlines[i].axes.set_ylim(0,np.max(buf))
+                
                 
             ax.autoscale_view(True,True,True)
             ax.figure.canvas.draw()     

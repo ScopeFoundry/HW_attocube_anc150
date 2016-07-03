@@ -16,7 +16,7 @@ class AugerElectronAnalyzer(object):
         
         
         # prologix usb-gpib
-        self.gpib = PrologixGPIB_Omicron("COM8", debug=True)
+        self.gpib = PrologixGPIB_Omicron("COM8", debug=self.debug)
 
         # Initialize to known state
         self.retarding_mode='CAE'
@@ -73,7 +73,7 @@ class AugerElectronAnalyzer(object):
     def write_KE(self, ke_v):
         assert 0 <= ke_v <= 2200
         self.KE_V = float(ke_v)
-        ke_int = int((ke_v-self.work_function/2200.)*65535)
+        ke_int = int( ((ke_v-self.work_function)/2200.)*65535)
         if self.retarding_mode == 'CRR':
             self.resolution_eV = self.KE_V/self.crr_ratio * 0.02
         self.write_cmd(1, 0x82, ke_int)
@@ -141,8 +141,8 @@ class AugerElectronAnalyzer(object):
     
     def write_Quad(self, quad, val):
         assert quad in self.quad_cmds.keys()
-        assert -0.5 <= val <= 0.5
-        val_int = int((val + 0.5)*65535)
+        assert -50 <= val <= 50
+        val_int = int((val + 50)*655.35)
         self.write_cmd(3,self.quad_cmds[quad], val_int)
         
     def write_Quad_X1(self,val):
@@ -170,16 +170,17 @@ class AugerElectronAnalyzerHC(HardwareComponent):
     def setup(self):
         self.settings.New("mode", dtype=str, choices=('CAE', 'CRR'))
         self.settings.New("multiplier", dtype=bool)
-        self.settings.New("KE", dtype=float, unit='V', vmin=0, vmax=2200)
+        self.settings.New("KE", dtype=float, unit='eV', vmin=0, vmax=2200)
         self.settings.New("work_function", dtype=float, unit='eV', vmin=0, vmax=10, initial=4.5)
         self.settings.New("pass_energy", dtype=float, unit='V', vmin=5, vmax=500)
         self.settings.New("crr_ratio", dtype=float, vmin=1.5, vmax=20)
         self.settings.New("resolution", dtype=float, ro=True, unit='eV')
-        self.settings.New("quad_X1", dtype=float, vmin=-0.5, vmax=+0.5, initial=0, si=False)
-        self.settings.New("quad_Y1", dtype=float, vmin=-0.5, vmax=+0.5, initial=0, si=False)
-        self.settings.New("quad_X2", dtype=float, vmin=-0.5, vmax=+0.5, initial=0, si=False)
-        self.settings.New("quad_Y2", dtype=float, vmin=-0.5, vmax=+0.5, initial=0, si=False)
-    
+        quad_lq_settings = dict( dtype=float, vmin=-50, vmax=+50, initial=0, unit='%%', si=False)
+        self.settings.New("quad_X1", **quad_lq_settings)
+        self.settings.New("quad_Y1", **quad_lq_settings)
+        self.settings.New("quad_X2", **quad_lq_settings)
+        self.settings.New("quad_Y2", **quad_lq_settings)
+                          
     def connect(self):
         E = self.e_analyzer = AugerElectronAnalyzer(debug=self.debug_mode.val)
         
@@ -226,9 +227,13 @@ class AugerElectronAnalyzerHC(HardwareComponent):
 
 class PrologixGPIB_Omicron(object):
     
+    '''>>> import serial
+        >>> ser = serial.Serial('/dev/ttyUSB0')  # open serial port'''
+    
+    
     def __init__(self, port, address=1, debug=False):
         self.port = port
-        self.ser = Serial(port)
+        self.ser = Serial(port, timeout=1.0)
         self.debug = debug
         self.write_config_gpib()
         self.set_address(address)
@@ -294,6 +299,7 @@ class PrologixGPIB_Omicron(object):
             print("prologix write")
             print("\t", " ".join(["{:02x}".format(ord(c)) for c in s]))
             print("\t", " ".join(["{:08b}".format(ord(c)) for c in s]))            
+            print("\n")
             
         return self.ser.write(out)
 

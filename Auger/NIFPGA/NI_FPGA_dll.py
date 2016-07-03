@@ -1,10 +1,11 @@
+'''Alan Buckley, Ed Barnard, Frank Ogletree'''
 import ctypes
 #import time
 from ctypes import windll
 import csv
 import numpy as np
 from collections import OrderedDict
-
+import os
 
 fpga_dll = windll.LoadLibrary('NIFpga.dll')
 #test_array = np.array([1,0,1,1,1,0,0,0])
@@ -22,7 +23,7 @@ class NI_FPGA(object):
         self.bitfilename = bitfilename
         self.signature = signature
         self.resource = resource
-        self.fifo = ctypes.c_uint32(0)
+        #self.fifo = ctypes.c_uint32(0)
         # NOTE: CounterFifo declared in last lines of
         #NiFpga_CountertoDAC.h as I32 datatype with value of 0
         #However, self.fifo argument warrants use of U32 type   (:c) <-- Disappointment.
@@ -30,7 +31,7 @@ class NI_FPGA(object):
         self.test_array2 = np.array([1,0,0,0,0,0,0,1])
         # Load error code information from csv file derived from header file
         self.err_code_list = []
-        with open('nifpga_errorcodes_14.csv') as err_file:
+        with open(os.path.join(os.path.dirname(__file__), 'nifpga_errorcodes_14.csv')) as err_file:
             csv_read = csv.reader(err_file, quotechar='"') #np.array([])
             for row in csv_read:
                 self.err_code_list.append(row)
@@ -129,22 +130,22 @@ class NI_FPGA(object):
      * elements after the elements are released or the session is closed.
      """
 
-    def Configure_Fifo2(self, reqDepth=8000):
+    def Configure_Fifo2(self, fifo=0, reqDepth=8000):
         self.requested_depth = ctypes.c_size_t(reqDepth)
         self.actual_depth = ctypes.c_size_t(0)
-        err = fpga_dll.NiFpga_ConfigureFifo2(self.session, self.fifo, self.requested_depth, self.actual_depth)
+        err = fpga_dll.NiFpga_ConfigureFifo2(self.session, fifo, self.requested_depth, self.actual_depth)
         if self.debug: print "FIFO Configure Status:" + str(err)
         if err == 0:
             if self.debug: print "FIFO Configured"
     
     ##Optional Method:  
-    def Start_Fifo(self):
-        err = fpga_dll.NiFpgaDll_StartFifo(self.session, self.fifo)
+    def Start_Fifo(self, fifo=0):
+        err = fpga_dll.NiFpgaDll_StartFifo(self.session, fifo)
         if self.debug: print "Start FIFO Status:" + str(err)
         if err == 0:
             if self.debug: print "FIFO Started"
 
-    def Read_Fifo(self, numberOfElements=8, timeout=10000):
+    def Read_Fifo(self, fifo=0, numberOfElements=8, timeout=10000):
         self.data = ctypes.c_uint32(0)
         buffer = np.zeros(numberOfElements, dtype=np.uint32)
         bufpointer = buffer.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
@@ -170,7 +171,7 @@ class NI_FPGA(object):
         """
         err = fpga_dll.NiFpgaDll_ReadFifoU32(
                                              self.session, 
-                                             self.fifo,
+                                             fifo,
                                              bufpointer,
                                              numberOfElements,
                                              timeout,
@@ -183,7 +184,7 @@ class NI_FPGA(object):
         return remaining.value, buffer
     
 
-    def ReleaseFifoElements(self, numberOfElements=8):
+    def ReleaseFifoElements(self, fifo=0, numberOfElements=8):
         """
         /**
          * Releases previously acquired FIFO elements.
@@ -203,13 +204,13 @@ class NI_FPGA(object):
                                                  size_t         elements);
         """
                                                  
-        err = fpga_dll.NiFpgaDll_ReleaseFifoElements(self.session, self.fifo, numberOfElements)
+        err = fpga_dll.NiFpgaDll_ReleaseFifoElements(self.session, fifo, numberOfElements)
         if self.debug: print "Release FIFO Status:" + str(err)
         return err
 
     ##Optional Method:
-    def Stop_Fifo(self):
-        err = fpga_dll.NiFpgaDll_StopFifo(self.session, self.fifo)
+    def Stop_Fifo(self, fifo=0):
+        err = fpga_dll.NiFpgaDll_StopFifo(self.session, fifo)
         if self.debug: print "Stop FIFO Status:" + str(err)
         if err == 0:
             if self.debug: print "FPGA VI successfully reset."
