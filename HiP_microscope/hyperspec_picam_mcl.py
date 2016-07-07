@@ -1,6 +1,8 @@
 from __future__ import division, print_function
 import numpy as np
 from ScopeFoundry.scanning.base_cartesian_scan import BaseCartesian2DSlowScan
+from ScopeFoundry import Measurement, LQRange
+import time
 
 class HyperSpecPicam2DScan(BaseCartesian2DSlowScan):
     
@@ -55,4 +57,42 @@ class HyperSpecPicam2DScan(BaseCartesian2DSlowScan):
         self.app.measurements.picam_readout.roi_data = self.roi_data
         self.app.measurements.picam_readout.update_display()
     
+
+class HyperSpecPicam3DStack(Measurement):
     
+    name = 'HyperSpecPicam3DStack'
+    
+    def setup(self):
+        lq_params = dict(dtype=float, vmin=0,vmax=100, ro=False, unit='um' )
+        self.z0 = self.settings.New('z0',  initial=20, **lq_params  )
+        self.z1 = self.settings.New('z1',  initial=30, **lq_params  )
+        lq_params = dict(dtype=float, vmin=1e-9,vmax=100, ro=False, unit='um' )
+        self.dz = self.settings.New('dz', initial=1, **lq_params)
+        self.Nz = self.settings.New('Nz', dtype=int, initial=10, vmin=1)
+        
+        self.z_range = LQRange(min_lq=self.z0, max_lq=self.z1, step_lq=self.dz, num_lq=self.Nz)
+    
+    def run(self):
+        
+        self.scan2d = self.app.measurements["hyperspec_picam_mcl"]
+        self.stage = self.app.hardware['mcl_xyz_stage']
+
+        for kk, z in enumerate(self.z_range.array):
+            if self.interrupt_measurement_called:
+                self.scan2d.interrupt()
+                break
+            
+            print(self.name, kk, z)
+                        
+            self.stage.settings['z_position'] = z
+            
+            self.scan2d.start()
+            while self.scan2d.is_measuring():
+                if self.interrupt_measurement_called:
+                    self.scan2d.interrupt()
+                    break
+                time.sleep(0.1)
+        
+    def update_display(self):
+        self.scan2d.update_display()
+        
