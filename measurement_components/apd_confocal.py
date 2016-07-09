@@ -328,14 +328,14 @@ class APD_MCL_2DSlowScan(MCLStage2DSlowScan):
     
     def pre_scan_setup(self):
         #hardware 
-        self.apd_counter_hc = self.gui.apd_counter_hc
-        self.apd_count_rate = self.gui.apd_counter_hc.apd_count_rate
+        self.apd_counter_hc = self.app.hardware.apd_counter
+        self.apd_count_rate = self.apd_counter_hc.apd_count_rate
 
 
         #scan specific setup
         
         # create data arrays
-        self.count_rate_map = np.zeros((self.Nv, self.Nh), dtype=float)
+        self.count_rate_map = np.zeros(self.scan_shape, dtype=float)
         self.count_rate_map_h5 = self.h5_meas_group.create_dataset('count_rate_map', 
                                                                    shape=self.scan_shape,
                                                                    dtype=float, 
@@ -362,6 +362,7 @@ class APD_MCL_2DSlowScan(MCLStage2DSlowScan):
     
     def collect_pixel(self, pixel_num, k, j, i):
         # collect data
+        print(pixel_num, k, j, i)
         self.apd_count_rate.read_from_hardware()
                           
         # store in arrays

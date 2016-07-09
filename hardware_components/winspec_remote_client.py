@@ -7,7 +7,7 @@ class WinSpecRemoteClientHC(HardwareComponent):
     
     def setup(self):
         
-        self.settings.New('host', dtype=str, initial='192.168.236.128')
+        self.settings.New('host', dtype=str, initial='192.168.254.200')
         self.settings.New('port', dtype=int, initial=9000, si=False)
         self.settings.New('acq_time', dtype=float, initial=1.0, unit='s', vmin=0.0,)
     

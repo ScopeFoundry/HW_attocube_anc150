@@ -26,7 +26,7 @@ class WinSpecMCL2DSlowScan(MCLStage2DSlowScan):
         winspec_readout.run()
         
         if pixel_num == 0:
-            spec_map_shape = self.scan_shape + self.winspec_readout.data.shape
+            spec_map_shape = self.scan_shape + winspec_readout.data.shape
             self.spec_map = np.zeros(spec_map_shape, dtype=np.float)
             self.spec_map_h5 = self.h5_meas_group.create_dataset('spec_map', spec_map_shape, dtype=np.float)
             

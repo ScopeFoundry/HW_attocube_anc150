@@ -152,9 +152,14 @@ class MCLNanoDrive(object):
         y_step = dy/steps
         z_step = dz/steps
         
+
+        
         for i in range(1,steps+1):
-            t1 = time.time()         
-            self.set_pos(x_start+i*x_step, y_start+i*y_step, z_start+i*z_step)
+            t1 = time.time()
+            if z is not None:
+                self.set_pos(x_start+i*x_step, y_start+i*y_step, z_start+i*z_step)
+            else:
+                self.set_pos(x_start+i*x_step, y_start+i*y_step, None)
             t2 = time.time()
             
             if (t2-t1) < SLOW_STEP_PERIOD:
@@ -180,8 +185,8 @@ class MCLNanoDrive(object):
         assert 0 <= x <= self.cal_X
         assert 0 <= y <= self.cal_Y
         #TODO z-axis is ignored        
-        if z is not None:
-            assert 0 <= z <= self.cal_Z
+        #if z is not None:
+        #    assert 0 <= z <= self.cal_Z
 
         
         self.set_pos_ax(x, 1)

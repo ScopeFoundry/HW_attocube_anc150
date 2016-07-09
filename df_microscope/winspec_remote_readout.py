@@ -61,17 +61,17 @@ class WinSpecRemoteReadout(Measurement):
             if self.interrupt_measurement_called:
                 break
             time.sleep(0.01)
-
-        #time.sleep(1)
-        time.sleep(0.1)
         
         hdr, data = W.get_data()
         self.data = np.array(data).reshape(( hdr.frame_count, hdr.ydim, hdr.xdim) )
         
         px = np.arange(hdr.xdim) +1
         c = hdr.calib_coeffs
-        self.wls = c[0] + c[1]*px + c[2]*px**2 + c[3]*px**3 + c[4]*px**4
-        
+        for i in range(5):
+            print(c[i])
+        print(px)
+        self.wls = c[0] + c[1]*(px) + c[2]*(px**2) # + c[3]*(px**3) + c[4]*(px**4)
+        print(self.wls)
 
     def update_display(self):
         
