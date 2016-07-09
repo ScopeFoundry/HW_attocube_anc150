@@ -5,6 +5,11 @@ from hardware_components.apd_counter import APDCounterHardwareComponent
 from hardware_components.mcl_xyz_stage import MclXYZStage
 from measurement_components.apd_confocal import APD_MCL_2DSlowScan
 
+from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
+from winspec_remote_readout import WinSpecRemoteReadout
+from winspec_remote_2Dscan import WinSpecMCL2DSlowScan
+
+
 class DFMicroscopeApp(BaseMicroscopeApp):
 
     name = 'DFMicroscopeApp'
@@ -14,11 +19,14 @@ class DFMicroscopeApp(BaseMicroscopeApp):
         self.add_hardware_component(APDCounterHardwareComponent(self))
         #self.add_hardware_component(DummyXYStage(self))
         self.add_hardware_component(MclXYZStage(self))
-        
+        self.add_hardware_component(WinSpecRemoteClientHC(self))
+
     
         print("Adding Measurement Components")
         self.add_measurement_component(APD_MCL_2DSlowScan(self))
-        
+        self.add_measurement_component(WinSpecRemoteReadout(self))
+        self.add_measurement_component(WinSpecMCL2DSlowScan(self))
+
         self.ui.show()
         self.ui.activateWindow()
         
