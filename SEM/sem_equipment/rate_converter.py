@@ -29,6 +29,7 @@ class RateConverter(object):
         self.sample_per_pixel=int(1.0*self.ms_per_pixel/self.ms_per_sample)
         if self.sample_per_pixel==0:
             self.sample_per_pixel=1
+        self.update_rate()
         return self.sample_per_pixel
     
     def line_rate(self,ms_per_line):
@@ -38,6 +39,10 @@ class RateConverter(object):
     def frame_rate(self,ms_per_frame):
         self.ms_per_frame=ms_per_frame
         return self.line_rate(1.0*self.ms_per_frame/self.num_lines)
+    
+    def update_rate(self):
+        self.ms_per_line=self.ms_per_pixel*self.num_pixels
+        self.ms_per_frame=self.ms_per_line*self.num_lines
     
     def set_rate(self,ms_per_unit,unit=0):
         if unit==0:

@@ -7,6 +7,7 @@ Communicating with RemCon32 on the SEM computer through RS232 Serial communcatio
 '''
 import serial
 import numpy as np
+import time
 
 
 
@@ -202,8 +203,10 @@ class ZeissSEMRemCon32(object):
         return self.write_cmd('EXS?\r')
     
     def write_external_scan(self,val):
-        if val>=0 and val<=1:
+        if val==1:
             return self.write_cmd('EDX %i\r' % val)
+        if val==0:
+            self.send_cmd('EDX %i\r' % val)
         else:
             raise ValueError("value %s out of range [0,10]" % val)  
         
@@ -236,6 +239,13 @@ class ZeissSEMRemCon32(object):
             return self.write_cmd('BMON %i\r' % val)
         else:
             raise ValueError("value %s out of range [1,6]" % val)  
+        
+    def read_EHT_status(self):
+        value=float(self.read_EHT())
+        if value==0:
+            return 2
+        else:
+            return 1
 #     '''
 #     43 Spot Mode
 #     '''
@@ -269,38 +279,60 @@ class ZeissSEMRemCon32(object):
 #     r 0.0-360 degrees
 #     m 0.0-10.0 degrees
 #     '''
-#     def read_stage_all(self):
-#         '''
-#         output: x y z t r m move_status
-#         '''
-#         return self.write_cmd('c95?\r')
-#        
-#     def read_stage_cords_array(self):
-#         return np.fromstring(self.read_stage_all(),sep=' ')[0:6]
-#     
-#     def read_stage_status(self):
-#         return int(np.fromstring(self.read_stage_all(),sep=' ')[6])
-#     
-#     def read_stage_x(self):
-#         return self.read_stage_cords_array()[0]
-#     
-#     def read_stage_y(self):
-#         return self.read_stage_cords_array()[1]
-#     
-#     def read_stage_z(self):
-#         return self.read_stage_cords_array()[2]
-#     
-#     def read_stage_tilt(self):
-#         return self.read_stage_cords_array()[3]
-#     
-#     def read_stage_rotation(self):
-#         return self.read_stage_cords_array()[4]
-#     
-#     def read_stage_m(self):
-#         return self.read_stage_cords_array()[5]
-#     
-#     def _write_stage_all(self,cords):
-#         return
+       
+    def read_stage_xyz(self):
+        return self.write_cmd('STG?\r')
+    
+    def read_stage_x(self):
+        current_pos=self.write_cmd('STG?\r').split(' ')
+        time.sleep(0.05)
+        return current_pos[0]
+    
+    def read_stage_y(self):
+        current_pos=self.write_cmd('STG?\r').split(' ')
+        time.sleep(0.05)
+        return current_pos[1]
+    
+    def read_stage_z(self):
+        current_pos=self.write_cmd('STG?\r').split(' ')
+        time.sleep(0.05)
+        return current_pos[2]
+    
+    def write_stage_x(self,x):
+        current_pos_string=self.read_stage_xyz()
+        time.sleep(0.05)
+        current_pos=current_pos_string.split(' ')
+        if len(current_pos)==4:
+            y=current_pos[1]
+            z=current_pos[2]
+            pos=str(x)+' '+str(y)+' '+str(z)
+            time.sleep(0.05)
+            self.send_cmd('STG '+pos+'\r')
+            time.sleep(0.2)
+    
+    def write_stage_y(self,y):
+        current_pos_string=self.read_stage_xyz()
+        time.sleep(0.05)
+        current_pos=current_pos_string.split(' ')
+        if len(current_pos)==4:
+            x=current_pos[0]
+            z=current_pos[2]
+            pos=str(x)+' '+str(y)+' '+str(z)
+            time.sleep(0.05)
+            self.send_cmd('STG '+pos+'\r')
+            time.sleep(0.2)
+            
+    def read_stage_all(self):
+        '''
+        output: x y z t r m move_status
+        '''
+        return self.write_cmd('c95?\r')
+        
+    def write_detector(self,val):
+        self.write_cmd('DET '+val+'\r')
+        
+    def read_detector(self):
+        return self.write_cmd('DET?\r')
     
     def close(self):
         self.ser.close()
@@ -311,8 +343,10 @@ Test Cases
 
 if __name__=='__main__':    
     rem=ZeissSEMRemCon32()
-    resp=rem.read_magnification()
-    resp=rem.write_cmd('BMON 2\r')
+    resp=rem.write_stage_x(55)
+    #resp=rem.write_stage_xyz(60,60)
+    #resp=rem.read_stage_xyz()
+    #resp=rem.write_cmd('BMON 2\r')
     print(resp)
 #     resp=rem.read_stage_cords_array()
 #     print('read_stage_cord_array:'+str(resp))
