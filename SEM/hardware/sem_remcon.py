@@ -129,9 +129,11 @@ class SEMRemCon(HardwareComponent):
                                                    unit='',
                                                    choices=[('Off',0),('On',1)])
         
-        self.magnification.connect_bidir_to_widget(self.gui.ui.sem_magnification_doubleSpinBox)
-        self.beam_blanking.connect_bidir_to_widget(self.gui.ui.beam_blanking_checkBox)
+        
         #connect to GUI
+        if False:
+            self.magnification.connect_bidir_to_widget(self.gui.ui.sem_magnification_doubleSpinBox)
+            self.beam_blanking.connect_bidir_to_widget(self.gui.ui.beam_blanking_checkBox)
         
     def connect(self):
         if self.debug: print "connecting to REMCON32"

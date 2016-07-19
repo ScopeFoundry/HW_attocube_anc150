@@ -231,33 +231,33 @@ class SemRasterScanner(HardwareComponent):
                                                vmin=1,
                                                vmax=1e5)
         
-        self.remcon=self.gui.sem_remcon
+        self.remcon=self.app.hardware['sem_remcon']
 #         self.display_windows=dict()
 #         self.display_window_channels=dict()
 #         self.display_windows_counter=0
+
         #connect events
-        
-        
-        self.visible_points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
-        self.visible_lines.connect_bidir_to_widget(self.gui.ui.lines_doubleSpinBox)
-        self.square.connect_bidir_to_widget(self.gui.ui.square_checkBox)
-        self.xoffset.connect_bidir_to_widget(self.gui.ui.xoffset_doubleSpinBox)
-        self.yoffset.connect_bidir_to_widget(self.gui.ui.yoffset_doubleSpinBox)
-        self.xsize.connect_bidir_to_widget(self.gui.ui.xsize_doubleSpinBox)
-        self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
-        self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
-        self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
-        self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox) 
-        self.ms_per_unit.connect_bidir_to_widget(self.gui.ui.ms_per_unit_doubleSpinBox)
-        self.unit_of_rate.connect_bidir_to_widget(self.gui.ui.unit_of_rate_comboBox)
-        self.counter_unit.connect_bidir_to_widget(self.gui.ui.counter_unit_comboBox)      
-        self.auto_blanking.connect_bidir_to_widget(self.gui.ui.auto_blanking_checkBox)
-        self.ai1_name.connect_bidir_to_widget(self.gui.ui.ai1_name_lineEdit)
-        self.ai2_name.connect_bidir_to_widget(self.gui.ui.ai2_name_lineEdit)
-        self.ctr1_name.connect_bidir_to_widget(self.gui.ui.ctr1_name_lineEdit)
-        self.ctr2_name.connect_bidir_to_widget(self.gui.ui.ctr2_name_lineEdit)
-        self.callback_mode.connect_bidir_to_widget(self.gui.ui.callback_mode_comboBox)
-        self.gui.ui.update_channel_pushButton.clicked.connect(self.update_channel)
+        if False:
+            self.visible_points.connect_bidir_to_widget(self.gui.ui.points_doubleSpinBox)
+            self.visible_lines.connect_bidir_to_widget(self.gui.ui.lines_doubleSpinBox)
+            self.square.connect_bidir_to_widget(self.gui.ui.square_checkBox)
+            self.xoffset.connect_bidir_to_widget(self.gui.ui.xoffset_doubleSpinBox)
+            self.yoffset.connect_bidir_to_widget(self.gui.ui.yoffset_doubleSpinBox)
+            self.xsize.connect_bidir_to_widget(self.gui.ui.xsize_doubleSpinBox)
+            self.ysize.connect_bidir_to_widget(self.gui.ui.ysize_doubleSpinBox)
+            self.angle.connect_bidir_to_widget(self.gui.ui.angle_doubleSpinBox)
+            self.sample_rate.connect_bidir_to_widget(self.gui.ui.sample_rate_doubleSpinBox)
+            self.sample_per_point.connect_bidir_to_widget(self.gui.ui.sample_per_point_doubleSpinBox) 
+            self.ms_per_unit.connect_bidir_to_widget(self.gui.ui.ms_per_unit_doubleSpinBox)
+            self.unit_of_rate.connect_bidir_to_widget(self.gui.ui.unit_of_rate_comboBox)
+            self.counter_unit.connect_bidir_to_widget(self.gui.ui.counter_unit_comboBox)      
+            self.auto_blanking.connect_bidir_to_widget(self.gui.ui.auto_blanking_checkBox)
+            self.ai1_name.connect_bidir_to_widget(self.gui.ui.ai1_name_lineEdit)
+            self.ai2_name.connect_bidir_to_widget(self.gui.ui.ai2_name_lineEdit)
+            self.ctr1_name.connect_bidir_to_widget(self.gui.ui.ctr1_name_lineEdit)
+            self.ctr2_name.connect_bidir_to_widget(self.gui.ui.ctr2_name_lineEdit)
+            self.callback_mode.connect_bidir_to_widget(self.gui.ui.callback_mode_comboBox)
+            self.gui.ui.update_channel_pushButton.clicked.connect(self.update_channel)
         
     def connect(self):
         
