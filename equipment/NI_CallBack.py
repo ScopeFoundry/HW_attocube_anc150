@@ -2,6 +2,7 @@
 Created on Aug 22, 2014
 
 @author: Frank Ogletree
+        Hao Wu
 '''
 from __future__ import division
 import numpy as np
@@ -166,7 +167,7 @@ class Adc(NI):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self, rate = 1e4, count = 1000, finite = False):
+    def set_rate(self, rate = 1e4, count = 1000, delta=0,finite = False):
         """
         Input buffer
             In continuous mode, count determines per-channel buffer size only if
@@ -175,6 +176,7 @@ class Adc(NI):
 
             In finite mode, buffer size determined by count
          """
+        self.delta=delta
         if finite:
             adc_mode = mx.int32(mx.DAQmx_Val_FiniteSamps)
         else:
@@ -275,8 +277,9 @@ class Adc(NI):
         return data
     
     def EveryNCallback(self):
-        self.data_buffer=self.read_buffer(self._count, timeout=10)
-        self._destination.append(self.data_buffer)
+        self.data_buffer=self.read_buffer(self._count, timeout=999)
+        self._destination.load(self.data_buffer)
+        #print self.delta
         return 0 # The function should return an integer
     
     def DoneCallback(self, status):
@@ -310,7 +313,7 @@ class Dac(NI):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self, rate = 1e4, count = 1000, finite = False):
+    def set_rate(self, rate = 1e4, count = 1000,delta=0, finite = False):
         """
         Output buffer size determined by amount of data written, unless explicitly set by DAQmxCfgOutputBuffer()
         
@@ -329,6 +332,7 @@ class Dac(NI):
             if task is COMMITted  before writing, overhead 40 us 
                 (implicit transition back to COMMIT instead of staying in RUNNING)
          """
+        self.delta=delta
         if finite:
             dac_mode = mx.int32(mx.DAQmx_Val_FiniteSamps)
         else:
@@ -466,7 +470,7 @@ class Counter( NI ):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self,rate = 1e4, count = 1000,  clock_source = 'ao/SampleClock', finite = False):
+    def set_rate(self,rate = 1e4, count = 1000,delta=0,  clock_source = 'ao/SampleClock', finite = False):
         """
         NOTE analog output and input clocks are ONLY available when Dac or Adc task are running. This
         is OK for simultaneous acquisition. Otherwise use dummy task or use another crt as a clock. If the 
@@ -480,6 +484,7 @@ class Counter( NI ):
     
             In finite mode, buffer size determined by count
         """
+        self.delta=delta
         if finite:
             ctr_mode = mx.int32(mx.DAQmx_Val_FiniteSamps)
         else:
@@ -580,8 +585,8 @@ class Counter( NI ):
         return data  
         
     def EveryNCallback(self):
-        self.data_buffer=self.read_buffer(self._count, timeout=10)
-        self._destination.append(self.data_buffer)
+        self.data_buffer=self.read_buffer(self._count, timeout=999)
+        self._destination.load(self.data_buffer)
         return 0 # The function should return an integer
     
     def DoneCallback(self, status):
@@ -640,3 +645,79 @@ class Sync(object):
         self.dac.stop() 
         self.adc.stop()
         self.ctr.stop()
+        
+class SyncCallBack(object):
+    '''
+    creates simultaneous input and output tasks with synchronized start triggers
+    input and output task elapsed time need not be equal, but typically will be, 
+    can oversample input with for example 10x rate, 10x sample count
+    for now scan through output block once, wait for all input data, later
+    use callbacks, implement multiple scans
+    '''
+    def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, range = 10.0,  out_name = '', in_name = '', terminalConfig='default' ):
+        # create input and output tasks
+        self.dac = Dac( out_chan, out_name)        
+        self.adc = Adc( in_chan, range, in_name, terminalConfig )
+        self.ctr_chans=ctr_chans
+        self.ctr_terms=ctr_terms
+        self.ctr_num=len(self.ctr_chans)
+        self.ctr=[]
+#         for n in range(self.ctr_num):
+#             print(ctr_chans)
+#             print(ctr_terms)
+        for i in xrange(0,self.ctr_num):
+            self.ctr.append(Counter(ctr_chans[i],ctr_terms[i],''))
+        #sync dac start to adc start
+        buffSize = 512
+        buff = mx.create_string_buffer( buffSize )
+        self.adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
+        trig_name = '/' + buff.value + '/ai/StartTrigger'
+        self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
+        
+    def setup(self, rate_out, count_out, rate_in, count_in, pad = False,is_finite=False):
+        # Pad = true, acquire one extra input value per channel, strip off
+        # first read, so writes/reads align 
+        if pad:
+            self.delta = np.int(np.rint(rate_in / rate_out))
+        else:
+            self.delta = 0
+        self.dac.set_rate(rate_out, count_out,self.delta, finite=is_finite)
+        self.adc.set_rate(rate_in, count_in+self.delta,self.delta,finite=is_finite)
+        for i in range(self.ctr_num):
+            self.ctr[i].set_rate(rate_in,count_in+self.delta,self.delta,clock_source='ai/SampleClock',finite=is_finite)
+        
+    def out_data(self, data):
+        self.dac.load_buffer(data)
+    
+    def start(self):
+        for i in range(self.ctr_num):
+            self.ctr[i].start()
+        self.dac.start() #start dac first, waits for trigger from ADC to output data
+        self.adc.start()
+        
+       
+    def read_adc_buffer(self, timeout = 1.0):
+        x = self.adc.read_buffer(timeout=timeout)
+        return x[self.delta*self.adc.get_chan_count()::]
+    
+    def read_ctr_buffer(self,i, timeout = 1.0):
+        x = self.ctr[i].read_buffer(timeout=timeout)
+        return x[self.delta*self.ctr[i].get_chan_count()::]
+    
+    def read_ctr_buffer_diff(self,i, timeout = 1.0):
+        x = self.ctr[i].read_buffer(timeout=timeout)
+        x=np.insert(x,0,0)
+        x=np.diff(x)
+        return x[self.delta*self.ctr[i].get_chan_count()::]
+    
+    def stop(self):
+        self.dac.stop() 
+        self.adc.stop()
+        for i in range(self.ctr_num):
+            self.ctr[i].stop()
+        
+    def close(self):
+        self.dac.close()
+        self.adc.close()
+        for i in range(self.ctr_num):
+            self.ctr[i].close()
