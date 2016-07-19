@@ -4,7 +4,7 @@ Created on Feb 4, 2015
 @author: Hao Wu
 '''
 
-from measurement_components.measurement import Measurement
+from ScopeFoundry import Measurement
 import time
 import numpy as np
 import matplotlib.cm as cm
@@ -115,7 +115,7 @@ class SemRasterScanCallBack(Measurement):
         if hasattr(self,"sem_remcon"):
             self.magnification=float(self.sem_remcon.remcon.read_magnification())
         
-        from equipment.SEM.scale_converter import ScaleConverter
+        from SEM.sem_equipment.scale_converter import ScaleConverter
         self.scale=ScaleConverter(1.0/1.045)
         self.element_size=[1.0,1.0,1.0]
         self.scale.read_parameters(self.magnification,self.scanner.xsize.val/100.0,self.scanner.ysize.val/100.0,self.scanner.points.val,self.scanner.lines.val)

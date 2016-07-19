@@ -4,13 +4,13 @@ Created on Feb 4, 2015
 @author: Hao Wu
 '''
 
-from measurement_components.measurement import Measurement
+from ScopeFoundry import Measurement
 import time
 from equipment.image_display import ImageData
 from PySide import QtGui, QtCore
 from equipment.image_io import ChannelInfo
 from equipment.image_io import Collection
-from equipment.SEM.rate_converter import RateConverter
+from SEM.sem_equipment.rate_converter import RateConverter
 import os.path
 import shutil
 

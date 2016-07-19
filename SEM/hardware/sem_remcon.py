@@ -5,7 +5,7 @@ Created on Feb 4, 2015
 '''
 from hardware_components import HardwareComponent
 try:
-    from equipment.SEM.zeiss_sem_remcon32 import ZeissSEMRemCon32
+    from SEM.sem_equipment.zeiss_sem_remcon32 import ZeissSEMRemCon32
 
 except Exception as err:
     print "could not load modules needed for ZeissSEMRemCon32:", err

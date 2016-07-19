@@ -5,7 +5,7 @@ Created on Feb 4, 2015
 '''
 from hardware_components import HardwareComponent
 try:
-    from equipment.SEM.raster_generator import RasterGenerator
+    from SEM.sem_equipment.raster_generator import RasterGenerator
     from equipment.NI_Daq import Sync
     from equipment.NI_CallBack import SyncCallBack
 except Exception as err:
