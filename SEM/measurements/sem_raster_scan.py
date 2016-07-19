@@ -64,7 +64,7 @@ class SemRasterScan(Measurement):
                                                     initial=0.07)
         
         
-        self.scanner=self.gui.sem_raster_scanner
+        self.scanner=self.app.hardware['sem_raster_scanner']
         
         self.scan_on=False
         
@@ -72,18 +72,19 @@ class SemRasterScan(Measurement):
             self.sem_remcon=self.gui.sem_remcon
         
         #connect events
-        self.gui.ui.sem_raster_start_pushButton.clicked.connect(self.start)
-        self.stop_pushButton=self.gui.ui.sem_raster_interrupt_pushButton
-        self.gui.ui.sem_raster_save_pushButton.clicked.connect(self.save)
-        self.gui.ui.actionSave.triggered.connect(self.save)
-        self.gui.ui.actionStart.triggered.connect(self.start)
-        self.gui.ui.scan_mode_tabWidget.currentChanged.connect(self.select_scan_mode)
-        
-        self.progress_reporter=Reporter()
-        self.progress_reporter.progress.connect(self.gui.ui.progressBar.setValue)
-        #self.save_file.connect_bidir_to_widget(self.gui.ui.save_file_comboBox)
-        self.gui.ui.sem_raster_interrupt_pushButton.setEnabled(False)
-        self.gui.ui.sem_raster_save_pushButton.setEnabled(False)
+        if False:
+            self.gui.ui.sem_raster_start_pushButton.clicked.connect(self.start)
+            self.stop_pushButton=self.gui.ui.sem_raster_interrupt_pushButton
+            self.gui.ui.sem_raster_save_pushButton.clicked.connect(self.save)
+            self.gui.ui.actionSave.triggered.connect(self.save)
+            self.gui.ui.actionStart.triggered.connect(self.start)
+            self.gui.ui.scan_mode_tabWidget.currentChanged.connect(self.select_scan_mode)
+            
+            self.progress_reporter=Reporter()
+            self.progress_reporter.progress.connect(self.gui.ui.progressBar.setValue)
+            #self.save_file.connect_bidir_to_widget(self.gui.ui.save_file_comboBox)
+            self.gui.ui.sem_raster_interrupt_pushButton.setEnabled(False)
+            self.gui.ui.sem_raster_save_pushButton.setEnabled(False)
         
   
     def setup_figure(self):
@@ -91,7 +92,7 @@ class SemRasterScan(Measurement):
         #self.fig=self.gui.fig
         #self.fig = self.gui.add_figure('main_display', self.gui.ui.sem_raster_plot_widget)
 
-    def _run(self):
+    def run(self):
         #Connect to RemCon and turn on External Scan for SEM
         self.scanner.update_channel()
         if hasattr(self,"sem_remcon"):
@@ -108,12 +109,13 @@ class SemRasterScan(Measurement):
             if hasattr(self,"sem_remcon"):
                 if self.sem_remcon.connected.val:
                     self.sem_remcon.remcon.write_beam_blanking(0)
-                    
-        self.gui.ui.sem_raster_interrupt_pushButton.setEnabled(True)
-        self.gui.ui.sem_raster_save_pushButton.setEnabled(False)
-        self.gui.ui.sem_raster_start_pushButton.setEnabled(False)
-        self.gui.ui.actionStop.setChecked(False)
-        self.gui.ui.scan_mode_tabWidget.setEnabled(False)
+        
+        if False:
+            self.gui.ui.sem_raster_interrupt_pushButton.setEnabled(True)
+            self.gui.ui.sem_raster_save_pushButton.setEnabled(False)
+            self.gui.ui.sem_raster_start_pushButton.setEnabled(False)
+            self.gui.ui.actionStop.setChecked(False)
+            self.gui.ui.scan_mode_tabWidget.setEnabled(False)
         
         self.rate_converter=RateConverter(self.scanner.points.val,self.scanner.lines.val,self.scanner.sample_rate.val)
         self.scanner.sample_per_point.update_value(self.rate_converter.set_rate(self.scanner.ms_per_unit.val,self.scanner.unit_of_rate.val))
@@ -140,26 +142,30 @@ class SemRasterScan(Measurement):
             print("scan done")
         except:
             pass
-         
-        self.gui.ui.sem_raster_start_pushButton.setEnabled(True)
-        self.gui.ui.sem_raster_save_pushButton.setEnabled(True)
-        self.gui.ui.sem_raster_interrupt_pushButton.setEnabled(False)
-        self.gui.ui.scan_mode_tabWidget.setEnabled(True)
         
-        self.progress=100
-        self.progress_reporter.progress.emit(self.progress)
-        self.progress_reporter.done.emit(True)
+        if False:
+            self.gui.ui.sem_raster_start_pushButton.setEnabled(True)
+            self.gui.ui.sem_raster_save_pushButton.setEnabled(True)
+            self.gui.ui.sem_raster_interrupt_pushButton.setEnabled(False)
+            self.gui.ui.scan_mode_tabWidget.setEnabled(True)
+        
+        if False:
+            self.progress=100
+            self.progress_reporter.progress.emit(self.progress)
+            self.progress_reporter.done.emit(True)
+
         if self.scanner.auto_blanking.val:
             if hasattr(self,"sem_remcon"):
                 if self.sem_remcon.connected.val:
                     self.sem_remcon.beam_blanking.update_value(1)
         self.scanner.disconnect()
         
-        if self.gui.autosave.val:
-            self.sem_remcon.EHT.read_from_hardware()
-            self.sem_remcon.select_aperture.read_from_hardware()
-            self.auto_save()
-        self.gui.ui.actionStop.setChecked(False)
+        if False:
+            if self.gui.autosave.val:
+                self.sem_remcon.EHT.read_from_hardware()
+                self.sem_remcon.select_aperture.read_from_hardware()
+                self.auto_save()
+            self.gui.ui.actionStop.setChecked(False)
         
     def setup_imagedata(self, mode='regular',collection=''):
             self.images=ImageData(sync_object=self.scanner.sync_analog_io, 
@@ -185,7 +191,7 @@ class SemRasterScan(Measurement):
         if hasattr(self,"sem_remcon"):
             self.sem_remcon.magnification.read_from_hardware()
             self.magnification=float(self.sem_remcon.magnification.val)
-        from equipment.SEM.scale_converter import ScaleConverter
+        from SEM.sem_equipment.scale_converter import ScaleConverter
         self.scale=ScaleConverter(1.0/1.045)
         self.element_size=[1.0,1.0,1.0]
         self.scale.read_parameters(self.magnification,self.scanner.xsize.val/100.0,self.scanner.ysize.val/100.0,self.scanner.points.val,self.scanner.lines.val)
@@ -304,8 +310,13 @@ class SemRasterScan(Measurement):
         if self.scan_on:
             self.progress_reporter.progress.emit(int(self.progress*100))
    
-        for window_name in self.gui.display_windows:
-            current_window=self.gui.display_windows[window_name]
+   
+        if not hasattr(self, 'display_windows'):
+            print "display_windows missing, creating"
+            self.display_windows = dict()
+   
+        for window_name in self.display_windows:
+            current_window=self.display_windows[window_name]
             current_window.image_view.load(data=self.images.get_by_name(self.gui.display_window_channels[window_name].val),
                                            scale_size=self.scanner.points.val*0.2,
                                            scale_length=self.scale.get_pixsize_x()*self.scanner.points.val*0.2*(1e-9),

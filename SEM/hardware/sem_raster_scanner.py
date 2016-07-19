@@ -262,7 +262,7 @@ class SemRasterScanner(HardwareComponent):
     def connect(self):
         
         #if self.debug_mode.val: print "connecting to {}".format(self.name)
-        from equipment.SEM.rate_converter import RateConverter
+        from SEM.sem_equipment.rate_converter import RateConverter
         
         self.rate_converter=RateConverter(self.points.val,self.lines.val,self.sample_rate.val)
         self.sample_per_point.update_value(self.rate_converter.set_rate(self.ms_per_unit.val,self.unit_of_rate.val))
@@ -362,11 +362,13 @@ class SemRasterScanner(HardwareComponent):
             self.ai1_name.update_value("AI1")
         if self.ai2_name.val=='':
             self.input_channel_names.update_value(self.ai1_name.val)
-            self.input_channel_addresses.update_value('X-6363/ai1')
+            # FIXME hard coded device names
+            #self.input_channel_addresses.update_value('X-6363/ai1')
             self.sample_rate.update_value(2000000)
         else:
             self.input_channel_names.update_value(self.ai1_name.val+','+self.ai2_name.val)
-            self.input_channel_addresses.update_value('X-6363/ai1,X-6363/ai2')
+            # FIXME hard coded device names
+            #self.input_channel_addresses.update_value('X-6363/ai1,X-6363/ai2')
             self.sample_rate.update_value(500000)
         
         counter_addresses=''

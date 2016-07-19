@@ -15,6 +15,8 @@ from hardware_components.sem_singlechan_signal import SEMSingleChanSignal
 from hardware_components.sem_dualchan_signal import SEMDualChanSignal
 from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
 
+from SEM.measurements.sem_raster_scan import SemRasterScan
+
 # SEM Measurement Components
 #from SEM.sem_slowscan_single_chan import SEMSlowscanSingleChan
 
@@ -35,7 +37,7 @@ class AugerMicroscopeApp(BaseMicroscopeApp):
         self.add_hardware_component(SEMRemCon(self))
         self.add_hardware_component(SemRasterScanner(self))       
         
-        
+        self.add_measurement_component(SemRasterScan(self))
 #         self.add_measurement_component(AugerAnalyzerChannelHistory(self))
 #         self.add_measurement_component(AugerPointSpectrum(self))
 #         self.add_measurement_component(AugerQuadOptimizer(self))
