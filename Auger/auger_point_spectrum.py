@@ -44,22 +44,22 @@ class AugerPointSpectrum(Measurement):
 
         
         self.e_analyzer = self.app.hardware['auger_electron_analyzer']
-        self.counter_dac_hc = self.app.hardware['Counter_DAC_FPGA_VI']
+        self.counter_dac_hc = self.app.hardware['Counter_DAC_FPGA_VI_HC']
         
         #self.counter_dac = self.counter_dac_hc.FPGA
         #self.counter_dac = self.app.hardware['Counter_DAC_FPGA_VI'] #works!
         #self.counter = self.counter_dac_hc.counter_dac #doesn't work for whatever reasons!
         ## (I verified this in the ScopeFoundry console)
         self.counter_dac = self.counter_dac_hc.counter_dac        
-        fpga = self.counter_dac.FPGA
+        self.fpga = self.counter_dac.FPGA
         
-        fpga.Stop_Fifo(0)
-        remaining, buf = fpga.Read_Fifo(numberOfElements=0)
+        self.fpga.Stop_Fifo(0)
+        remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
         #print("remaining", remaining, remaining%8)
-        remaining, buf = fpga.Read_Fifo(numberOfElements=remaining)
-        print("read ofter stop", remaining, len(buf))
+        remaining, buf = self.fpga.Read_Fifo(numberOfElements=remaining)
+        print("read after stop", remaining, len(buf))
 
-        fpga.Start_Fifo(0)
+        self.fpga.Start_Fifo(0)
         self.counter_dac.CtrFIFO(True)
         #self.counter_dac_hc.CtrFIFO(True)
         
@@ -75,9 +75,9 @@ class AugerPointSpectrum(Measurement):
             
             time.sleep(0.1)
 
-            remaining, buf = fpga.Read_Fifo(numberOfElements=0)
+            remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
             read_elements = (remaining - (remaining % 8))
-            remaining, buf = fpga.Read_Fifo(numberOfElements=read_elements)
+            remaining, buf = self.fpga.Read_Fifo(numberOfElements=read_elements)
             
             print('->', buf.shape, len(buf)/8)
             print('-->',  buf.reshape(-1,8).shape, buf.reshape(-1,8).mean(axis=0) ) #,  buf.reshape(-1,8))
@@ -86,8 +86,8 @@ class AugerPointSpectrum(Measurement):
         
             self.chan_spectra[ii, :] = buf.reshape(-1,8).mean(axis=0)
             
-        fpga.Stop_Fifo(0)
-        remaining, buf = fpga.Read_Fifo(numberOfElements=0)
+        self.fpga.Stop_Fifo(0)
+        remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
         print("left in buffer after scan", remaining)
 
             

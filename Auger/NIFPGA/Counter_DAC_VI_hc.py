@@ -1,9 +1,10 @@
 from ScopeFoundry import HardwareComponent
-from Counter_DAC_VI import Counter_DAC_FPGA_VI
+from Auger.NIFPGA.Counter_DAC_VI import Counter_DAC_FPGA_VI
+
 
 class Counter_DAC_FPGA_VI_HC(HardwareComponent):
     
-    name = 'Counter_DAC_FPGA_VI'
+    name = 'Counter_DAC_FPGA_VI_HC'
     
     
     def setup(self):
@@ -25,10 +26,10 @@ class Counter_DAC_FPGA_VI_HC(HardwareComponent):
 
     def connect(self):
         self.counter_dac = Counter_DAC_FPGA_VI(debug=self.settings['debug_mode'])
-        self.fpga = fpga = self.counter_dac.FPGA
-        fpga.connect()
-        fpga.reset()
-        fpga.run()       
+        self.fpga = self.counter_dac.FPGA
+        self.fpga.connect()
+        self.fpga.reset()
+        self.fpga.run()       
         
         
         self.ctr_fifo.hardware_set_func = self.counter_dac.CtrFIFO
@@ -38,11 +39,11 @@ class Counter_DAC_FPGA_VI_HC(HardwareComponent):
         
     
     def disconnect(self):
-        self.counter_dac.FPGA.Stop_Fifo(0)
-        self.counter_dac.FPGA.disconnect()
+        self.fpga.Stop_Fifo(0)
+        self.fpga.disconnect()
         
         
         # disconnect hardware lq's
         # TODO
         
-        del self.counter_dac
+        del self.counter_dac, self.fpga
