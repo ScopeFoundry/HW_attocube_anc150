@@ -110,7 +110,7 @@ class SemRasterRepScan(Measurement):
         while self.continuous_scan.val==1:
             if self.interrupt_measurement_called:
                 break
-            self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
+            self.scanner.sync_analog_io.write_output_data_to_buffer(self.scanner.xy_raster_volts)
             self.scanner.sync_analog_io.start()
             self.images.read_all()
 

@@ -152,7 +152,7 @@ class SemRasterScanCallBack(Measurement):
                     if self.sem_remcon.connected.val:
                         self.sem_remcon.remcon.write_beam_blanking(0)
             self.scan_on=True
-            self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
+            self.scanner.sync_analog_io.write_output_data_to_buffer(self.scanner.xy_raster_volts)
             print("scan started")
             
             self.scanner.sync_analog_io.start()            

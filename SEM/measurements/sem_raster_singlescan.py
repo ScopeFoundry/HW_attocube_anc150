@@ -116,7 +116,7 @@ class SemRasterSingleScan(Measurement):
             
             
         if self.single_scan.val==1:
-            self.scanner.sync_analog_io.out_data(self.scanner.xy_raster_volts)
+            self.scanner.sync_analog_io.write_output_data_to_buffer(self.scanner.xy_raster_volts)
             self.scanner.sync_analog_io.start()            
             self.images.read_all()
             self.update_display()

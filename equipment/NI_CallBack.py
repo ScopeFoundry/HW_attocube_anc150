@@ -624,7 +624,7 @@ class Sync(object):
         self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite)
         self.ctr.set_rate(rate_in,count_in+self.delta,clock_source='ai/SampleClock',finite=is_finite)
         
-    def out_data(self, data):
+    def write_output_data_to_buffer(self, data):
         self.dac.load_buffer(data)
     
     def start(self):
@@ -686,7 +686,7 @@ class SyncCallBack(object):
         for i in range(self.ctr_num):
             self.ctr[i].set_rate(rate_in,count_in+self.delta,self.delta,clock_source='ai/SampleClock',finite=is_finite)
         
-    def out_data(self, data):
+    def write_output_data_to_buffer(self, data):
         self.dac.load_buffer(data)
     
     def start(self):
