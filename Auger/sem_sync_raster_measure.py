@@ -15,6 +15,9 @@ class SemSyncRasterScan(BaseCartesian2DScan):
     name = "sem_sync_raster_scan"
     
     def setup(self):
+        self.h_unit = self.v_unit = "V"
+        self.h_limits = self.v_limits = (-10,10)
+        
         BaseCartesian2DScan.setup(self)
                 
         self.display_update_period = 0.050 #seconds
