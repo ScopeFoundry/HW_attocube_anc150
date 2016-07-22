@@ -2,7 +2,11 @@
 
 ## Labview VI Functions 
 
-from NI_FPGA_dll import NI_FPGA
+try:
+    from NI_FPGA_dll import NI_FPGA
+except Exception as err:
+    print("failed to load NI_FIGA_dll")
+    
 from ScopeFoundry import HardwareComponent, LoggedQuantity
 #this logged quantity system is archaic, need updated ScopeFoundry framework.
 import numpy as np
