@@ -85,14 +85,17 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
         self.spec_map[k,j,i, :] = spec[0:7] 
         #Use the sum of the 7 auger channels to visualize the data   
         sig = np.sum(spec)
-        self.display_image_map[k,j,i] = sig
+        
         
         #Save the data to disk
         if self.settings['save_h5']:
             self.in_lens_data_h5[k,j, i] = self.app.hardware['sem_dualchan_signal'].settings.inLens_signal.read_from_hardware()            
-            self.se2_data_h5[k,j,i] = self.app.hardware['sem_dualchan_signal'].settings.se2_signal.read_from_hardware()
+            sig = self.se2_data_h5[k,j,i] = self.app.hardware['sem_dualchan_signal'].settings.se2_signal.read_from_hardware()
             self.spec_map_h5[k,j,i,:] = spec[0:7]
             self.fpga_num_elements_h5[k,j,i] = read_elements
+        
+       
+        self.display_image_map[k,j,i] = sig
 
     def post_scan_cleanup(self):
         #Flush the FIFO Counter
@@ -180,10 +183,12 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
             self.img_items[i].setLevels(self.hist_lut2.region.getRegion())
                
     def update_display(self):
+        kk, jj, ii = self.current_scan_index
+        
+        #self.display_image_map = self.in_lens_data_h5[kk,:,:]
         BaseCartesian2DSlowScan.update_display(self)
 
-        kk, jj, ii = self.current_scan_index
-
+        
          
     #         self.vLine.setPos(self.history_i)
     #         self.plot_lines[0].setData(self.randomnumbers)
