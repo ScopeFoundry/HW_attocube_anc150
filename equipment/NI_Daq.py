@@ -546,7 +546,8 @@ class Sync(object):
     for now scan through output block once, wait for all input data, later
     use callbacks, implement multiple scans
     '''
-    def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, vin_range = 10.0,  out_name = '', in_name = '', terminalConfig='default' ):
+    def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, vin_range = 10.0, 
+                 out_name = '', in_name = '', terminalConfig='default', trigger_output_term=None ):
         # create input and output tasks
         self.dac = Dac( out_chan, out_name)        
         self.adc = Adc( in_chan, vin_range, in_name, terminalConfig )
@@ -566,6 +567,11 @@ class Sync(object):
         trig_name = '/' + buff.value + '/ai/StartTrigger'
         self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
         
+        
+        # Route trigger output signal to trigger_output_term
+        if trigger_output_term:
+            self.adc.task.ExportSignal(mx.DAQmx_Val_SampleClock, trigger_output_term)
+            
     def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
         # Pad = true, acquire one extra input value per channel, strip off
         # first read, so writes/reads align 

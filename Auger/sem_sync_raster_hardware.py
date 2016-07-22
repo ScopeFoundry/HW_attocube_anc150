@@ -130,7 +130,12 @@ class SemSyncRasterDAQ(HardwareComponent):
 
         #setup tasks
         if self.sync_mode.val=='regular':
-            self.sync_analog_io = Sync(self.output_channel_addresses.val,self.input_channel_addresses.val,self.counter_channel_addresses.val.split(','),self.counter_channel_terminals.val.split(','))
+            self.sync_analog_io = Sync(out_chan  = self.output_channel_addresses.val,
+                                       in_chan   = self.input_channel_addresses.val,
+                                       ctr_chans = self.counter_channel_addresses.val.split(','),
+                                       ctr_terms = self.counter_channel_terminals.val.split(','),
+                                       trigger_output_term = "/X-6368/PFI0",
+                                       )
         elif self.sync_mode.val=='callback':
             self.sync_analog_io= SyncCallBack(self.output_channel_addresses.val,self.input_channel_addresses.val,self.counter_channel_addresses.val.split(','),self.counter_channel_terminals.val.split(','))
       
