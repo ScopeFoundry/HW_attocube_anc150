@@ -216,6 +216,7 @@ class AugerElectronAnalyzerHC(HardwareComponent):
             getattr(self.settings, lqname).updated_value[None].connect(self.settings.resolution.read_from_hardware)
     
     def disconnect(self):
+        self.settings['multiplier'] = False
         self.e_analyzer.close()
         
         # disconnect lq's

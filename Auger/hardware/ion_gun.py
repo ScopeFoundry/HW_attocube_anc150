@@ -1,8 +1,8 @@
 from ScopeFoundry import HardwareComponent
-from Auger.equipment.phi_ion_gun import PhiIonGun
+from Auger.auger_equipment.phi_ion_gun import PhiIonGun
 from sympy.functions.special.polynomials import _x
 try:
-    from Auger.equipment.phi_ion_gun import PhiIonGun
+    from Auger.auger_equipment.phi_ion_gun import PhiIonGun
 except Exception as err:
     print "Cannot load required modules for PhiIonGun", err
 
