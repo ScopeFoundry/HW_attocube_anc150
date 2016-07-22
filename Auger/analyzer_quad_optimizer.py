@@ -1,11 +1,9 @@
 from __future__ import division, print_function
-from ScopeFoundry import Measurement, LQRange
+from ScopeFoundry import Measurement
 import pyqtgraph as pg
 import numpy as np
 import time
-#import scipy
 import scipy.optimize as opt
-from Auger.NIFPGA.Counter_DAC_VI import Counter_DAC_FPGA_VI
 
 
 class AugerQuadOptimizer(Measurement):
@@ -53,10 +51,43 @@ class AugerQuadOptimizer(Measurement):
         #self.counter_dac = self.counter_dac_hc.fpga
         #self.counter_dac = self.app.hardware['Counter_DAC_self.fpga_VI'] #works!
         
-        ## (I verified this in the ScopeFoundry console)
+        self.engage_FIFO()
         
-        self.counter_dac = Counter_DAC_FPGA_VI()    #fixed 7/11/16 -Alan
-        self.fpga = self.counter_dac.FPGA           #fixed 7/11/16
+        # Line Sampling Walk Maximization Algorithm: Two-Stage Optimization
+        #Initialize xy
+        x0 = (self.settings['Quad_X1_Max']+self.settings['Quad_X1_Min'])/2
+        y0 = (self.settings['Quad_Y1_Max']+self.settings['Quad_Y1_Min'])/2
+        xy0 = (x0, y0)
+        pStep = 1
+        pExtents = (self.settings['Quad_X1_Max']-x0,
+                    self.settings['Quad_Y1_Max']-y0)
+        xTol = 0.5
+        yTol = 0.5
+        
+        #Stage One
+        xy1 = self.line_sample_walk_2D(xy0, pStep, pExtents, xTol, yTol,
+                                       self.quad_intensity,
+                                       maxIter=self.settings['Max_Iterations'])
+        #Stage Two
+        quad_optimal = self.line_sample_walk_2D(xy1, 0.2, (1, 1), 
+                                                self.settings['Quad_X1_Tol'],
+                                                self.settings['Quad_Y1_Tol'], 
+                                                self.quad_intensity,
+                                                maxIter=self.settings['Max_Iterations']) 
+        
+        print('Optimal Quad:' + str(quad_optimal))
+        
+        self.disengage_FIFO()
+        
+        #Automatically set the quad to optimal
+        self.e_analyzer.settings['quad_X1'] = quad_optimal[0]
+        self.e_analyzer.settings['quad_Y1'] = quad_optimal[1]
+    
+    def engage_FIFO(self):
+        ## (I verified this in the ScopeFoundry console)
+        self.counter_dac_hc = self.app.hardware['Counter_DAC_FPGA_VI_HC']
+        self.counter_dac = self.counter_dac_hc.counter_dac
+        self.fpga = self.counter_dac.FPGA
         
         self.fpga.Stop_Fifo(0)
         remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
@@ -87,38 +118,11 @@ class AugerQuadOptimizer(Measurement):
         print('-->',  buf.reshape(-1,8).shape, buf.reshape(-1,8).mean(axis=0) ) #,  buf.reshape(-1,8))
         
         time.sleep(0.2)
-        
-        # Line Sampling Walk Maximization Algorithm: Two-Stage Optimization
-        #Initialize xy
-        x0 = (self.settings['Quad_X1_Max']+self.settings['Quad_X1_Min'])/2
-        y0 = (self.settings['Quad_Y1_Max']+self.settings['Quad_Y1_Min'])/2
-        xy0 = (x0, y0)
-        pStep = 1
-        pExtents = (self.settings['Quad_X1_Max']-x0,
-                    self.settings['Quad_Y1_Max']-y0)
-        xTol = 0.5
-        yTol = 0.5
-        
-        #Stage One
-        xy1 = self.line_sample_walk_2D(xy0, pStep, pExtents, xTol, yTol,
-                                       self.quad_intensity,
-                                       maxIter=self.settings['Max_Iterations'])
-        #Stage Two
-        quad_optimal = self.line_sample_walk_2D(xy1, 0.2, (1, 1), 
-                                                self.settings['Quad_X1_Tol'],
-                                                self.settings['Quad_Y1_Tol'], 
-                                                self.quad_intensity,
-                                                maxIter=self.settings['Max_Iterations']) 
-        
-        print('Optimal Quad:' + str(quad_optimal))
-        
+    
+    def disengage_FIFO(self):
         self.fpga.Stop_Fifo(0)
         remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
         print("left in buffer after scan", remaining)
-        
-        #Automatically set the quad to optimal
-        self.e_analyzer.settings['quad_X1'] = quad_optimal[0]
-        self.e_analyzer.settings['quad_Y1'] = quad_optimal[1]
         
     def gauss(self, x, mean, stdDev, area=1):
             return (area*(np.sqrt(2*np.pi)*stdDev)**-1 
@@ -270,16 +274,19 @@ class AugerQuadOptimizer(Measurement):
         #print(out)
         return out
     
-    def scan_octopole_line(self, xMin, xMax, yMin, yMax, numSteps, dwell=0.1):
+    def scan_octopole_line(self, xMin, xMax, yMin, yMax, numSteps, dwell=0.1, consoleMode=True):
         #Scans the octopole along a line in 4D parameter space, X1, X2, Y1, Y2, and gives intensities.
         #xMin, xMax, yMin, and yMax are tuples, e.g. xMin = (x1Min, x2Min)
         #numSteps dictates how many points at which to take images
         X1 = np.linspace(xMin[0],xMax[0],numSteps)
         X2 = np.linspace(xMin[1],xMax[1],numSteps)
         Y1 = np.linspace(yMin[0],yMax[0],numSteps)
-        Y2 = np.linspace(yMin[0],yMax[0],numSteps)
+        Y2 = np.linspace(yMin[1],yMax[1],numSteps)
         
         out = np.zeros(numSteps)
+        
+        if consoleMode:
+            self.engage_FIFO()
         
         for iStep in range(numSteps):
             self.e_analyzer.settings['quad_X1'] = X1[iStep]
@@ -297,7 +304,44 @@ class AugerQuadOptimizer(Measurement):
             
             out[iStep] = np.sum(buf.reshape(-1,8).mean(axis=0))
         
+        if consoleMode:
+            self.disengage_FIFO()
         
+        return out
+    
+    def find_gauss_max_octopole_line(self, xMin, xMax, yMin, yMax, numSteps, dwell=0.1, consoleMode=True):
+        #Scans the octopole along a line in 4D parameter space, X1, X2, Y1, Y2, fits a gaussian,
+        #and gives the estimated location of maximum value.
+        #xMin, xMax, yMin, and yMax are tuples, e.g. xMin = (x1Min, x2Min)
+        #numSteps dictates how many points at which to take images
+        X1 = np.linspace(xMin[0],xMax[0],numSteps)
+        X2 = np.linspace(xMin[1],xMax[1],numSteps)
+        Y1 = np.linspace(yMin[0],yMax[0],numSteps)
+        Y2 = np.linspace(yMin[1],yMax[1],numSteps)
+        
+        #p-space is parameterized distance along the line in terms of index
+        p = np.arange(numSteps)
+        pMax = numSteps-1
+        pMin = 0
+        
+        #Get the data
+        pData = self.scan_octopole_line(xMin, xMax, yMin, yMax, numSteps, dwell, consoleMode)
+        
+        #Make initial guess for gaussian at center of distribution
+        g0 = [(pMax+pMin)/2, 1, (pMax-pMin)*max(pData)]
+        
+        gPars = opt.leastsq(self.residual, g0, args = (pData, p, self.gauss))
+        pMax = gPars[0][0]
+        
+        #Convert back from parameter space to octopole space
+        X1_max = X1[0] + (pMax/numSteps)*(X1[-1]-X1[0])
+        X2_max = X2[0] + (pMax/numSteps)*(X2[-1]-X2[0])
+        Y1_max = Y1[0] + (pMax/numSteps)*(Y1[-1]-Y1[0])
+        Y2_max = Y2[0] + (pMax/numSteps)*(Y2[-1]-Y2[0])
+        
+        octoMax = (X1_max, X2_max, Y1_max, Y2_max)
+        
+        return octoMax, gPars[0], (p, pData)
             
     def update_display(self):
         ## Display the data
