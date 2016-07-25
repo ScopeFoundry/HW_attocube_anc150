@@ -16,6 +16,8 @@ from pyqtgraph.Qt import QtCore, QtGui
 class AugerSlowMap(BaseCartesian2DSlowScan):
     
     name = "AugerSlowMap"
+    def __init__(self,app):
+        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")        
     
     def scan_specific_setup(self):
         #Hardware
