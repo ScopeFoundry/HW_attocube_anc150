@@ -219,9 +219,10 @@ class NI_FPGA(object):
 ### -----------Begin Read/Write Functions ------###
 
     def Read_Bool(self, indicator):
-        data = ctypes.c_char(0)
+        data = ctypes.c_uint8(0)
         err = fpga_dll.NiFpgaDll_ReadBool(self.session, indicator, ctypes.byref(data))
-        return err, data.value
+        #print data.value
+        return err, bool(data.value)
 
     def Read_I16(self, indicator):
         data = ctypes.c_int16(0)
