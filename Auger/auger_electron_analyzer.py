@@ -234,7 +234,7 @@ class PrologixGPIB_Omicron(object):
     
     def __init__(self, port, address=1, debug=False):
         self.port = port
-        self.ser = Serial(port, timeout=1.0)
+        self.ser = Serial(port, timeout=1.0, writeTimeout = 0)
         self.debug = debug
         self.write_config_gpib()
         self.set_address(address)
