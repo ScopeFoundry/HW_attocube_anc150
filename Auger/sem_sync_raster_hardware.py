@@ -114,6 +114,10 @@ class SemSyncRasterDAQ(HardwareComponent):
                                                vmin=1,
                                                vmax=1e5) # unit?
         
+        self.ext_clock_enable = self.add_logged_quantity("ext_clock_enable", dtype=bool, initial=False)
+        self.ext_clock_source = self.add_logged_quantity("ext_clock_source", dtype=str, initial="/X-6368/PFI0")
+        
+        
         self.lq_lock_on_connect = ['output_channel_addresses', 'input_channel_addresses', 'counter_channel_addresses', 'counter_channel_terminals']
         
     def connect(self):        
@@ -130,11 +134,16 @@ class SemSyncRasterDAQ(HardwareComponent):
 
         #setup tasks
         if self.sync_mode.val=='regular':
+            if self.settings['ext_clock_enable']:
+                clock_source = self.settings['ext_clock_source']
+            else:
+                clock_source = "" 
             self.sync_analog_io = Sync(out_chan  = self.output_channel_addresses.val,
                                        in_chan   = self.input_channel_addresses.val,
                                        ctr_chans = self.counter_channel_addresses.val.split(','),
                                        ctr_terms = self.counter_channel_terminals.val.split(','),
-                                       trigger_output_term = "/X-6368/PFI0",
+                                       clock_source = clock_source,
+                                       trigger_output_term = "/X-6368/PXI_Trig0",
                                        )
         elif self.sync_mode.val=='callback':
             self.sync_analog_io= SyncCallBack(self.output_channel_addresses.val,self.input_channel_addresses.val,self.counter_channel_addresses.val.split(','),self.counter_channel_terminals.val.split(','))
