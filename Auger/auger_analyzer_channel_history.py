@@ -2,7 +2,8 @@
 
 from __future__ import division
 from ScopeFoundry import Measurement
-from Auger.NIFPGA.Counter_DAC_VI import Counter_DAC_FPGA_VI
+from Auger.NIFPGA.Counter_DAC_VI_R2 import Counter_DAC_FPGA_VI
+from PySide import QtGui
 import pyqtgraph as pg
 import numpy as np
 import time
@@ -17,18 +18,36 @@ class AugerAnalyzerChannelHistory(Measurement):
         
         self.settings.New('chan_history_len', dtype=int, initial=5000,vmin=1)
         
+        self.ui = QtGui.QWidget()
+        self.layout = QtGui.QGridLayout()
+        self.ui.setLayout(self.layout)
+        self.start_button= QtGui.QPushButton("Start")
+        self.layout.addWidget(self.start_button)
+        self.stop_button= QtGui.QPushButton("Stop")
+        self.layout.addWidget(self.stop_button)
+        
+        self.start_button.clicked.connect(self.start)
+        self.stop_button.clicked.connect(self.interrupt)
+        
+        
         self.graph_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
-        self.graph_layout.show()
-        self.graph_layout.setWindowTitle("AugerAnalyzerChannelHistory")
+        
+        self.layout.addWidget(self.graph_layout)
+        
+        self.ui.show()
+        self.ui.setWindowTitle("AugerAnalyzerChannelHistory")
+        
+        self.counter_dac_hc = self.app.hardware['Counter_DAC_FPGA_VI_HC']
+        NUM_CHANS = self.counter_dac_hc.NUM_CHANS
         
         self.plots = []
-        for i in range(8):
+        for i in range(NUM_CHANS):
             plot = self.graph_layout.addPlot(title="Channel %i" % i)
             self.graph_layout.nextRow()
             self.plots.append(plot)
             
         self.plot_lines = []
-        for i in range(8):
+        for i in range(NUM_CHANS):
             color = pg.intColor(i)
             plot_line = self.plots[i].plot([0], pen=color)
             self.plot_lines.append(plot_line)
@@ -42,17 +61,14 @@ class AugerAnalyzerChannelHistory(Measurement):
     def run(self):
         print(self.name, 'run')
         
-        self.counter_dac_hc = self.app.hardware['Counter_DAC_FPGA_VI_HC']
-        self.counter_dac = self.counter_dac_hc.counter_dac
-        self.fpga = self.counter_dac.FPGA
-        
-        self.fpga.Start_Fifo(0)
-        self.counter_dac.CtrFIFO(True)
+        NUM_CHANS = self.counter_dac_hc.NUM_CHANS
+
+        self.counter_dac_hc.engage_FIFO()
         
         self.CHAN_HIST_LEN = self.settings['chan_history_len']
         
-        self.chan_history = np.zeros( (8, self.CHAN_HIST_LEN) )
-        self.chan_history_Hz = np.zeros( (8, self.CHAN_HIST_LEN) )
+        self.chan_history = np.zeros( (NUM_CHANS, self.CHAN_HIST_LEN), dtype=np.uint32 )
+        self.chan_history_Hz = np.zeros( (NUM_CHANS, self.CHAN_HIST_LEN) )
         
         self.history_i = 0
          
@@ -60,71 +76,31 @@ class AugerAnalyzerChannelHistory(Measurement):
 
             self.dwell_time = self.app.hardware['Counter_DAC_FPGA_VI_HC'].settings['counter_ticks']/40e6
 
-            #print(self.name, 'run')
+            buf_reshaped = self.counter_dac_hc.read_FIFO()
             
-
-            remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
-            #print("remaining", remaining, remaining%8)
-            read_elements = min((self.CHAN_HIST_LEN-1)*8, remaining - (remaining%8))
-            remaining, buf = self.fpga.Read_Fifo(numberOfElements=read_elements)
-            
-            depth = (len(buf))/8
+            depth = buf_reshaped.shape[1]
 
             if depth >0:
-                #if (self.history_i + len(buf)) > (self.CHAN_HIST_LEN -1):
-                #    print("history_i reset", len(buf))
-                #    self.history_i = 0
-                
-                #_, newoffset = append_fifo_data_to_array(buf, self.history_i, self.chan_history)
-                
-                #chan_data = np.zeros((8,depth))
-                buf_reshaped = buf.reshape((8,depth), order='F')
-    
-                #newoffset = self.history_i + depth
-                #self.chan_history[:,self.history_i:newoffset] = buf_reshaped
-                #self.chan_history_Hz[:,self.history_i:newoffset] = buf_reshaped / dwell_time
                 
                 ring_buf_index_array = (self.history_i + np.arange(depth, dtype=int)) % self.CHAN_HIST_LEN
                 
                 self.chan_history[:, ring_buf_index_array] = buf_reshaped
                 self.chan_history_Hz[:,ring_buf_index_array] = buf_reshaped / self.dwell_time
                 
-                #self.history_i = newoffset 
-                #self.history_i %= self.CHAN_HIST_LEN
-                
                 self.history_i = ring_buf_index_array[-1]
             
             time.sleep(0.1)
+        
+        self.counter_dac_hc.disengage_FIFO()
             
-
     def update_display(self):
         #print("chan_history shape", self.chan_history.shape)
         
-        dwell_time = self.app.hardware['Counter_DAC_FPGA_VI_HC'].settings['counter_ticks']/40e6
+        NUM_CHANS = self.counter_dac_hc.NUM_CHANS
         
         self.vLine.setPos(self.history_i)
-        for i in range(8):
+        for i in range(NUM_CHANS-1):
             self.plot_lines[i].setData(self.chan_history_Hz[i,:])
+        self.plot_lines[NUM_CHANS-1].setData(np.bitwise_and(self.chan_history[NUM_CHANS-1,:], 0x7FFFFFFF))
+        
         self.app.qtapp.processEvents()
-
-        
-def append_fifo_data_to_array(buff, col_offset, memory):
-    
-        #buf_read = np.array(buff)#function reads buffer object and 
-        
-        #separates elements into their respective rows and outputs an (8 x n) block
-        
-        #returns the integer depth of the block, then the data block itself.
-    
-        depth = (len(buff))/8
-            
-        chan_data = np.zeros((8,depth))
-        
-        for i in range(8):
-            #reads every 8th element, places elements in their respective rows
-            chan_data[i,:] = buff[i::8]
-        #new_block = np.array(chan_data, dtype=int) #this data processing method also OK
-        #depth = np.shape(new_block)[1] #this data processing method also OK
-        memory[:,col_offset:col_offset+depth] = chan_data # new_block[:,:]
-        col_offset += depth
-        return memory, col_offset
