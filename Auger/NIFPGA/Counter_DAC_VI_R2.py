@@ -16,7 +16,7 @@ from cffi import FFI
 
 
 fpga_vi_header = """
-static const char* const NiFpga_CountertoDAC_Signature = "E6A642D13C803FE1AD3C3BD5F4A990D1";
+static const char* const NiFpga_CountertoDAC_Signature = "6E0B9B5ADEBCAD931C547CBE9D5AE234";
 
 typedef enum
 {
@@ -111,7 +111,7 @@ class Counter_DAC_FPGA_VI(object):
     
     #bitfilename = r"C:\Users\NIuser\Documents\Programs LV\R Series\builds\Omicron_R_1\Omicron Auger\data\NiFpga_CountertoDAC.lvbitx"
     bitfilename = os.path.join(os.path.dirname(__file__),"Auger FPGA R2/FPGA Bitfiles/NiFpga_CountertoDAC.lvbitx")
-    signature = "E6A642D13C803FE1AD3C3BD5F4A990D1"
+    signature = "6E0B9B5ADEBCAD931C547CBE9D5AE234"
     resource = "RIO0"
     session = ctypes.c_uint32(0)
     
