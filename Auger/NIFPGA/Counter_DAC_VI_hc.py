@@ -48,9 +48,12 @@ class Counter_DAC_FPGA_VI_HC(HardwareComponent):
         
         
         # disconnect hardware lq's
-        # TODO
+        #disconnect logged quantities from hardware
+        for lq in self.settings.as_list():
+            lq.hardware_read_func = None
+            lq.hardware_set_func = None
         
-        del self.counter_dac, self.fpga
+        del self.fpga, self.counter_dac 
 
 
     def flush_FIFO(self):
