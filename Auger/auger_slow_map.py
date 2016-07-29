@@ -50,41 +50,21 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
         #Also create a channel for number of FIFO elements read
         self.fpga_num_elements_h5 = H.create_dataset('fpga_num_elements',self.scan_shape,dtype=np.int)
         
-        #set up the FIFO counter
-        self.counter_dac = self.counter_dac_hc.counter_dac
-        self.fpga = self.counter_dac.FPGA
-        
-        #Restart the FIFO because apparently it needs it?
-        self.fpga.Stop_Fifo(0)
-        remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
-        #print("remaining", remaining, remaining%8)
-        remaining, buf = self.fpga.Read_Fifo(numberOfElements=remaining)
-        print("read after stop", remaining, len(buf))
-        
-        self.fpga.Start_Fifo(0)
-        self.counter_dac.CtrFIFO(True)
+        self.counter_dac_hc.engage_FIFO()
         
         #Perform an initial FIFO flush
-        remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
-        read_elements = (remaining - (remaining % 8))
-        remaining, buf = self.fpga.Read_Fifo(numberOfElements=read_elements)
+        self.counter_dac_hc.flush_FIFO()
 
     def collect_pixel(self, pixel_num, k, j, i):
         # collect data
         # store in arrays
         
-        #Collect data from FIFO
-        remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
-        read_elements = (remaining - (remaining % 8))
-        remaining, buf = self.fpga.Read_Fifo(numberOfElements=read_elements)
+        buf_reshaped, read_elements = self.counter_dac_hc.read_FIFO(return_read_elements=True)
         
-        print('->', buf.shape, len(buf)/8)
-        print('-->',  buf.reshape(-1,8).shape, buf.reshape(-1,8).mean(axis=0) ) #,  buf.reshape(-1,8))
-        
-        spec = buf.reshape(-1,8).mean(axis=0)
-     
-        #Store the seven analyzer channels
-        self.spec_map[k,j,i, :] = spec[0:7] 
+        #Store the seven analyzer channels in counts/s
+        dwell_time = self.counter_dac_hc.settings['counter_ticks']/40e6
+        spec = (np.mean(buf_reshaped[0:7,:],axis=1))/dwell_time
+        self.spec_map[k,j,i, :] =  spec
         #Use the sum of the 7 auger channels to visualize the data   
         sig = np.sum(spec)
         
@@ -101,13 +81,11 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
 
     def post_scan_cleanup(self):
         #Flush the FIFO Counter
-        self.fpga.Stop_Fifo(0)
-        remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
-        print("left in buffer after scan", remaining)
+        self.counter_dac_hc.disengage_FIFO()
         
         print(self.name, "post_scan_cleanup")
-        import scipy.io
-        scipy.io.savemat(file_name="%i_%s.mat" % (self.t0, self.name), mdict=dict(spec_map=self.spec_map))
+        #import scipy.io
+        #scipy.io.savemat(file_name="%i_%s.mat" % (self.t0, self.name), mdict=dict(spec_map=self.spec_map))
     
 #     def update_display(self):
 #         BaseCartesian2DSlowScan.update_display(self)
