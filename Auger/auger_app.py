@@ -18,6 +18,7 @@ from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
 
 #from SEM.measurements.sem_raster_scan import SemRasterScan
 from Auger.sem_sync_raster_measure import SemSyncRasterScan
+from Auger.auger_sync_scan import AugerSyncScan
 
 # SEM Measurement Components
 #from SEM.sem_slowscan_single_chan import SEMSlowscanSingleChan
@@ -49,6 +50,7 @@ class AugerMicroscopeApp(BaseMicroscopeApp):
         self.add_measurement_component(SEMSlowScan(self))
         self.add_measurement_component(AugerSlowMap(self))
         self.add_measurement_component(SemSyncRasterScan(self))
+        self.add_measurement_component(AugerSyncScan(self))
 
         self.settings_load_ini('auger_fast_scan_settings.ini')
 
