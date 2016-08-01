@@ -2,14 +2,20 @@ from ScopeFoundry import Measurement
 import numpy as np
 import pyqtgraph as pg
 import time
+from ScopeFoundry.helper_funcs import sibling_path
 
 class APDOptimizerMeasurement(Measurement):
 
     name = "apd_optimizer"
 
-    ui_filename = "measurement_components/apd_optimizer.ui"
-
-    def setup(self):        
+    def __init__(self, app):
+        self.ui_filename = sibling_path(__file__, "apd_optimizer.ui")
+        print(self.ui_filename)
+        super(APDOptimizerMeasurement, self).__init__(app)
+        
+    def setup(self):
+        
+                
         self.display_update_period = 0.1 #seconds
 
         # create data array

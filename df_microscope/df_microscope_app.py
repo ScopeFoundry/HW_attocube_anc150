@@ -4,6 +4,7 @@ from ScopeFoundry import BaseMicroscopeApp
 from hardware_components.apd_counter_usb import APDCounterUSBHardwareComponent
 from hardware_components.mcl_xyz_stage import MclXYZStage
 from measurement_components.apd_confocal import APD_MCL_2DSlowScan
+from measurement_components.apd_optimizer import APDOptimizerMeasurement
 
 from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
 from winspec_remote_readout import WinSpecRemoteReadout
@@ -26,6 +27,7 @@ class DFMicroscopeApp(BaseMicroscopeApp):
         self.add_measurement_component(APD_MCL_2DSlowScan(self))
         self.add_measurement_component(WinSpecRemoteReadout(self))
         self.add_measurement_component(WinSpecMCL2DSlowScan(self))
+        self.add_measurement_component(APDOptimizerMeasurement(self))
 
         self.ui.show()
         self.ui.activateWindow()
