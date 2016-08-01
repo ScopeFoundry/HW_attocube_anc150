@@ -10,9 +10,9 @@ import random
 
 
 
-class SEMSlowscanVout(HardwareComponent):
+class SEMSlowscanVoutStage(HardwareComponent):
     
-    name = "sem_slowscan_vout"
+    name = "sem_slowscan_vout_stage"
     
     def setup(self):
         lq_params = dict(  dtype=float, ro=False,
@@ -61,6 +61,7 @@ class SEMSlowscanVout(HardwareComponent):
 
     def write_y(self,val):
         self.dac.set((self.x_position.val,-1*val))
+        
     def write_xy(self, x, y):
         self.dac.set((x,-1*y))
         #self.x_position.update_value(x, update_hardware=False)

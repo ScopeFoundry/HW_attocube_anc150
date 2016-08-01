@@ -396,8 +396,8 @@ class Dac(NI):
         except mx.DAQError as err:
             self.error(err)
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
-        if not( writeCount.value == 1):
-            print "sample count {} transfer count {}".format( 1, writeCount.value )
+        assert writeCount.value == 1, \
+            "sample count {} transfer count {}".format( 1, writeCount.value )
 
 class Counter( NI ):
     '''
@@ -546,10 +546,10 @@ class Sync(object):
     for now scan through output block once, wait for all input data, later
     use callbacks, implement multiple scans
     '''
-    def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, range = 10.0,  out_name = '', in_name = '', terminalConfig='default' ):
+    def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, vin_range = 10.0,  out_name = '', in_name = '', terminalConfig='default' ):
         # create input and output tasks
         self.dac = Dac( out_chan, out_name)        
-        self.adc = Adc( in_chan, range, in_name, terminalConfig )
+        self.adc = Adc( in_chan, vin_range, in_name, terminalConfig )
         self.ctr_chans=ctr_chans
         self.ctr_terms=ctr_terms
         self.ctr_num=len(self.ctr_chans)
@@ -578,7 +578,7 @@ class Sync(object):
         for i in range(self.ctr_num):
             self.ctr[i].set_rate(rate_in,count_in+self.delta,clock_source='ai/SampleClock',finite=is_finite)
         
-    def out_data(self, data):
+    def write_output_data_to_buffer(self, data):
         self.dac.load_buffer(data)
     
     def start(self):
@@ -591,6 +591,9 @@ class Sync(object):
     def read_adc_buffer(self, timeout = 1.0):
         x = self.adc.read_buffer(timeout=timeout)
         return x[self.delta*self.adc.get_chan_count()::]
+    
+    def read_adc_buffer_reshaped(self, timeout = 1.0):
+        return self.read_adc_buffer(timeout).reshape(-1, self.adc.get_chan_count()) # Check order
     
     def read_ctr_buffer(self,i, timeout = 1.0):
         x = self.ctr[i].read_buffer(timeout=timeout)

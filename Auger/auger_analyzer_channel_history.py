@@ -2,6 +2,7 @@
 
 from __future__ import division
 from ScopeFoundry import Measurement
+from Auger.NIFPGA.Counter_DAC_VI import Counter_DAC_FPGA_VI
 import pyqtgraph as pg
 import numpy as np
 import time
@@ -41,11 +42,11 @@ class AugerAnalyzerChannelHistory(Measurement):
     def run(self):
         print(self.name, 'run')
         
-        self.counter_dac_hc = self.app.hardware['Counter_DAC_FPGA_VI']
+        self.counter_dac_hc = self.app.hardware['Counter_DAC_FPGA_VI_HC']
         self.counter_dac = self.counter_dac_hc.counter_dac
-        fpga = self.counter_dac.FPGA
+        self.fpga = self.counter_dac.FPGA
         
-        fpga.Start_Fifo(0)
+        self.fpga.Start_Fifo(0)
         self.counter_dac.CtrFIFO(True)
         
         self.CHAN_HIST_LEN = self.settings['chan_history_len']
@@ -57,15 +58,15 @@ class AugerAnalyzerChannelHistory(Measurement):
          
         while not self.interrupt_measurement_called:
 
-            dwell_time = self.app.hardware['Counter_DAC_FPGA_VI'].settings['counter_ticks']/40e6
+            self.dwell_time = self.app.hardware['Counter_DAC_FPGA_VI_HC'].settings['counter_ticks']/40e6
 
             #print(self.name, 'run')
             
 
-            remaining, buf = fpga.Read_Fifo(numberOfElements=0)
+            remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
             #print("remaining", remaining, remaining%8)
             read_elements = min((self.CHAN_HIST_LEN-1)*8, remaining - (remaining%8))
-            remaining, buf = fpga.Read_Fifo(numberOfElements=read_elements)
+            remaining, buf = self.fpga.Read_Fifo(numberOfElements=read_elements)
             
             depth = (len(buf))/8
 
@@ -86,7 +87,7 @@ class AugerAnalyzerChannelHistory(Measurement):
                 ring_buf_index_array = (self.history_i + np.arange(depth, dtype=int)) % self.CHAN_HIST_LEN
                 
                 self.chan_history[:, ring_buf_index_array] = buf_reshaped
-                self.chan_history_Hz[:,ring_buf_index_array] = buf_reshaped / dwell_time
+                self.chan_history_Hz[:,ring_buf_index_array] = buf_reshaped / self.dwell_time
                 
                 #self.history_i = newoffset 
                 #self.history_i %= self.CHAN_HIST_LEN
@@ -99,7 +100,7 @@ class AugerAnalyzerChannelHistory(Measurement):
     def update_display(self):
         #print("chan_history shape", self.chan_history.shape)
         
-        dwell_time = self.app.hardware['Counter_DAC_FPGA_VI'].settings['counter_ticks']/40e6
+        dwell_time = self.app.hardware['Counter_DAC_FPGA_VI_HC'].settings['counter_ticks']/40e6
         
         self.vLine.setPos(self.history_i)
         for i in range(8):

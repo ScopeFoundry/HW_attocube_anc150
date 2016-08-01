@@ -21,7 +21,7 @@ class Channel(object):
     def __init__(self,
                  channel_info,
                  data_group,
-                 initial_size=100,create=True):
+                 initial_size=100,expansion_size=100,create=True,element_size_um=[1,0.5,0.5]):
         
         self.name=channel_info.name
         self.dimension=channel_info.dimension
@@ -29,7 +29,10 @@ class Channel(object):
         self.unit=channel_info.unit
         self.data_group=data_group
         self.size=initial_size
+        self.expansion_size=expansion_size
         self.new=create
+        self.element_size_um=element_size_um
+        self.counter=0
         self.setup()
          
     def setup(self):
@@ -38,6 +41,8 @@ class Channel(object):
                                                      (self.size,)+self.dimension,
                                                      maxshape=(None,)+self.dimension,
                                                      dtype=self.dtype)
+            self.data.attrs['element_size_um']=np.array(self.element_size_um)
+            #self.data.attrs['info']="My name is Hao"
         else:
             self.data=self.data_group[self.name]
              
@@ -46,11 +51,18 @@ class Channel(object):
         self.data.resize(self.size,0)
      
     def add_frame(self,counter,frame):
-        self.data[counter]=frame        
+        self.data[counter]=frame
+        self.counter=counter+1        
  
     def get_frame(self,count):
         return self.data[count]
  
+    def update_one_frame(self,frame):
+        self.data[self.counter]=frame
+        self.counter=self.counter+1
+        if self.counter>=self.size:
+            self.resize(self.size+self.expansion_size)
+            
 class Collection(object):
     '''
     Collection object handle the data storage of a scan
@@ -62,14 +74,14 @@ class Collection(object):
                  create=True,
                  initial_size=100,
                  expansion_size=100, 
-                 channel_infos=[ChannelInfo(),]):
+                 channel_infos=[ChannelInfo(),],element_size_um=[1,0.5,0.5]):
         self.name=name
         if create:
             self.new=True
             self.initial_size=initial_size
             self.expansion_size=expansion_size
             self.size=self.initial_size
-             
+            self.element_size_um=element_size_um
             self.create()
             self.setup_main_group()
             self.counter=0
@@ -151,7 +163,10 @@ class Collection(object):
     def save_logged_quantities(self,group,logged_quantities):
         for name in logged_quantities:
             group.attrs[name]=logged_quantities[name]
-            
+    
+    def save_comment(self,comment):
+        self.data_group.attrs["comment"]=comment
+    
     def save_measurement_component(self,vals,units):
         vals_group=self.measurement.create_group('vals')
         units_group=self.measurement.create_group('units')
@@ -164,6 +179,9 @@ class Collection(object):
         units_group=hardware_group.create_group('units')
         self.save_logged_quantities(vals_group,vals)
         self.save_logged_quantities(units_group,units)
+    
+    def save_resolution(self,dset):
+        pass
      
     def setup_channels(self,channel_infos=[ChannelInfo()]):
         '''
@@ -178,7 +196,7 @@ class Collection(object):
         for channel_info in channel_infos:
             self.channels[channel_info.name]=Channel(channel_info,
                                                      data_group=self.data_group,
-                                                     initial_size=self.initial_size)
+                                                     initial_size=self.initial_size,expansion_size=self.expansion_size,element_size_um=self.element_size_um)
     
     def link_channels(self,channel_infos):
         '''
@@ -213,7 +231,10 @@ class Collection(object):
          
     def update(self,frames):
         self.add_frames(self.counter,frames)
-                    
+    
+    def update_independent_frame(self,name,frame):     
+        self.channels[name].update_one_frame(frame)
+        
     def expand(self):
         '''
         increase the size of collection datasets by expansion_size,
