@@ -84,7 +84,8 @@ class SemSyncRasterScan(BaseCartesian2DScan):
                 #    self.single_scan_callback()
                 #else:
                 self.current_scan_index = 0,0,0
-                self.single_scan_regular()
+                while not self.interrupt_measurement_called:
+                    self.single_scan_regular()
                 
             elif self.scan_mode.val=="movie":
                 print("Acquring Movie")
@@ -146,7 +147,8 @@ class SemSyncRasterScan(BaseCartesian2DScan):
         self.scanDAQ.sync_mode.update_value('regular')
         self.scanDAQ.connect()
         #self.setup_imagedata("regular")
-        self.scanDAQ.setup_io_with_data(self.scan_h_positions, self.scan_v_positions)
+        # fix 
+        self.scanDAQ.setup_io_with_data(self.scan_h_positions, -1*self.scan_v_positions)
         self.scanDAQ.sync_analog_io.start()            
         
         #self.images.read_all() -- old way everything hiding in image_display object
@@ -157,8 +159,10 @@ class SemSyncRasterScan(BaseCartesian2DScan):
         #self.display_image_map[self.scan_index_array] = self.ai_data[0,:]
         self.display_image_map[0,:,:] = self.ai_data[:,1].reshape(self.settings['Nv'], self.settings['Nh'])
         
+        # TODO save data
+        
         self.scanDAQ.sync_analog_io.stop()
-        self.scanDAQ.sync_analog_io.close()
+        #self.scanDAQ.sync_analog_io.close()
         
     def update_display(self):
         BaseCartesian2DScan.update_display(self)

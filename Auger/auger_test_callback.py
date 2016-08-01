@@ -74,7 +74,7 @@ if __name__ == '__main__':
         #setup tasks
         scan = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
         scan.setup(rate, block, rate, block)
-        scan.out_data(buff_out)
+        scan.write_output_data_to_buffer(buff_out)
 
         scan.start()
         x = scan.read_buffer(timeout=10)
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         #setup tasks
         scan = Sync('X-6368/ao0:1', 'X-6368/ai2:3', 1.0)
         scan.setup(rate, block, 10*rate, 10*block)
-        scan.out_data(buff_out)
+        scan.write_output_data_to_buffer(buff_out)
 
         scan.start()
         x = scan.read_buffer()

@@ -216,6 +216,7 @@ class AugerElectronAnalyzerHC(HardwareComponent):
             getattr(self.settings, lqname).updated_value[None].connect(self.settings.resolution.read_from_hardware)
     
     def disconnect(self):
+        self.settings['multiplier'] = False
         self.e_analyzer.close()
         
         # disconnect lq's
@@ -233,7 +234,7 @@ class PrologixGPIB_Omicron(object):
     
     def __init__(self, port, address=1, debug=False):
         self.port = port
-        self.ser = Serial(port, timeout=1.0)
+        self.ser = Serial(port, timeout=1.0, writeTimeout = 0)
         self.debug = debug
         self.write_config_gpib()
         self.set_address(address)
