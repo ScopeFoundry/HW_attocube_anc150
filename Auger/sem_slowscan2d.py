@@ -4,7 +4,9 @@ import numpy as np
 class SEMSlowScan(BaseCartesian2DSlowScan):
     
     name = "SEMSlowScan"
-    
+    def __init__(self,app):
+        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")
+        
     def scan_specific_setup(self):
         #Hardware
         self.stage = self.app.hardware['sem_slowscan_vout_stage']
