@@ -2,12 +2,14 @@ from ctypes import byref, c_uint32, c_int32
 import numpy as np
 
 import PyDAQmx
+import PyDAQmx as mx
 from PyDAQmx import DAQmx_Val_Rising, DAQmx_Val_CountUp, DAQmx_Val_ContSamps, DAQmxSetDigEdgeStartTrigSrc
 from PyDAQmx import DAQmx_Val_Hz, DAQmx_Val_Low, DAQmx_Val_LargeRng2Ctr, DAQmx_Val_OverwriteUnreadSamps
-from PyDAQmx import DAQmx_Val_DMA, DAQmx_Val_HighFreq2Ctr
+from PyDAQmx import DAQmx_Val_DMA, DAQmx_Val_HighFreq2Ctr, DAQmx_Val_LowFreq1Ctr
 
+import time
 
-SAMPLE_BUFFER_SIZE = 32768
+SAMPLE_BUFFER_SIZE = 32000
 
 class NI_FreqCounter(object):
     """ National Instruments DAQmx interface to a frequency counter
@@ -21,7 +23,7 @@ class NI_FreqCounter(object):
         self.debug = debug
         self.mode = mode
     
-        assert mode in ['large_range', 'high_freq']
+        assert mode in ['large_range', 'high_freq', 'low_freq']
         
         self.create_task()
     
@@ -29,23 +31,28 @@ class NI_FreqCounter(object):
     
         # need to check if task exists and fail
     
-        self.task = PyDAQmx.Task()
+        #self.task = PyDAQmx.Task()
+        self.task_handle = mx.TaskHandle(0)
+        mx.DAQmxCreateTask("",byref(self.task_handle))
         
         if self.mode == 'large_range':
-            self.task.CreateCIFreqChan(
-                counter = self.counter_chan ,
+            print 'counter_chan', self.counter_chan
+            print 'input_terminal', self.input_terminal
+            
+            mx.DAQmxCreateCIFreqChan(self.task_handle,
+                counter = str(self.counter_chan) ,
                 nameToAssignToChannel="",
-                minVal = 1e2, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                minVal = 5e1, # applies measMethod is DAQmx_Val_LargeRng2Ctr
                 maxVal = 1e8, # applies measMethod is DAQmx_Val_LargeRng2Ctr
                 units = DAQmx_Val_Hz,
                 edge = DAQmx_Val_Rising,
                 measMethod = DAQmx_Val_LargeRng2Ctr,
-                measTime = 0.01, # applies measMethod is DAQmx_Val_HighFreq2Ctr
+                measTime = 1.0, # applies measMethod is DAQmx_Val_HighFreq2Ctr
                 divisor = 100, # applies measMethod is DAQmx_Val_LargeRng2Ctr
                 customScaleName = None,
                 )
         elif self.mode == 'high_freq':
-            self.task.CreateCIFreqChan(
+            mx.DAQmxCreateCIFreqChan(self.task_handle,
                 counter = self.counter_chan ,
                 nameToAssignToChannel="",
                 minVal = 1e1, # applies measMethod is DAQmx_Val_LargeRng2Ctr
@@ -53,64 +60,82 @@ class NI_FreqCounter(object):
                 units = DAQmx_Val_Hz,
                 edge = DAQmx_Val_Rising,
                 measMethod = DAQmx_Val_HighFreq2Ctr,
-                measTime = 0.01, # applies measMethod is DAQmx_Val_HighFreq2Ctr
+                measTime = 0.05, # applies measMethod is DAQmx_Val_HighFreq2Ctr
                 divisor = 100, # applies measMethod is DAQmx_Val_LargeRng2Ctr
                 customScaleName = None,
                 )
-            
+        elif self.mode == 'low_freq':
+            mx.DAQmxCreateCIFreqChan(self.task_handle,
+                counter = self.counter_chan ,
+                nameToAssignToChannel="",
+                minVal = 1e1, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                maxVal = 1e7, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                units = DAQmx_Val_Hz,
+                edge = DAQmx_Val_Rising,
+                measMethod = DAQmx_Val_LowFreq1Ctr,
+                measTime = 0.05, # applies measMethod is DAQmx_Val_HighFreq2Ctr
+                divisor = 100, # applies measMethod is DAQmx_Val_LargeRng2Ctr
+                customScaleName = None,
+                )
         
-        data = c_int32(0)
-        self.task.GetCIDataXferMech(channel=self.counter_chan, data=data )
-        print "XFmethod" , data.value
+        ### data = c_int32(0)
+        ### self.task.GetCIDataXferMech(channel=self.counter_chan, data=data )
+        ### print "XFmethod" , data.value
         
         # set DMA
         #self.task.SetCIDataXferMech(channel=self.counter_chan, data=DAQmx_Val_DMA)
         
-        self.task.GetReadOverWrite(data=byref(data))
-        print "overwrite", data.value
+        ### self.task.GetReadOverWrite(data=byref(data))
+        ### print "overwrite", data.value
         
-        
-        self.task.SetCIFreqTerm(
+        #Set the input terminal of the counter
+        mx.DAQmxSetCIFreqTerm(self.task_handle,
             channel = self.counter_chan,
             data = self.input_terminal)
 
-        self.task.CfgImplicitTiming(
+        #Set the counter channel to continuously sample into a buffer.  The size of the
+        #buffer is set by sampsPerChan.
+        mx.DAQmxCfgImplicitTiming(self.task_handle,
             sampleMode = DAQmx_Val_ContSamps,
             sampsPerChan = 1000)
             
-        self.task.SetReadOverWrite(DAQmx_Val_OverwriteUnreadSamps)
+        
+        mx.DAQmxSetReadOverWrite(self.task_handle, DAQmx_Val_OverwriteUnreadSamps)
 
-        self.task.GetReadOverWrite(data=byref(data))
-        print "overwrite", data.value
+        ### self.task.GetReadOverWrite(data=byref(data))
+        ### print "overwrite", data.value
             
+        # Sample buffer
         self._sample_buffer_count = c_int32(0)
         self.sample_buffer = np.zeros((SAMPLE_BUFFER_SIZE,), dtype=np.float64)
-        
-        #self.task.StartTask()
-    
+
     
     def start(self):
-        self.task.StartTask()
+        status = mx.DAQmxStartTask(self.task_handle)
+        print 'start status', status
     
     def stop(self):
-        self.task.StopTask()
+        status = mx.DAQmxStopTask(self.task_handle)
+        print 'stop status', status
+
     
     def reset(self):
-        self.task.StopTask()
-        self.task.ClearTask()
+        status = mx.DAQmxStopTask(self.task_handle)
+        status = mx.DAQmxClearTask(self.task_handle)
         self.create_task()
         self.start()
 
     def read_freq_buffer(self):
-        self.task.ReadCounterF64(
+        status = \
+        mx.DAQmxReadCounterF64(self.task_handle,
             numSampsPerChan = -1,
-            timeout = 2.0,
+            timeout = 0.1, ###
             readArray = self.sample_buffer,
             arraySizeInSamps = SAMPLE_BUFFER_SIZE,
             sampsPerChanRead = byref(self._sample_buffer_count),
             reserved = None
             )
-        
+        print 'read_freq_buffer', status, self._sample_buffer_count, np.max(self.sample_buffer)
         return self._sample_buffer_count.value, self.sample_buffer
 
     def read_average_freq_in_buffer(self):
