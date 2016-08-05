@@ -5,18 +5,25 @@ from collections import OrderedDict
 import json
 
 class LoggedQuantity(QtCore.QObject):
+    """
+    LoggedQuantity objects are containers that wrap settings. These settings may be a number (integer or float) 
+    or a string and occasionally small arrays of them. 
+    
+    These objects emit signals when changed and can be connected bidirectionally to Qt Widgets. 
+    
+    """
 
     updated_value = QtCore.Signal((float,),(int,),(bool,), (), (str,),) # signal sent when value has been updated
-    updated_text_value = QtCore.Signal(str)
+    updated_text_value = QtCore.Signal(str) # signal sent when value has been updated, sends text representation
     updated_choice_index_value = QtCore.Signal(int) # emits the index of the value in self.choices
     
     updated_min_max = QtCore.Signal((float,float),(int,int), (),) # signal sent when min max range updated
-    updated_readonly = QtCore.Signal((bool,), (),)
+    updated_readonly = QtCore.Signal((bool,), (),) # signal sent when read only (ro) status has changed
     
     def __init__(self, name, dtype=float, 
                  hardware_read_func=None, hardware_set_func=None, 
-                 initial=0, fmt="%g", si=True,
-                 ro = False,
+                 initial=0, fmt="%g", si=False,
+                 ro = False, # read only flag
                  unit = None,
                  spinbox_decimals = 2,
                  spinbox_step=0.1,
@@ -33,8 +40,8 @@ class LoggedQuantity(QtCore.QObject):
         self.unit = unit
         self.vmin = vmin
         self.vmax = vmax
-        self.choices = choices # must be tuple [ ('name', val) ... ]
-        self.ro = ro # Read-Only?
+        self.choices = self._expand_choices(choices) # should be tuple [ ('name', val) ... ] or simple list [val, val, ...]
+        self.ro = ro # Read-Only
         
         if self.dtype == int:
             self.spinbox_decimals = 0
@@ -56,6 +63,19 @@ class LoggedQuantity(QtCore.QObject):
     def coerce_to_type(self, x):
         return self.dtype(x)
         
+    def _expand_choices(self, choices):
+        if choices is None:
+            return None
+        expanded_choices = []
+        for c in choices:
+            if isinstance(c, tuple):
+                name, val = c
+                expanded_choices.append( ( str(name), self.dtype(val) ) )
+            else:
+                expanded_choices.append( ( str(c), self.dtype(c) ) )
+        return expanded_choices
+
+
     def read_from_hardware(self, send_signal=True):
         if self.hardware_read_func:
             self.oldval = self.val
@@ -72,6 +92,12 @@ class LoggedQuantity(QtCore.QObject):
     @QtCore.Slot(bool)
     @QtCore.Slot()
     def update_value(self, new_val=None, update_hardware=True, send_signal=True, reread_hardware=None):
+        """
+        Change value of LQ and emit signals to inform listeners of change 
+        
+        if *update_hardware* is true: call connected hardware_set_func
+        
+        """
         #print "LQ update_value", self.name, self.val, "-->",  new_val
         if new_val is None:
             #print "update_value {} new_val is None. From Sender {}".format(self.name, self.sender())
@@ -108,6 +134,11 @@ class LoggedQuantity(QtCore.QObject):
             self.send_display_updates()
             
     def send_display_updates(self, force=False):
+        """
+        emit updated_value signals if value has changed.
+        
+        *force* will emit signals regardless of value change. 
+        """
         #print "send_display_updates: {} force={}".format(self.name, force)
         if (not self.same_values(self.oldval, self.val)) or (force):
             
@@ -149,6 +180,13 @@ class LoggedQuantity(QtCore.QObject):
         
 
     def connect_bidir_to_widget(self, widget):
+        """
+        Creates Qt signal-slot connections between LQ and the QtWidget *widget*
+        
+        connects updated_value signal to the appropriate slot depending on 
+        the type of widget 
+        
+        """
         print type(widget)
         if type(widget) == QtGui.QDoubleSpinBox:
             #self.updated_value[float].connect(widget.setValue )
@@ -247,7 +285,7 @@ class LoggedQuantity(QtCore.QObject):
     
     def change_choice_list(self, choices):
         #widget = self.widget
-        self.choices = choices
+        self.choices = self._expand_choices(choices)
         
         for widget in self.widget_list:
             if type(widget) == QtGui.QComboBox:
@@ -278,7 +316,12 @@ class LoggedQuantity(QtCore.QObject):
             
 
 class FileLQ(LoggedQuantity):
+    """
+    Specialized str type :class:`LoggedQuantity` that handles
     
+    
+    """
+     
     def __init__(self, name, default_dir=None, **kwargs):
         kwargs.pop('dtype', None)
         
@@ -395,57 +438,97 @@ class LQRange(QtCore.QObject):
     """
     updated_range = QtCore.Signal((),)# (float,),(int,),(bool,), (), (str,),) # signal sent when value has been updated
     
-    def __init__(self, min_lq,max_lq,step_lq, num_lq):
+    def __init__(self, min_lq,max_lq,step_lq, num_lq, center_lq=None, span_lq=None):
         QtCore.QObject.__init__(self)
 
         self.min = min_lq
         self.max = max_lq
         self.num = num_lq
         self.step = step_lq
+        self.center = center_lq
+        self.span = span_lq
         
         assert self.num.dtype == int
-                
-        self.array = np.linspace(self.min.val, self.max.val, self.num.val)
-        step = self.array[1]-self.array[0]
+        
+        self._array_valid = False # Internal _array invalid, must be computed on next request
+        
+        self._array = None #np.linspace(self.min.val, self.max.val, self.num.val)
+        
+        #step = self._array[1]-self._array[0]
+        step = self.compute_step(self.min.val, self.max.val, self.num.val)
         self.step.update_value(step)
         
         self.num.updated_value[int].connect(self.recalc_with_new_num)
         self.min.updated_value.connect(self.recalc_with_new_min_max)
         self.max.updated_value.connect(self.recalc_with_new_min_max)
-        self.step.updated_value.connect(self.recalc_with_new_step)        
+        self.step.updated_value.connect(self.recalc_with_new_step)
+        
+        if self.center and self.span:
+            self.center.updated_value.connect(self.recalc_with_new_center_span)
+            self.span.updated_value.connect(self.recalc_with_new_center_span)
+
+
+    @property
+    def array(self):
+        if self._array_valid:
+            return self._array
+        else:
+            self._array = np.linspace(self.min.val, self.max.val, self.num.val)
+            self._array_valid = True
+            return self._array
+
+    def compute_step(self, xmin, xmax, num):
+        delta = xmax - xmin
+        if num > 1:
+            return delta/(num-1)
+        else:
+            return delta
 
     def recalc_with_new_num(self, new_num):
         print "recalc_with_new_num", new_num
-        self.array = np.linspace(self.min.val, self.max.val, int(new_num))
-        if len(self.array) > 1:
-            new_step = self.array[1]-self.array[0]
-            print "    new_step inside new_num", new_step
-            self.step.update_value(new_step)#, send_signal=True, update_hardware=False)
-            self.step.send_display_updates(force=True)
+        self._array_valid = False
+        self._array = None
+        #self._array = np.linspace(self.min.val, self.max.val, int(new_num))
+        new_step = self.compute_step(self.min.val, self.max.val, int(new_num))
+        print "    new_step inside new_num", new_step
+        self.step.update_value(new_step)#, send_signal=True, update_hardware=False)
+        self.step.send_display_updates(force=True)
         self.updated_range.emit()
         
     def recalc_with_new_min_max(self, x):
-        self.array = np.linspace(self.min.val, self.max.val, self.num.val)
-        step = self.array[1]-self.array[0]
-        self.step.update_value(step)#, send_signal=True, update_hardware=False)        
+        self._array_valid = False
+        self._array = None
+        #self._array = np.linspace(self.min.val, self.max.val, self.num.val)
+        #step = self._array[1]-self._array[0]
+        step = self.compute_step(self.min.val, self.max.val, self.num.val)
+        self.step.update_value(step)#, send_signal=True, update_hardware=False)
+        if self.center:
+            self.span.update_value(0.5*(self.max.val-self.min.val) + self.min.val)
+        if self.span:
+            self.span.update_value(self.max.val-self.min.val)
         self.updated_range.emit()
         
     def recalc_with_new_step(self,new_step):
-        print "-->recalc_with_new_step"
-        if len(self.array) > 1:
-            old_step = self.array[1]-self.array[0]    
+        #print "-->recalc_with_new_step"
+        if self.num.val > 1:
+            #old_step = self._array[1]-self._array[0]
+            old_step = self.compute_step(self.min.val, self.max.val, self.num.val)
         else:
             old_step = np.nan
-        diff = np.abs(old_step - new_step)
-        print "step diff", diff
-        if diff < 10**(-self.step.spinbox_decimals):
-            print "steps close enough, no more recalc"
+        sdiff = np.abs(old_step - new_step)
+        #print "step diff", sdiff
+        if sdiff < 10**(-self.step.spinbox_decimals):
+            #print "steps close enough, no more recalc"
             return
         else:
+            self._array_valid = False
+            self._array = None
             new_num = int((((self.max.val - self.min.val)/new_step)+1))
-            self.array = np.linspace(self.min.val, self.max.val, new_num)
-            new_step1 = self.array[1]-self.array[0]
-            print "recalc_with_new_step", new_step, new_num, new_step1
+            #self._array = np.linspace(self.min.val, self.max.val, new_num)
+            #new_step1 = self._array[1]-self._array[0]
+            new_step1 = self.compute_step(self.min.val, self.max.val, new_num)
+            
+            #print "recalc_with_new_step", new_step, new_num, new_step1
             #self.step.val = new_step1
             #self.num.val = new_num
             #self.step.update_value(new_step1, send_signal=False)
@@ -458,11 +541,32 @@ class LQRange(QtCore.QObject):
             #print "sending step display Updates"
             #self.step.send_display_updates(force=True)
             self.updated_range.emit()
+            
+    def recalc_with_new_center_span(self,x):
+        C = self.center.val
+        S = self.span.val
+        self.min.updated_value( C - 0.5*S)
+        self.max.updated_value( C + 0.5*S)
 
 class LQCollection(object):
+    """
+    LQCollection is a smart dictionary of LoggedQuantity objects.
+    
+    attribute access such as lqcoll.x1 will return full LoggedQuantity object
+    
+    dictionary-style access lqcoll['x1'] allows direct reading and writing of 
+    the LQ's value, while handling the signals
+    
+    New LQ's can be created with :meth:`New`
+    
+    LQRange objects can be created with :meth:`New_Range` and will be stored
+    in :attr:ranges
+    
+    """
 
     def __init__(self):
         self._logged_quantities = OrderedDict()
+        self.ranges = OrderedDict()
         
     def New(self, name, dtype=float, **kwargs):
         is_array = kwargs.pop('array', False)
@@ -477,6 +581,12 @@ class LQCollection(object):
         self._logged_quantities[name] = lq
         self.__dict__[name] = lq
         return lq
+
+    def get_lq(self, key):
+        return self._logged_quantities[key]
+    
+    def get_val(self, key):
+        return self._logged_quantities[key].val
     
     def as_list(self):
         return self._logged_quantities.values()
@@ -484,12 +594,20 @@ class LQCollection(object):
     def as_dict(self):
         return self._logged_quantities
     
-    """def __getattr__(self, name):
-        return self.logged_quantities[name]
-
+    def items(self):
+        return self._logged_quantities.items()
+    
     def __getitem__(self, key):
-        return self.logged_quantities[key]
+        "Dictionary-like access reads and sets value of LQ's"
+        return self._logged_quantities[key].val
+    
+    def __setitem__(self, key, item):
+        "Dictionary-like access reads and sets value of LQ's"
+        self._logged_quantities[key].update_value(item)
 
+    def __contains__(self, key):
+        return self._logged_quantities.__contains__(key)
+    """
     def __getattribute__(self,name):
         if name in self.logged_quantities.keys():
             return self.logged_quantities[name]
@@ -497,6 +615,19 @@ class LQCollection(object):
             return object.__getattribute__(self, name)
     """
     
+    def New_Range(self, name, **kwargs):
+                        
+        min_lq  = self.New( name + "_min" , **kwargs ) 
+        max_lq  = self.New( name + "_max" , **kwargs ) 
+        step_lq = self.New( name + "_step", **kwargs)
+        num_lq  = self.New( name + "_num", dtype=int, vmin=1)
+        center_lq = self.New(name + "_center", **kwargs)
+        span_lq = self.New( name + "_span", **kwargs)
+    
+        lqrange = LQRange(min_lq, max_lq, step_lq, num_lq, center_lq, span_lq)
+
+        self.ranges[name] = lqrange
+        return lqrange
 
 def print_signals_and_slots(obj):
     for i in xrange(obj.metaObject().methodCount()):

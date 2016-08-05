@@ -11,12 +11,11 @@ from hardware_components.mcl_xyz_stage import MclXYZStage
 
 # Import Measurement Components
 from measurement_components.apd_optimizer_simple import APDOptimizerMeasurement
-from measurement_components.simple_xy_scan import SimpleXYScan
 from measurement_components.picam_readout import PicamReadout
 from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
 from hardware_components.omega_pt_pid_controller import OmegaPtPIDControllerHardware
 from measurement_components.hip_dual_temperature import HiPMicroscopeDualTemperature
-
+from HiP_microscope.hyperspec_picam_mcl import HyperSpecPicam2DScan, HyperSpecPicam3DStack
 
 class HiPMicroscopeApp(BaseMicroscopeApp):
 
@@ -39,7 +38,9 @@ class HiPMicroscopeApp(BaseMicroscopeApp):
         #self.add_measurement_component(APDOptimizerMeasurement(self))
         #self.add_measurement_component(SimpleXYScan(self))
         self.add_measurement_component(PicamReadout(self))
+        self.add_measurement_component(HyperSpecPicam2DScan(self))
         self.add_measurement_component(HiPMicroscopeDualTemperature(self))
+        self.add_measurement_component(HyperSpecPicam3DStack(self))
                 
         #set some default logged quantities
         #self.hardware_components['apd_counter'].debug_mode.update_value(True)

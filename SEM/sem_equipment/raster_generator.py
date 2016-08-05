@@ -86,7 +86,7 @@ class RasterGenerator(object):
         y = np.zeros(pixels)
         buff_out = np.zeros(2*pixels)
         
-        print 'scan x y', xsize, ysize
+        #print 'scan x y', xsize, ysize
         
         xramp = np.linspace(-0.5*xsize, 0.5*xsize, points)
         yramp = np.linspace(-0.5*ysize, 0.5*ysize, lines)

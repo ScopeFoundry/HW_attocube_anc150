@@ -166,7 +166,7 @@ class Adc(NI):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self, rate = 1e4, count = 1000, finite = True):
+    def set_rate(self, rate = 1e4, count = 1000, finite = True, clk_source=""):
         """
         Input buffer
             In continuous mode, count determines per-channel buffer size only if
@@ -185,9 +185,12 @@ class Adc(NI):
         self.stop() #make sure task not running, 
         #  CfgSampClkTiming ( const char source[], float64 rate, int32 activeEdge, 
         #                        int32 sampleMode, uInt64 sampsPerChan );
-        #  default clock source is subsystem acquisition clock
+        #  default clk_source (clock source) is subsystem acquisition clock (OnboardClock)
+        # adc_rate: The sampling rate in samples per second per channel. 
+        #             If you use an external source for the Sample Clock, set this value to the maximum expected rate of that clock.  
+        
         try:                 
-            self.task.CfgSampClkTiming("", adc_rate, mx.DAQmx_Val_Rising, adc_mode, adc_count) 
+            self.task.CfgSampClkTiming(clk_source, adc_rate, mx.DAQmx_Val_Rising, adc_mode, adc_count) 
             adc_rate = mx.float64(0)
             #exact rate depends on hardware timer properties, may be slightly different from requested rate
             self.task.GetSampClkRate(mx.byref(adc_rate));
@@ -294,7 +297,7 @@ class Dac(NI):
             self._chan_count = 0
             self.error(err)
             
-    def set_rate(self, rate = 1e4, count = 1000, finite = True):
+    def set_rate(self, rate = 1e4, count = 1000, finite = True, clk_source=""):
         """
         Output buffer size determined by amount of data written, unless explicitly set by DAQmxCfgOutputBuffer()
         
@@ -324,7 +327,7 @@ class Dac(NI):
             dac_rate = mx.float64(rate)   #override python type
             dac_count = mx.uInt64(int(count))
             self.stop() #make sure task not running, 
-            self.task.CfgSampClkTiming("", dac_rate, mx.DAQmx_Val_Rising, dac_mode, dac_count) 
+            self.task.CfgSampClkTiming(clk_source, dac_rate, mx.DAQmx_Val_Rising, dac_mode, dac_count) 
             dac_rate = mx.float64(0)
             #exact rate depends on hardware timer properties, may be slightly different from requested rate
             self.task.GetSampClkRate(mx.byref(dac_rate));
@@ -396,8 +399,8 @@ class Dac(NI):
         except mx.DAQError as err:
             self.error(err)
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
-        if not( writeCount.value == 1):
-            print "sample count {} transfer count {}".format( 1, writeCount.value )
+        assert writeCount.value == 1, \
+            "sample count {} transfer count {}".format( 1, writeCount.value )
 
 class Counter( NI ):
     '''
@@ -546,10 +549,13 @@ class Sync(object):
     for now scan through output block once, wait for all input data, later
     use callbacks, implement multiple scans
     '''
-    def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, range = 10.0,  out_name = '', in_name = '', terminalConfig='default' ):
+    def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, vin_range = 10.0, 
+                 out_name = '', in_name = '', terminalConfig='default', clock_source = "", trigger_output_term=None ):
+    
+        self.clock_source = clock_source
         # create input and output tasks
         self.dac = Dac( out_chan, out_name)        
-        self.adc = Adc( in_chan, range, in_name, terminalConfig )
+        self.adc = Adc( in_chan, vin_range, in_name, terminalConfig )
         self.ctr_chans=ctr_chans
         self.ctr_terms=ctr_terms
         self.ctr_num=len(self.ctr_chans)
@@ -562,10 +568,20 @@ class Sync(object):
         #sync dac start to adc start
         buffSize = 512
         buff = mx.create_string_buffer( buffSize )
+        
+        if clock_source:
+            self.adc.task.CfgDigEdgeStartTrig(clock_source, mx.DAQmx_Val_Rising)
+        
         self.adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
         trig_name = '/' + buff.value + '/ai/StartTrigger'
+        #print trig_name
         self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
         
+        
+        # Route trigger output signal to trigger_output_term
+        if trigger_output_term:
+            self.adc.task.ExportSignal(mx.DAQmx_Val_SampleClock, trigger_output_term)
+            
     def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
         # Pad = true, acquire one extra input value per channel, strip off
         # first read, so writes/reads align 
@@ -573,12 +589,17 @@ class Sync(object):
             self.delta = np.int(np.rint(rate_in / rate_out))
         else:
             self.delta = 0
-        self.dac.set_rate(rate_out, count_out, finite=is_finite)
-        self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite)
+        self.dac.set_rate(rate_out, count_out, finite=is_finite, clk_source=self.clock_source)
+        print "setup", self.clock_source
+        self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite, clk_source=self.clock_source)
         for i in range(self.ctr_num):
             self.ctr[i].set_rate(rate_in,count_in+self.delta,clock_source='ai/SampleClock',finite=is_finite)
+            
+        if self.clock_source:
+            self.adc.task.CfgDigEdgeStartTrig(self.clock_source, mx.DAQmx_Val_Rising)
+
         
-    def out_data(self, data):
+    def write_output_data_to_buffer(self, data):
         self.dac.load_buffer(data)
     
     def start(self):
@@ -592,6 +613,9 @@ class Sync(object):
         x = self.adc.read_buffer(timeout=timeout)
         return x[self.delta*self.adc.get_chan_count()::]
     
+    def read_adc_buffer_reshaped(self, timeout = 1.0):
+        return self.read_adc_buffer(timeout).reshape(-1, self.adc.get_chan_count()) # Check order
+    
     def read_ctr_buffer(self,i, timeout = 1.0):
         x = self.ctr[i].read_buffer(timeout=timeout)
         return x[self.delta*self.ctr[i].get_chan_count()::]
@@ -603,6 +627,8 @@ class Sync(object):
         return x[self.delta*self.ctr[i].get_chan_count()::]
     
     def stop(self):
+        print self.dac.task
+        print self.adc.task
         self.dac.stop() 
         self.adc.stop()
         for i in range(self.ctr_num):

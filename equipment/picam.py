@@ -101,6 +101,26 @@ class PiCAM(object):
         else:
             raise ValueError("PI write_param ptype not understood: {}".format(repr(ptype)))
 
+    def get_param_readwrite(self, pname):
+        
+        """
+        PICAM_API Picam_GetParameterValueAccess(
+        PicamHandle       camera,
+        PicamParameter    parameter,
+        PicamValueAccess* access );
+        
+        ##
+        PicamValueAccess_ReadOnly         = 1,
+        PicamValueAccess_ReadWriteTrivial = 3,
+        PicamValueAccess_ReadWrite        = 2     
+        """
+        param = picam_ctypes.PicamParameter["PicamParameter_" + pname]       
+        access = ctypes.c_int(0)
+        
+        self._err(PI.Picam_GetParameterValueAccess(self.camera_handle, param.enum, byref(access)))
+        print "get_param_readwrite", pname, access, access.value
+        return picam_ctypes.PicamValueAccess[access.value].split('_')[-1]        
+
     def commit_parameters(self):
 
         failed_param_array = ctypes.POINTER(ctypes.c_int)()
@@ -139,6 +159,9 @@ class PiCAM(object):
         rois.roi_array = ctypes.cast(roi_np_array.ctypes.data, ctypes.POINTER(picam_ctypes.PicamRoi))
         rois.roi_count = len(roi_np_array)
         self._err(PI.Picam_SetParameterRoisValue(self.camera_handle, param.enum, byref(rois)))
+        
+    def write_single_roi(self, x, width, x_binning, y, height, y_binning):
+        return self.write_rois( [ROI_tuple(x, width, x_binning, y, height, y_binning)] )
     
     def acquire(self, readout_count=1, readout_timeout=-1):
         readout_count = picam_ctypes.pi64s(readout_count)

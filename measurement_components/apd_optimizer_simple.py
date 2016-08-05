@@ -8,9 +8,12 @@ class APDOptimizerMeasurement(Measurement):
 
     name = "apd_optimizer"
 
-    ui_filename = os.path.join(os.path.dirname(__file__), "apd_optimizer.ui")
 
-    def setup(self):       
+
+    def setup(self):
+        self.ui_filename = os.path.join(os.path.dirname(__file__), "apd_optimizer.ui")
+        self.load_ui(self.ui_filename)
+            
         self.display_update_period = 0.001 #seconds
 
         # create data array

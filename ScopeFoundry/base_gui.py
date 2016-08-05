@@ -22,12 +22,12 @@ else:
     from qtconsole.rich_jupyter_widget import RichJupyterWidget
     from qtconsole.inprocess import QtInProcessKernelManager
 
-import matplotlib
-matplotlib.rcParams['backend.qt4'] = 'PySide'
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar2
+#import matplotlib
+#matplotlib.rcParams['backend.qt4'] = 'PySide'
+#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar2
 
-from matplotlib.figure import Figure
+#from matplotlib.figure import Figure
 
 from logged_quantity import LoggedQuantity, LQCollection
 
@@ -166,7 +166,7 @@ class BaseMicroscopeApp(BaseApp):
     
     def setup_default_ui(self):
         
-        confirm_on_close(self.ui, title="Close %s?" % self.name, message="Do you wish to shut down %s?" % self.name)
+        confirm_on_close(self.ui, title="Close %s?" % self.name, message="Do you wish to shut down %s?" % self.name, func_on_close=self.on_close)
         
         self.ui.hardware_treeWidget.setColumnWidth(0,175)
         self.ui.measurements_treeWidget.setColumnWidth(0,175)
@@ -190,6 +190,16 @@ class BaseMicroscopeApp(BaseApp):
         if hasattr(self.ui, "settings_load_pushButton"):
             self.ui.settings_load_pushButton.clicked.connect(self.settings_load_dialog)
         
+    def on_close(self):
+        print("on_close")
+        # disconnect all hardware objects
+        for hw in self.hardware.values():
+            print("disconnecting", hw.name)
+            if hw.settings['connected']:
+                try:
+                    hw.disconnect()
+                except Exception as err:
+                    print("tried to disconnect", hw.name, err)
 
     def setup(self):
         """ Override to add Hardware and Measurement Components"""
@@ -315,7 +325,7 @@ class BaseMicroscopeApp(BaseApp):
             if section_name in config.sections():
                 for lqname, new_val in config.items(section_name):
                     try:
-                        lq = hc.settings[lqname]
+                        lq = hc.settings.get_lq(lqname)
                         if lq.dtype == bool:
                             new_val = str2bool(new_val)
                         if not lq.ro:
@@ -323,11 +333,11 @@ class BaseMicroscopeApp(BaseApp):
                     except Exception as err:
                         print "-->Failed to load config for {}/{}, new val {}: {}".format(section_name, lqname, new_val, repr(err))
                         
-        for meas_name, measurement in self.measurement.items():
+        for meas_name, measurement in self.measurements.items():
             section_name = 'measurement/'+meas_name            
             if section_name in config.sections():
                 for lqname, new_val in config.items(section_name):
-                    lq = measurement.logged_quantities[lqname]
+                    lq = measurement.settings.get_lq(lqname)
                     if lq.dtype == bool:
                         new_val = str2bool(new_val)                    
                     if not lq.ro:

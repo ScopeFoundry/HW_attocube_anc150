@@ -1,5 +1,4 @@
 from ScopeFoundry import Measurement
-from PySide import QtGui
 import pyqtgraph as pg
 import numpy as np
 
@@ -15,9 +14,9 @@ class PicamReadout(Measurement):
 
         #local logged quantities
 
-    def _run(self):
+    def run(self):
 
-        picam_hc = self.gui.hardware_components['picam']
+        picam_hc = self.app.hardware.picam
         cam = picam_hc.cam
 
         print "rois|-->", cam.read_rois()
@@ -58,10 +57,9 @@ class PicamReadout(Measurement):
         self.hist_lut.setImageItem(self.img_item)
         self.graph_layout.addItem(self.hist_lut)
 
-        #self.show_ui()
+        self.show_ui()
 
     def update_display(self):
-        import numpy as np
         self.img_item.setImage(self.roi_data[0].T.astype(float), autoLevels=False)
         self.hist_lut.imageChanged(autoLevel=True, autoRange=True)
 
