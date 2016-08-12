@@ -30,13 +30,27 @@ class SEMSlowscanVoutStage(HardwareComponent):
         self.y_position.reread_from_hardware_after_write = False
         self.y_position.spinbox_decimals = 3
         
-#        self.x_chan = self.add_logged_quantity('x_chan', dtype=str, initial='/X')
+        self.chan_addr = self.add_logged_quantity("chan_addr", dtype=str, initial='X-6368/ao0:1')
+        self.v_min = self.settings.New("v_min", dtype=float, initial=-10, unit='V', si=False)
+        self.v_max = self.settings.New("v_max", dtype=float, initial=+10, unit='V', si=False)
 
+        self.x_dir = self.settings.New("x_dir", dtype=int, initial=+1, choices=[("Normal", 1,), ("Reversed", -1)])
+        self.y_dir = self.settings.New("y_dir", dtype=int, initial=+1, choices=[("Normal", 1,), ("Reversed", -1)])
+
+        self.v_min.updated_value.connect(self.on_v_min_max_change)
+        self.v_max.updated_value.connect(self.on_v_min_max_change)
+        self.on_v_min_max_change()
+    
+    def on_v_min_max_change(self):
+        self.x_position.change_min_max(self.v_min.val, self.v_max.val)
+    
     def connect(self):
         if self.debug_mode.val: print "connecting to NI Dac output task"
 
+        self.chan_addr.change_readonly(True)
+
         # Open connection to hardware
-        self.dac = Dac('X-6368/ao0:1','SEM_slowscan_dac_out')
+        self.dac = Dac(self.chan_addr.val,'SEM_slowscan_dac_out')
         self.dac.start()
 
         # connect logged quantities
@@ -46,8 +60,10 @@ class SEMSlowscanVoutStage(HardwareComponent):
     def disconnect(self):
         if self.debug_mode.val: print "disconnecting from NI Dac output"
         
+        self.chan_addr.change_readonly(False)
+
         #disconnect logged quantities from hardware
-        for lq in self.logged_quantities.values():
+        for lq in self.settings.as_list():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
         
@@ -56,14 +72,14 @@ class SEMSlowscanVoutStage(HardwareComponent):
         # clean up hardware object
         del self.dac
 
-    def write_x(self,val):
-        self.dac.set((val,-1*self.y_position.val))
-
-    def write_y(self,val):
-        self.dac.set((self.x_position.val,-1*val))
+    def write_x(self,x):
+        self.write_xy(x, self.y_position.val)
+    
+    def write_y(self,y):
+        self.write_xy(self.x_position.val, y)
         
     def write_xy(self, x, y):
-        self.dac.set((x,-1*y))
+        self.dac.set((self.x_dir.val*x,self.y_dir.val*y))
         #self.x_position.update_value(x, update_hardware=False)
         #self.y_position.update_value(y, update_hardware=False)
         
