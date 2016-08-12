@@ -18,7 +18,6 @@ class AttoCubeXYStage(HardwareComponent):
 
     def setup(self):
         self.name = 'attocube_xy_stage'
-        self.debug = False
         # if attocube pro is activated
         self.pro = False
         
@@ -96,10 +95,10 @@ class AttoCubeXYStage(HardwareComponent):
         # no custom gui yet
         
     def connect(self):
-        if self.debug: print "connecting to attocube_xy_stage"
+        if self.settings['debug_mode']: print "connecting to attocube_xy_stage"
         
         # Open connection to hardware
-        self.ecc100 = AttoCubeECC100(device_num=DEVICE_NUM, debug=self.debug)
+        self.ecc100 = AttoCubeECC100(device_num=DEVICE_NUM, debug=self.settings['debug_mode'])
         
         # Enable Axes
         
@@ -141,7 +140,7 @@ class AttoCubeXYStage(HardwareComponent):
         
 
         #disconnect logged quantities from hardware
-        for lq in self.logged_quantities.values():
+        for lq in self.settings.as_list():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
         
