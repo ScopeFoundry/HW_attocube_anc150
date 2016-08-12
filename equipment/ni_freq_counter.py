@@ -135,7 +135,7 @@ class NI_FreqCounter(object):
             sampsPerChanRead = byref(self._sample_buffer_count),
             reserved = None
             )
-        print 'read_freq_buffer', status, self._sample_buffer_count, np.max(self.sample_buffer)
+        if self.debug: print 'read_freq_buffer', status, self._sample_buffer_count, np.max(self.sample_buffer)
         return self._sample_buffer_count.value, self.sample_buffer
 
     def read_average_freq_in_buffer(self):
