@@ -29,7 +29,12 @@ class DFMicroscopeApp(BaseMicroscopeApp):
         self.add_measurement_component(WinSpecMCL2DSlowScan(self))
         self.add_measurement_component(APDOptimizerMeasurement(self))
 
+
         self.ui.show()
+        self.ui.close()
+        self.ui.show()
+
+        #self.ui._raise()
         self.ui.activateWindow()
         
 if __name__ == '__main__':

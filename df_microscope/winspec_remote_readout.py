@@ -45,7 +45,7 @@ class WinSpecRemoteReadout(Measurement):
             self.hist_lut.setImageItem(self.img_item)
             self.graph_layout.addItem(self.hist_lut)
 
-        self.show_ui()
+        #self.show_ui()
         
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
