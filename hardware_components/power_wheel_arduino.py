@@ -39,12 +39,13 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
 
     def connect(self):
         
-        PowerWheelArduinoPort = 'COM4'
+        PowerWheelArduinoPort = 'COM10'
         
         if self.debug: print "connecting to arduino power wheel"
         
         # Open connection to hardware
         self.power_wheel = PowerWheelArduino(port=PowerWheelArduinoPort, debug=self.debug_mode.val)
+        self.power_wheel.write_speed(100)
         
         # connect logged quantities
         self.encoder_pos.hardware_set_func = \
@@ -92,4 +93,9 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.power_wheel.write_zero_encoder()
         self.encoder_pos.read_from_hardware()
 
+    def move_relative(self, d_steps):
+        self.power_wheel.write_steps_and_wait(d_steps)
+        time.sleep(0.2)
+        #TODO really should wait until done
 
+        self.encoder_pos.read_from_hardware()

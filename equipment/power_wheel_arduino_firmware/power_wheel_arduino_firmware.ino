@@ -1,15 +1,17 @@
 // ND PowerWheel Arduino Firmware
 // Controls Pololu A4988 Stepper Motor Driver
 
-
 #include <AccelStepper.h>
 
-#define STEP 9
-#define DIR 10
+#define STEP 13
+#define DIR A0
 #define RST 8
 #define MS1 5
 #define MS2 6
 #define MS3 7
+
+#define HAND  -1
+
 
 AccelStepper stepper1(1 , STEP, DIR); 
 
@@ -33,7 +35,7 @@ int t0 = 0;
 boolean is_moving_to = false;
 
 
-long speed = 100;
+long speed = 500;
 
 
 
@@ -43,7 +45,7 @@ void setup()
     Serial.begin(57600);             // set up Serial library at 57600 bps
     
     
-    stepper1.setMaxSpeed(1000);
+    stepper1.setMaxSpeed(10000);
     stepper1.setSpeed(speed);
     
     //Serial.println(stepper1.speed());
@@ -114,7 +116,7 @@ void loop()
                     break;
     
                  case 'e': // get encoder position
-                    Serial.println(stepper1.currentPosition());
+                    Serial.println(HAND*stepper1.currentPosition());
                     break;
                     
                  case 'z': // zero encoder
@@ -133,7 +135,7 @@ void loop()
                      //stepper1.setSpeed( float(sign(inputNumber) * abs(speed)));
                      //stepper1.setSpeed( float(abs(speed)) );
                      //Serial.println(  stepper1.speed() );
-                     stepper1.move(inputNumber);
+                     stepper1.move(HAND*inputNumber);
                      //stepper1.setSpeed( float(sign(inputNumber) * abs(stepper1.speed())));              
                      stepper1.setSpeed( float(abs(speed)) ); //Caution: moveTo() also recalculates the speed for the next step. If you are trying to use constant speed movements, you should call setSpeed() after calling moveTo().
 
@@ -144,8 +146,8 @@ void loop()
                  case '?': // query status
                      Serial.print(is_moving_to); Serial.print(",");
                      Serial.print(int(abs(stepper1.speed()))); Serial.print(",");
-                     Serial.print(stepper1.currentPosition()); Serial.print(",");
-                     Serial.print(stepper1.distanceToGo()); Serial.println("");
+                     Serial.print(HAND*stepper1.currentPosition()); Serial.print(",");
+                     Serial.print(HAND*stepper1.distanceToGo()); Serial.println("");
     
                      break;
             }
