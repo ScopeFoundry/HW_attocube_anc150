@@ -314,6 +314,7 @@ class TRPLScanMeasurement(Base2DScan):
     
     def update_display(self):
         
+    
         if self.initial_scan_setup_plotting:
             #update figure
             self.time_trace_plotline.set_xdata(self.time_array)
@@ -334,7 +335,9 @@ class TRPLScanMeasurement(Base2DScan):
         #self.time_trace_plotline.set_ydata(1+self.time_trace_map[j,i-1:])
         
         # integrated map
-        if True:
+        map_type = 'lifetime'
+        
+        if map_type == 'int':
             C = (self.integrated_count_map)
             self.imgplot.set_data(C)         
             try:
@@ -345,7 +348,7 @@ class TRPLScanMeasurement(Base2DScan):
             self.imgplot.set_clim(count_min, count_max + 1)
             
         # lifetime 
-        else:
+        if map_type == 'lifetime':
             x=1-0.36787944117
             #kk_start = 10#kk_bg_max+50/2
             kk_start = self.time_trace_map[0,0,:].argmax()
@@ -358,11 +361,25 @@ class TRPLScanMeasurement(Base2DScan):
             # 
             self.imgplot.set_data(C)
             c0,c1 = np.percentile(C,10), np.percentile(C,90)
-            c0,c1 = 0.3, 1.0
+            c0,c1 = 0.0,0.5
+        
+        
             self.imgplot.set_clim(c0, c1)
             self.imgplot.set_cmap('hot')
             self.aximg.set_title("color range: {} -> {} ns".format(c0,c1))
             #self.imgplot.colorbar()
+            
+        # Gated integrated map
+        if  map_type=='gated':
+            t_start = 3.5
+            kk_start = np.searchsorted(self.time_array, t_start) #np.argmin(np.abs(self.time_array - t_start))
+            C = self.time_trace_map[:,:,kk_start:].sum(axis=2)
+            c0,c1 = np.percentile(C,67), np.percentile(C,99)
+            self.imgplot.set_data(C)
+            self.imgplot.set_clim(c0, c1)
+            self.imgplot.set_cmap('gist_heat')
+            
+            
         self.fig.canvas.draw()
         
         
@@ -450,6 +467,7 @@ class TRPLScan3DMeasurement(Base3DScan):
         return savedict
           
     def update_display(self):
+        return
         #self.initial_scan_setup_plotting =True
         if self.initial_scan_setup_plotting:
 
