@@ -14,6 +14,13 @@ class APDCounterHardwareComponent(HardwareComponent):
     def setup(self):
 
         # Create logged quantities
+        
+        self.input_terminal = self.add_logged_quantity(
+                                name='input_terminal',
+                                initial="/Dev1/PFI0",
+                                dtype=str,
+                                ro=False)
+        
         self.apd_count_rate = self.add_logged_quantity(
                                 name = 'apd_count_rate', 
                                 initial = 0,
@@ -38,14 +45,17 @@ class APDCounterHardwareComponent(HardwareComponent):
             print "APDCounterHardwareComponent: could not connect to custom GUI", err
 
     def connect(self):
-        if self.debug_mode.val: print "Connecting to APD Counter"
+        if self.debug_mode.val: print "Connecting to APD Counter", self.input_terminal.val
         
         # Open connection to hardware
+        self.input_terminal.change_readonly(True)
 
         if not self.dummy_mode.val:
             # Normal APD:  "/Dev1/PFI0"
             # APD on monochromator: "/Dev1/PFI2"
-            self.ni_counter = NI_FreqCounter(debug = self.debug_mode.val, mode='high_freq', input_terminal = "/Dev1/PFI0")
+            self.ni_counter = NI_FreqCounter(debug = self.debug_mode.val, mode='high_freq', 
+                                             #input_terminal = self.input_terminal.val)
+                                             input_terminal = "/Dev1/PFI0")
         else:
             if self.debug_mode.val: print "Connecting to APD Counter (Dummy Mode)"
 
@@ -59,6 +69,8 @@ class APDCounterHardwareComponent(HardwareComponent):
             print "missing gui", err
 
     def disconnect(self):
+        self.input_terminal.change_readonly(False)
+
         #disconnect hardware
         self.ni_counter.close()
         
