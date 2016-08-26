@@ -187,16 +187,22 @@ class SpectrumScan2DMeasurement(Base2DScan):
         self.spec_plotline.set_ydata(self.spectra_data)
         
         self.ax_spec.set_xlim(self.wls[0], self.wls[-1])
+        self.ax_spec.set_ylim(0, np.max(self.spectra_data))
         #self.ax_spec.relim()
         #self.ax_spec.autoscale_view(scalex=False, scaley=True)
         
         C = self.integrated_count_map
+        
         #C = np.argmax(self.spec_map, axis=2)
         #self.imgplot.set_data(np.ma.array(C, mask=C==0))
+        #C = self.spec_map[:,:, 200:300].sum(axis=2)
 
         def wl_i(wl):
             return np.searchsorted(self.wls,wl)
         #C = np.sum(self.spec_map[:,:,wl_i(560):wl_i(800)], axis=2)#/np.sum(self.spec_map[:,:,wl_i(650):wl_i(700)], axis=2)
+        
+        #C = self.wls[np.argmin( np.abs(np.cumsum(self.spec_map, axis=2)/ np.sum(self.spec_map, axis=2).reshape(self.Nv, self.Nh, 1) - 0.5) , axis=2)]
+
         self.imgplot.set_data(C)
         
         try:
@@ -204,6 +210,8 @@ class SpectrumScan2DMeasurement(Base2DScan):
         except Exception:
             count_min = 0
         count_max = np.max(C)
+        #count_min = 470 
+        #count_max = 490
         self.imgplot.set_clim(count_min, count_max )
         #self.imgplot.set_clim(200,300)
         
