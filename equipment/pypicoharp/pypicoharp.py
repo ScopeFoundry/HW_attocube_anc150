@@ -3,9 +3,12 @@ from ctypes import create_string_buffer, c_int, c_double, byref
 import time
 import numpy
 import platform
+import os
 
 if platform.architecture()[0] == '64bit':
-    phlib = ctypes.WinDLL("phlib64.dll")
+    #phlib = ctypes.WinDLL("phlib64.dll")
+    phlib = ctypes.WinDLL(os.path.join(os.path.dirname(__file__), "phlib64.dll"))
+
 else:
     phlib = ctypes.WinDLL("phlib.dll")
 
@@ -247,8 +250,9 @@ class PicoHarp300(object):
 
 if __name__ == '__main__':
     
-    import pylab as pl
-
+    #import pylab as pl
+    import matplotlib.pyplot as plt
+    
     ## HIST mode test
     ph = PicoHarp300(debug=True, mode='HIST')
     ph.setup_experiment()#Range, Offset, Tacq, SyncDivider, CFDZeroCross0, CFDLevel0, CFDZeroCross1, CFDLevel1)
@@ -260,12 +264,12 @@ if __name__ == '__main__':
     ph.stop_histogram()
     ph.read_histogram_data()
     
-    pl.figure(1)
-    pl.plot(ph.histogram_data)
-    pl.show()
+    plt.figure(1)
+    plt.plot(ph.histogram_data)
+    plt.show()
 
     ## T3 mode test
-    ph = PicoHarp300(debug=True, mode='HIST')
+    ph = PicoHarp300(debug=True, mode='T3')
     ph.setup_experiment()
     ph.start_measure(Tacq=1000)
     t0 = time.time()

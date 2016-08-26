@@ -54,9 +54,10 @@ class APDCounterHardwareComponent(HardwareComponent):
             print "APDCounterHardwareComponent: could not connect to custom GUI", err
 
     def connect(self):
-        if self.debug_mode.val: print "Connecting to APD Counter"
+        if self.debug_mode.val: print "Connecting to APD Counter", self.input_terminal.val
         
         # Open connection to hardware
+        self.input_terminal.change_readonly(True)
 
         if not self.dummy_mode.val:
             # Normal APD:  "/Dev1/PFI0"

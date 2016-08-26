@@ -48,13 +48,13 @@ class MonochromatorSweep(Measurement):
         self.ax.set_xlabel("Time (ns)")
         self.ax.set_ylabel("Counts")
         """
-        
         self.graph_layout=pg.GraphicsLayoutWidget(border=(100,100,100))
         self.graph_layout.show()
         self.graph_layout.setWindowTitle("monochromator_sweep")
         
         self.plot = self.graph_layout.addPlot(title="monochromator_sweep")
         self.plot_line = self.plot.plot([1,3,2,4,3,5])
+        self.ui = self.graph_layout 
 
     def update_display(self):
         self.plot_line.setData(self.wavelengths, self.apd_count_rates)

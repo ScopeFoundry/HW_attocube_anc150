@@ -76,7 +76,7 @@ class CrystalTechAOTF(HardwareComponent):
     def connect(self):
 
         #connect to hardware        
-        self.dds = CrystalTechDDS(comm="serial", port="COM2", debug=self.debug)
+        self.dds = CrystalTechDDS(comm="serial", port="COM1", debug=self.debug)
         
         
         # Connect logged quantities to hardware

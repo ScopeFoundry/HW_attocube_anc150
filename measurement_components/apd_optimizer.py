@@ -17,6 +17,9 @@ class APDOptimizerMeasurement(Measurement):
         
                 
         self.display_update_period = 0.1 #seconds
+        
+        # logged quantities
+        self.save_data = self.add_logged_quantity(name='save_data', dtype=bool, initial=False, ro=False)
 
         # create data array
         self.OPTIMIZE_HISTORY_LEN = 500
@@ -33,6 +36,8 @@ class APDOptimizerMeasurement(Measurement):
 
         self.gui.hardware_components['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
 
+        self.save_data.connect_bidir_to_widget(self.ui.save_data_checkBox)
+
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
 
@@ -47,7 +52,7 @@ class APDOptimizerMeasurement(Measurement):
         self.ui.plot_groupBox.layout().addWidget(self.graph_layout)
 
 
-        self.graph_layout.addLabel('Long Vertical Label', angle=-90, rowspan=3)
+        #self.graph_layout.addLabel('Long Vertical Label', angle=-90, rowspan=3)
         
         ## Add 3 plots into the first row (automatic position)
         self.p1 = self.graph_layout.addPlot(title="APD Optimizer")
@@ -60,9 +65,8 @@ class APDOptimizerMeasurement(Measurement):
         self.apd_counter_hc = self.gui.hardware_components['apd_counter']
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
 
-        self.SAVE_DATA = True # TODO convert to LoggedQuantity
 
-        if self.SAVE_DATA:
+        if self.save_data.val:
             self.full_optimize_history = []
             self.full_optimize_history_time = []
             self.t0 = time.time()
@@ -74,7 +78,7 @@ class APDOptimizerMeasurement(Measurement):
             self.apd_count_rate.read_from_hardware()            
             self.optimize_history[self.optimize_ii] = self.apd_count_rate.val    
             
-            if self.SAVE_DATA:
+            if self.save_data.val:
                 self.full_optimize_history.append(self.apd_count_rate.val  )
                 self.full_optimize_history_time.append(time.time() - self.t0)
             # test code
@@ -82,7 +86,7 @@ class APDOptimizerMeasurement(Measurement):
             #self.optimize_history[self.optimize_ii] = random.random()    
         
         #save data afterwards
-        if self.SAVE_DATA:
+        if self.save_data.val:
             #save  data file
             save_dict = {
                      'optimize_history': self.full_optimize_history,

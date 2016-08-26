@@ -18,7 +18,6 @@ class MclXYZStage(HardwareComponent):
     
     def setup(self):
         self.name = 'mcl_xyz_stage'
-        self.debug = True
         
         # Created logged quantities
         lq_params = dict(  dtype=float, ro=True,
@@ -106,10 +105,10 @@ class MclXYZStage(HardwareComponent):
         self.z_position.read_from_hardware()
         
     def connect(self):
-        if self.debug: print "connecting to mcl_xyz_stage"
+        if self.debug_mode.val: print "connecting to mcl_xyz_stage"
         
         # Open connection to hardware
-        self.nanodrive = MCLNanoDrive(debug=self.debug)
+        self.nanodrive = MCLNanoDrive(debug=self.debug_mode.val)
         
         # connect logged quantities
         self.x_target.hardware_set_func  = \

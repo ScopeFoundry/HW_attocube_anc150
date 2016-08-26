@@ -84,17 +84,17 @@ class SingleParticleBlink(Measurement):
             
             # Collect Spectrum
             
-            print "spectrum_after"
+            #print "spectrum_after"
             ## Flip mirror to Spec
-            self.flip_to_spec()
+            #self.flip_to_spec()
             ## Open shutter
-            self.open_shutter()
+            #self.open_shutter()
             ## acquire Spec
-            self.gui.andor_ro_measure.read_single.update_value(True)
-            self.gui.andor_ro_measure._run()
-            self.save_dict['spectrum_after'] = self.gui.andor_ro_measure.spectrum.copy()
+            #self.gui.andor_ro_measure.read_single.update_value(True)
+            #self.gui.andor_ro_measure._run()
+            #self.save_dict['spectrum_after'] = self.gui.andor_ro_measure.spectrum.copy()
             ## Close shutter
-            self.close_shutter()
+            #self.close_shutter()
             
             # Collect lifetime
             #print "lifetime after"
@@ -160,21 +160,12 @@ class SingleParticleBlinkSet(Measurement):
     def _run(self):
 
         self.coords = [
-(41.2425500007 ,58.0088831721, None),
-(44.6808999546 ,56.2227273519, None),
-(48.1639038039 ,56.2673812474, None),
-(50.9324453253 ,55.6868806059, None),
-(51.7362154443 ,52.9183390846, None),
-(54.4601030702 ,52.695069607, None),
-(57.0500290094 ,53.0076468756, None),
-(55.3531809802 ,56.401342934, None),
-(56.8267595319 ,54.9724182778, None),
-(57.630529651 ,46.8900631914, None),
-(44.9934772231 ,45.9969852813, None),
-(43.6985142535 ,43.585674924, None),
-(51.1110609073 ,41.7102113128, None),
-(56.3802205769 ,41.3083262533, None),
-(41.8677045377 ,48.6315651161, None),
+(67.6235296643 ,67.7094017973, None),
+(54.7560513256 ,64.5592722455, None),
+(50.5914732741 ,57.7784849052, None),
+(53.7416028259 ,51.1044816175, None),
+(56.4645961673 ,54.5215713008, None),
+(63.4589516128 ,52.2257141699, None),
         ]
         
 

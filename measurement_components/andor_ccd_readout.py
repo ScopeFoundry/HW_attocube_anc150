@@ -215,7 +215,7 @@ class AndorCCDReadout(Measurement):
     
     def update_display(self):
 
-        self.img_item.setImage(self.buffer_.T, autoLevels=False)
+        self.img_item.setImage(self.buffer_.astype(np.float32).T, autoLevels=False)
         self.hist_lut.imageChanged(autoLevel=True, autoRange=True)
 
         self.spec_plot_line.setData(self.wls, self.spectra_data)
