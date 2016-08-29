@@ -66,12 +66,13 @@ class CrystalTechAOTF(HardwareComponent):
 
 
         #connect GUI
+        """
         self.modulation_enable.connect_bidir_to_widget(self.gui.ui.aotf_mod_enable_checkBox)
         self.freq0.connect_bidir_to_widget(self.gui.ui.atof_freq_doubleSpinBox)
 #        self.ui.aotf_freq_set_lineEdit.returnPressed.connect(self.aotf_freq.update_value)
         self.pwr0.connect_bidir_to_widget(self.gui.ui.aotf_power_doubleSpinBox)
 #        self.ui.aotf_power_doubleSpinBox.valueChanged.connect(self.aotf_power.update_value)
-        
+        """
        
     def connect(self):
 

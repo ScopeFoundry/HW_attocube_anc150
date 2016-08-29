@@ -25,11 +25,13 @@ class ThorlabsOpticalChopperComponent(HardwareComponent): #object-->HardwareComp
     def setup(self):
         self.debug = True
         
-        self.freq = self.add_logged_quantity('chopp_frequency', dtype=int, unit='Hz', ro=False, si=True)        
-        self.freq.connect_bidir_to_widget(self.gui.ui.photocurrent2D_chopp_frequency_doubleSpinBox)
+        self.freq = self.add_logged_quantity('chopp_frequency', dtype=int, unit='Hz', ro=False, si=True)
+        if hasattr(self.gui.ui, 'photocurrent2D_chopp_frequency_doubleSpinBox'):
+            self.freq.connect_bidir_to_widget(self.gui.ui.photocurrent2D_chopp_frequency_doubleSpinBox)
 
         self.spinning = self.add_logged_quantity('spinning', dtype=bool, unit='Hz', ro=False)        
-        self.spinning.connect_bidir_to_widget(self.gui.ui.photocurrent2D_spinning_checkBox)
+        if hasattr(self.gui.ui, 'photocurrent2D_spinning_checkBox'):
+            self.spinning.connect_bidir_to_widget(self.gui.ui.photocurrent2D_spinning_checkBox)
         
         
         

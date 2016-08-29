@@ -33,8 +33,9 @@ class ThorlabsPowerMeter(HardwareComponent):
         self.current_range = self.add_logged_quantity(name = "current_range", dtype=float, unit="A")
         
         # connect GUI
-        self.wavelength.connect_bidir_to_widget(self.gui.ui.power_meter_wl_doubleSpinBox)
-        self.power.connect_bidir_to_widget(self.gui.ui.power_meter_power_label)
+        if hasattr(self.gui.ui, 'power_meter_wl_doubleSpinBox'):
+            self.wavelength.connect_bidir_to_widget(self.gui.ui.power_meter_wl_doubleSpinBox)
+            self.power.connect_bidir_to_widget(self.gui.ui.power_meter_power_label)
         
         #operations
         self.add_operation("run_zero", self.run_zero)

@@ -27,7 +27,7 @@ class ShutterServoHardwareComponent(HardwareComponent):
                                                                         ("Closed", False)])
 
         # connect GUI
-        self.shutter_open.connect_bidir_to_widget(self.gui.ui.shutter_open_checkBox)
+        #self.shutter_open.connect_bidir_to_widget(self.gui.ui.shutter_open_checkBox)
         
         
     def connect(self):
