@@ -59,7 +59,7 @@ class APDOptimizerMeasurement(Measurement):
 
         self.optimize_plot_line = self.p1.plot([1,3,2,4,3,5])
 
-    def _run(self):
+    def run(self):
         self.display_update_period = 0.001 #seconds
 
         self.apd_counter_hc = self.gui.hardware_components['apd_counter']
@@ -109,12 +109,6 @@ class APDOptimizerMeasurement(Measurement):
             
             
         
-        #is this right place to put this?
-        self.measurement_state_changed.emit(False)
-        if not self.interrupt_measurement_called:
-            self.measurement_sucessfully_completed.emit()
-        else:
-            self.measurement_interrupted.emit()
     
 
     def update_display(self):        
@@ -124,6 +118,6 @@ class APDOptimizerMeasurement(Measurement):
         # pyqtgraph
         #self.p1.plot(self.optimize_history)
         self.optimize_plot_line.setData(self.optimize_history)
-        self.gui.app.processEvents()
+        #self.gui.app.processEvents()
 
         
