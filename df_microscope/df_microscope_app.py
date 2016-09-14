@@ -10,6 +10,9 @@ from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
 from winspec_remote_readout import WinSpecRemoteReadout
 from winspec_remote_2Dscan import WinSpecMCL2DSlowScan
 
+from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
+
+#from hardware_components.thorlabs_powermeter import ThorlabsPM100D
 
 class DFMicroscopeApp(BaseMicroscopeApp):
 
@@ -21,7 +24,9 @@ class DFMicroscopeApp(BaseMicroscopeApp):
         #self.add_hardware_component(DummyXYStage(self))
         self.add_hardware_component(MclXYZStage(self))
         self.add_hardware_component(WinSpecRemoteClientHC(self))
+        #self.add_hardware_component(ThorlabsPM100D(self))
 
+        self.add_hardware_component(PowerWheelArduinoComponent(self))
     
         print("Adding Measurement Components")
         self.add_measurement_component(APD_MCL_2DSlowScan(self))

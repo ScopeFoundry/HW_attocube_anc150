@@ -32,7 +32,7 @@ class MCLStage2DSlowScan(BaseCartesian2DSlowScan):
         #self.stage.x_position.update_value(x)
         self.stage.nanodrive.set_pos(x, y, None)
         #self.current_stage_pos_arrow.setPos(x, y)
-        self.stage.settings.x_position.read_from_hardware()
-        self.stage.settings.y_position.read_from_hardware()
+        #self.stage.settings.x_position.read_from_hardware()
+        #self.stage.settings.y_position.read_from_hardware()
     
     

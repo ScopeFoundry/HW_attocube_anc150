@@ -24,6 +24,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         # logged quantity        
         self.encoder_pos = self.add_logged_quantity('encoder_pos', dtype=int, unit='steps', ro=True)
         self.move_steps  = self.add_logged_quantity('move_steps',  dtype=int, unit='steps', vmin=1, vmax=3200, initial=10, ro=False)
+        self.ser_port = self.add_logged_quantity('ser_port', dtype=str, initial='COM1')
 
         #  operations
         self.add_operation("zero_encoder", self.zero_encoder)
@@ -45,7 +46,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         if self.debug: print "connecting to arduino power wheel"
         
         # Open connection to hardware
-        self.power_wheel = PowerWheelArduino(port=PowerWheelArduinoPort, debug=self.debug_mode.val)
+        self.power_wheel = PowerWheelArduino(port=self.ser_port.val, debug=self.debug_mode.val)
         self.power_wheel.write_speed(100)
         
         # connect logged quantities
