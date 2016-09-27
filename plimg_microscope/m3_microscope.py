@@ -11,6 +11,7 @@ from hardware_components.picam import PicamHardware
 from hardware_components.mcl_xyz_stage import MclXYZStage
 from hardware_components.apd_counter import APDCounterHardwareComponent
 from hardware_components.attocube_xy_stage import AttoCubeXYStage
+
 from measurement_components.apd_confocal import APD_MCL_2DSlowScan
 
 
@@ -22,6 +23,10 @@ from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
 from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
 from Auger.sem_slowscan2d import SEMVoutDelaySlowScan
 
+from attocube_interface_measure import AttocubeInterface
+
+from pl_img_linescan import PLImgLineScan
+from hardware_components.picoharp import PicoHarpHardwareComponent
 
 class M3MicroscopeApp(BaseMicroscopeApp):
 
@@ -37,6 +42,7 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         #self.add_hardware_component(DummyXYStage(self))
         self.add_hardware_component(MclXYZStage(self))
         self.add_hardware_component(SEMSlowscanVoutStage(self)) 
+        self.add_hardware_component(PicoHarpHardwareComponent(self))
 
         #self.add_hardware_component(PicamHardware(self))
         #self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
@@ -48,6 +54,9 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         self.add_measurement_component(APD_MCL_2DSlowScan(self))
         
         self.add_measurement_component(SEMVoutDelaySlowScan(self))
+        
+        self.add_measurement_component(AttocubeInterface(self))
+        self.add_measurement_component(PLImgLineScan(self))
         #self.add_measurement_component(SimpleXYScan(self))
         #self.add_measurement_component(PicamReadout(self))
                 
