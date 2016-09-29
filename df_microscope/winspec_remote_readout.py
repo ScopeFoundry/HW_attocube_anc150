@@ -3,6 +3,7 @@ import time
 from ScopeFoundry.helper_funcs import load_qt_ui_file, sibling_path
 import pyqtgraph as pg
 import numpy as np
+from ScopeFoundry import h5_io
 
 class WinSpecRemoteReadout(Measurement):
     
@@ -11,6 +12,7 @@ class WinSpecRemoteReadout(Measurement):
     def setup(self):
         self.SHOW_IMG_PLOT = False
         
+        self.settings.New('save_h5', dtype=bool, initial=True)
         
     
     def setup_figure(self):
@@ -53,6 +55,7 @@ class WinSpecRemoteReadout(Measurement):
     
     def run(self):
         
+        
         winspec_hc = self.app.hardware.WinSpecRemoteClient
         W = winspec_hc.winspec_client
         W.start_acq()
@@ -74,6 +77,18 @@ class WinSpecRemoteReadout(Measurement):
         self.wls = c[0] + c[1]*(px) + c[2]*(px**2) # + c[3]*(px**3) + c[4]*(px**4)
         self.wls = np.polynomial.polynomial.polyval(px, hdr.calib_coeffs) # need to verify
         print(self.wls)
+
+        if self.settings['save_h5']:
+            self.t0 = time.time()
+            self.h5_file = h5_io.h5_base_file(self.app, "%i_%s.h5" % (self.t0, self.name) )
+            self.h5_file.attrs['time_id'] = self.t0
+            H = self.h5_meas_group  =  h5_io.h5_create_measurement_group(self, self.h5_file)
+        
+            #create h5 data arrays
+            H['wls'] = self.wls
+            H['spectrum'] = self.data
+        
+            self.h5_file.close()
 
     def update_display(self):
         
