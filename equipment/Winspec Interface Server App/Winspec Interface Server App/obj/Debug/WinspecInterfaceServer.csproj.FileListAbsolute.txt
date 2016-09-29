@@ -1,0 +1,32 @@
+C:\Dev\WinspecCOMTest\WinspecCOMTest\bin\Debug\WinspecInterfaceServer.exe
+C:\Dev\WinspecCOMTest\WinspecCOMTest\bin\Debug\WinspecInterfaceServer.pdb
+C:\Dev\WinspecCOMTest\WinspecCOMTest\bin\Debug\tcpServer.dll
+C:\Dev\WinspecCOMTest\WinspecCOMTest\bin\Debug\tcpServer.pdb
+C:\Dev\WinspecCOMTest\WinspecCOMTest\bin\Debug\Interop.WINX32Lib.dll
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\ResolveAssemblyReference.cache
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\Interop.WINX32Lib.dll
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\WinspecInterfaceServer.csproj.ResolveComReference.cache
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\WinspecCOMTest.Form1.resources
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\WinspectInterfaceServer.Properties.Resources.resources
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\GenerateResource.read.1.tlog
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\GenerateResource.write.1.tlog
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\WinspecInterfaceServer.exe
+C:\Dev\WinspecCOMTest\WinspecCOMTest\obj\Debug\WinspecInterfaceServer.pdb
+C:\Dev\Winspec Interface Service App\WinspecCOMTest\obj\Debug\Interop.WINX32Lib.dll
+C:\Dev\Winspec Interface Service App\WinspecCOMTest\obj\Debug\WinspecInterfaceServer.csproj.ResolveComReference.cache
+C:\Dev\Winspec Interface Service App\WinspecCOMTest\obj\Debug\WinspecInterfaceServer.exe
+C:\Dev\Winspec Interface Service App\WinspecCOMTest\obj\Debug\WinspecInterfaceServer.pdb
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\bin\Debug\WinspecInterfaceServer.exe
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\bin\Debug\WinspecInterfaceServer.pdb
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\bin\Debug\tcpServer.dll
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\bin\Debug\tcpServer.pdb
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\bin\Debug\Interop.WINX32Lib.dll
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\ResolveAssemblyReference.cache
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\Interop.WINX32Lib.dll
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\WinspecInterfaceServer.csproj.ResolveComReference.cache
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\WinspecCOMTest.Form1.resources
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\WinspectInterfaceServer.Properties.Resources.resources
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\GenerateResource.read.1.tlog
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\GenerateResource.write.1.tlog
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\WinspecInterfaceServer.exe
+C:\Dev\Winspec Interface Server App\Winspec Interface Server App\obj\Debug\WinspecInterfaceServer.pdb

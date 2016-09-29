@@ -65,12 +65,14 @@ class WinSpecRemoteReadout(Measurement):
         hdr, data = W.get_data()
         self.data = np.array(data).reshape(( hdr.frame_count, hdr.ydim, hdr.xdim) )
         
-        px = np.arange(hdr.xdim) +1
+        #px = (np.arange(hdr.xdim) +1) # works with no binning
+        px = np.linspace( 1 + 0.5*(hdr.bin_x-1), 1+ 0.5*((2*hdr.xdim-1)*(hdr.bin_x) + 1)-1, hdr.xdim)
         c = hdr.calib_coeffs
         for i in range(5):
             print(c[i])
         print(px)
         self.wls = c[0] + c[1]*(px) + c[2]*(px**2) # + c[3]*(px**3) + c[4]*(px**4)
+        self.wls = np.polynomial.polynomial.polyval(px, hdr.calib_coeffs) # need to verify
         print(self.wls)
 
     def update_display(self):
