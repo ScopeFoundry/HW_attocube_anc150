@@ -28,6 +28,11 @@ from attocube_interface_measure import AttocubeInterface
 from pl_img_linescan import PLImgLineScan
 from hardware_components.picoharp import PicoHarpHardwareComponent
 
+from hardware_components.ascom_camera_hc import ASCOMCameraHC
+from measurement_components.ascom_camera_capture import ASCOMCameraCapture
+from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
+from df_microscope.winspec_remote_readout import WinSpecRemoteReadout
+
 class M3MicroscopeApp(BaseMicroscopeApp):
 
     name = "M3_Microscope"
@@ -43,6 +48,8 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         self.add_hardware_component(MclXYZStage(self))
         self.add_hardware_component(SEMSlowscanVoutStage(self)) 
         self.add_hardware_component(PicoHarpHardwareComponent(self))
+        self.add_hardware_component(WinSpecRemoteClientHC(self))
+        self.add_hardware_component(ASCOMCameraHC(self))
 
         #self.add_hardware_component(PicamHardware(self))
         #self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
@@ -60,6 +67,9 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         #self.add_measurement_component(SimpleXYScan(self))
         #self.add_measurement_component(PicamReadout(self))
                 
+        self.add_measurement_component(ASCOMCameraCapture(self))
+        self.add_measurement_component(WinSpecRemoteReadout(self))
+
         #set some default logged quantities
         #self.hardware_components['apd_counter'].debug_mode.update_value(True)
         #self.hardware_components['apd_counter'].dummy_mode.update_value(True)
