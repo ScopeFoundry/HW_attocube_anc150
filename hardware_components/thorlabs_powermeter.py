@@ -17,20 +17,22 @@ class ThorlabsPowerMeter(HardwareComponent):
                                                      vmin=0,
                                                      vmax=2000, )
         
-        self.power = self.add_logged_quantity(name = 'power', dtype=float, unit="W", vmin=-1, vmax = 10, ro=True)
-        self.current = self.add_logged_quantity(name = 'current', dtype=float, unit="A", vmin=-1, vmax = 10, ro=True)
+        self.power = self.add_logged_quantity(name = 'power', dtype=float, unit="W", vmin=-1, vmax = 10, ro=True, si=True)
+        self.current = self.add_logged_quantity(name = 'current', dtype=float, unit="A", vmin=-1, vmax = 10, ro=True, si=True)
         
         
-        self.power_range = self.add_logged_quantity(name = 'power_range', dtype=float, unit="W", vmin=0, vmax=1e3)
+        self.power_range = self.add_logged_quantity(name = 'power_range', dtype=float, unit="W", vmin=0, vmax=1e3, si=True)
         
         self.auto_range = self.add_logged_quantity(name = 'auto_range', dtype=bool, ro=False)
         
         self.zero_state = self.add_logged_quantity(name = "zero_state", dtype=bool, ro=True)
-        self.zero_magnitude = self.add_logged_quantity(name = "zero_magnitude", dtype=float, ro=True)
+        self.zero_magnitude = self.add_logged_quantity(name = "zero_magnitude", dtype=float, ro=True, si=True)
         
-        self.photodiode_response = self.add_logged_quantity(name = "photodiode_response", dtype=float, unit="A/W")
+        self.photodiode_response = self.add_logged_quantity(name = "photodiode_response", dtype=float, unit="A/W", si=True)
         
-        self.current_range = self.add_logged_quantity(name = "current_range", dtype=float, unit="A")
+        self.current_range = self.add_logged_quantity(name = "current_range", dtype=float, unit="A", si=True)
+        
+        self.port = self.add_logged_quantity('port', dtype=str, initial='USB0::0x1313::0x8078::P0005750::INSTR')
         
         # connect GUI
         if hasattr(self.gui.ui, 'power_meter_wl_doubleSpinBox'):
@@ -44,7 +46,7 @@ class ThorlabsPowerMeter(HardwareComponent):
         if self.debug_mode.val: print "connecting to", self.name
         
         # Open connection to hardware                        
-        self.power_meter = ThorlabsPM100D(debug=self.debug_mode.val)
+        self.power_meter = ThorlabsPM100D(debug=self.debug_mode.val, port=self.port.val)
         
         #Connect lq
         self.wavelength.hardware_read_func = self.power_meter.get_wavelength
