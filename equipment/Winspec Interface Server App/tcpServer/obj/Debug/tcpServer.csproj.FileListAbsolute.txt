@@ -14,3 +14,11 @@ C:\Dev\Winspec Interface Server App\tcpServer\obj\Debug\GenerateResource.read.1.
 C:\Dev\Winspec Interface Server App\tcpServer\obj\Debug\GenerateResource.write.1.tlog
 C:\Dev\Winspec Interface Server App\tcpServer\obj\Debug\tcpServer.dll
 C:\Dev\Winspec Interface Server App\tcpServer\obj\Debug\tcpServer.pdb
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\bin\Debug\tcpServer.dll
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\bin\Debug\tcpServer.pdb
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\obj\Debug\tcpServer.TcpServer.resources
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\obj\Debug\GenerateResource.read.1.tlog
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\obj\Debug\GenerateResource.write.1.tlog
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\obj\Debug\tcpServer.dll
+C:\Documents and Settings\Administrator\Desktop\Winspec Interface Server App\tcpServer\obj\Debug\tcpServer.pdb

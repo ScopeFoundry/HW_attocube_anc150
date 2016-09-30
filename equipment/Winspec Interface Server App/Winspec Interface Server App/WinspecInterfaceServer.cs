@@ -397,8 +397,8 @@ namespace WinspecInterfaceService
         private bool is_acquiring()
         {
             short p_val;
-            exp.GetParam(EXP_CMD.EXP_RUNNING_EXPERIMENT, out p_val);
-            return p_val == 1;
+            int val = (int)exp.GetParam(EXP_CMD.EXP_RUNNING_EXPERIMENT, out p_val);
+            return val == 1;
         }
 
         //
