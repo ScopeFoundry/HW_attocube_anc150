@@ -64,6 +64,8 @@ class XboxControl_MC(Measurement):
         self.control.rs_lr.connect_bidir_to_widget(self.ui.rs_hdsb)
         self.control.rs_ud.connect_bidir_to_widget(self.ui.rs_vdsb)
         self.control.triggers.connect_bidir_to_widget(self.ui.trig_dsb)
+        self.control.Back.connect_bidir_to_widget(self.ui.back_radio)
+        self.control.Start.connect_bidir_to_widget(self.ui.start_radio)
         
         # Dpad positions
         self.control.N.connect_bidir_to_widget(self.ui.north)
