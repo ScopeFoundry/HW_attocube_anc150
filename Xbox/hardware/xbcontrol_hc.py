@@ -7,8 +7,8 @@ class XboxControl_HC(HardwareComponent):
     name = "xbcontrol_hc"
 
     def setup(self):
-        
-        
+        """Create logged quantities for each HID object including all hats, 
+        sticks and buttons specific to the Xbox controller."""
         self.ls_lr = self.settings.New(name='Axis_0', initial=0,
                                             dtype=float, fmt="%.3f", 
                                             ro=True, vmin=-1.0, vmax=1.0)
@@ -65,27 +65,19 @@ class XboxControl_HC(HardwareComponent):
         self.origin = self.settings.New(name='Origin', initial=0,
                                     dtype=bool, ro=True)
         
+        ## This logged quantity is meant to display the name of the connected controller.
         self.controller_name = self.settings.New(name="Controller_Name", initial="None",
                                     dtype=str, ro=True)
         
     def connect(self):
-        
-
+        """Creates joystick object and connects to controller upon clicking "connect" in ScopeFoundry app."""
         # Reference to equipment level joystick object
         self.joystick = XboxControl_EC().joystick
         XboxControl_EC().connect()
         
-        ## Read hardware does not work, use measurement routine.
-        
-
-    
     def disconnect(self):
+        """Disconnects and removes modules when no longer needed by the application."""
         self.dev.disconnect()
-        
-        
-        # disconnect all LQ's
-        # TODO
-        
         # delete object
         del self.dev
         

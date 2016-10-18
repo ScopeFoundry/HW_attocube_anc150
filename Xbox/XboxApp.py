@@ -5,10 +5,12 @@ from measurement.xbcontrol_mc import XboxControl_MC
 from hardware.xbcontrol_hc import XboxControl_HC
 
 class XboxApp(BaseMicroscopeApp):
-	
+	"""This class loads ScopeFoundry modules into the ScopeFoundry app related to
+	Xbox hardware and measurement modules."""
 	def setup(self):
+		"""Setup function attempts to load desired modules into ScopeFoundry app
+		and activates its respective graphical user interface."""
 		self.xbcontrol_hc = self.add_hardware_component(XboxControl_HC(self))
-
 		self.xbcontrol_mc = self.add_measurement_component(XboxControl_MC(self))
 		self.ui.show()
 		self.ui.activateWindow()

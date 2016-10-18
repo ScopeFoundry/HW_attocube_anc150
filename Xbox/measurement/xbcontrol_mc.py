@@ -8,7 +8,9 @@ from pygame.constants import JOYAXISMOTION, JOYHATMOTION, JOYBUTTONDOWN, JOYBUTT
 from equipment.xbcontrol_ec import XboxControl_EC
 
 class XboxControl_MC(Measurement):
-
+    """This class contains connections to logged quantities and ui elements. 
+    Dicts included under class header are referenced by functions and are used as a kind of 
+    directory to interpret different signals emitted by the Pygame module."""
     name = "xbcontrol_mc"
     direction_map = {
         (0,1): 'N', 
@@ -33,6 +35,10 @@ class XboxControl_MC(Measurement):
         9: 'RP'}
 
     def setup(self):
+        """Update interval and connections to subordinate classes 
+        (hardware and equipment level) are established here.
+        Controller name logged quantity referenced below is meant to
+        tell the user the name of the connected device as a sanity check."""
         self.dt = 0.05
         self.gui
         
@@ -66,6 +72,8 @@ class XboxControl_MC(Measurement):
         self.control.triggers.connect_bidir_to_widget(self.ui.trig_dsb)
         self.control.Back.connect_bidir_to_widget(self.ui.back_radio)
         self.control.Start.connect_bidir_to_widget(self.ui.start_radio)
+        self.control.LP.connect_bidir_to_widget(self.ui.lpress)
+        self.control.RP.connect_bidir_to_widget(self.ui.rpress)
         
         # Dpad positions
         self.control.N.connect_bidir_to_widget(self.ui.north)
@@ -83,6 +91,10 @@ class XboxControl_MC(Measurement):
         self.control.settings['Controller_Name'] = self.joystick.get_name()
 
     def run(self):
+        """This function is run after having clicked "start" in the ScopeFoundry GUI.
+        It essentially runs and listens for Pygame event signals and updates the status
+        of every button in a specific category (such as hats, sticks, or buttons) in
+        intervals of self.dt seconds."""
         print "run"
         while not self.interrupt_measurement_called:  
             time.sleep(self.dt)
