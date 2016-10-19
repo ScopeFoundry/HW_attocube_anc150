@@ -1,3 +1,9 @@
+'''
+Created July 2016
+
+@author: Daniel B. Durham
+'''
+
 from __future__ import division, print_function
 from ScopeFoundry import Measurement
 import pyqtgraph as pg
@@ -136,30 +142,15 @@ class AugerQuadOptimizer(Measurement):
         self.counter_dac_hc.engage_FIFO()
         
         #Stage One: Find optimum at x2 = 0, y2 = 0
-#         xy1 = self.line_sample_walk_2D(xy0, pStep, pExtents, xTol, yTol,
-#                                        self.quad_intensity,
-#                                        maxIter=self.settings['Max_Iterations'])
+
         xy1 = self.octopole_maximization_walk_2D(x0, y0, numSteps, extents, xTol, yTol, 
                                                  maxIter=self.settings['Max_Iterations'],
                                                  dwell=dwell)
         
         #Applying limits in case optimal values are outside the scope of
         #the octopole's movement
-        if xy1[0] > 49:
-            X1 = 49
-            print('Optimal X1 > 49: X1 coerced to 49')
-        elif xy1[0] < -49:
-            X1 = -49
-        else:
-            X1 = xy1[0]
-            
-        if xy1[1] > 49:
-            Y1 = 49
-        elif xy1[1] < -49:
-            Y1 = -49
-        else:
-            Y1 = xy1[1]
-
+        X1 = self.coerce(xy1[0])
+        Y1 = self.coerce(xy1[1])
         print('Optimal X1/Y1:' + str(X1) + ', ' + str(Y1))
 
         #Stage Two: Move x1 and x2 as a pair until maximum is achieved
@@ -172,12 +163,13 @@ class AugerQuadOptimizer(Measurement):
         x2Max = 49
         x1Min = xCouple*x2Min + X1
         x1Max = xCouple*x2Max + X1
-        if x1Min < -49:
-            x1Min = -49
-            x2Min = (x1Min - X1)/xCouple
-        if x1Max > 49:
-            x1Max = 49
-            x2Max = (x1Max - X1)/xCouple
+        
+        x1Min = self.coerce(x1Min)
+        x2Min = (x1Min - X1)/xCouple
+            
+        x1Max = self.coerce(x1Max)
+        x2Max = (x1Max - X1)/xCouple
+        
         xMin = (x1Min, x2Min)
         xMax = (x1Max, x2Max)
         yMin = (Y1, 0)
@@ -191,6 +183,7 @@ class AugerQuadOptimizer(Measurement):
             octoMax= self.find_max_octopole_line(xMin, xMax, yMin, yMax, numSteps, dwell=dwell, consoleMode=False)
         else:
             octoMax = (X1, 0, Y1, 0)
+            
         #Stage Three: Move y1 and y2 as a pair until maximum is achieved
         
         X1 = octoMax[0]
@@ -204,12 +197,13 @@ class AugerQuadOptimizer(Measurement):
         y2Max = 49
         y1Min = yCouple*y2Min + Y1
         y1Max = yCouple*y2Max + Y1
-        if y1Min < -49:
-            y1Min = -49
-            y2Min = (y1Min - Y1)/yCouple
-        if y1Max > 49:
-            y1Max = 49
-            y2Max = (y1Max - Y1)/yCouple
+        
+        y1Min = self.coerce(y1Min)
+        y2Min = (y1Min - Y1)/yCouple
+        
+        y1Max = self.coerce(y1Max)
+        y2Max = (y1Max - Y1)/yCouple
+        
         yMin = (y1Min, y2Min)
         yMax = (y1Max, y2Max)
         xMin = (X1, X2)
@@ -236,6 +230,16 @@ class AugerQuadOptimizer(Measurement):
         
         self.counter_dac_hc.disengage_FIFO()
         
+    def coerce(self, val, vmin=-49, vmax=49):
+        if val < vmin:
+            val = vmin
+            print('Value too small, coerced to ' + str(vmin))
+        elif val > vmax:
+            val = vmax
+            print('Value too large, coerced to ' + str(vmax))
+        
+        return val
+        
     ###################### OCTOPOLE ALIGNMENT FUNCTIONS #########################################    
     
     def octopole_maximization_walk_2D(self, x0, y0, numSteps, extents, xTol, yTol, maxIter = 10, dwell=0.05):
@@ -254,10 +258,8 @@ class AugerQuadOptimizer(Measurement):
                     xMin = x - extents[0]
                     xMax = x + extents[0]
                     #apply limits
-                    if xMax > 49:
-                        xMax = 49
-                    if xMin < -49:
-                        xMin = -49
+                    xMax = self.coerce(xMax)
+                    xMin = self.coerce(xMin)
                     
                     yMin = yMax = y
                     
@@ -272,10 +274,8 @@ class AugerQuadOptimizer(Measurement):
                     yMin = y - extents[0]
                     yMax = y + extents[0]
                     #apply limits
-                    if yMax > 49:
-                        yMax = 49
-                    if yMin < -49:
-                        yMin = -49
+                    yMax = self.coerce(yMax)
+                    yMin = self.coerce(yMin)
                     
                     xMin = xMax = x
                 
@@ -284,18 +284,8 @@ class AugerQuadOptimizer(Measurement):
                 fevs += numSteps
                 
                 #Coerce optimal values to within octopole range of motion
-                octoCoerced = []
-                for ii in (0, 2):
-                    octoCoerced.append(octoMax[ii])
-                    if octoCoerced[-1] > 49:
-                        octoCoerced[-1] = 49
-                        print('Optimal value outside of octopole bounds: coerced to within range')
-                    elif octoCoerced[-1] < -49:
-                        octoCoerced[-1] = -49
-                        print('Optimal value outside of octopole bounds: coerced to within range')
-                
-                x = octoCoerced[0]
-                y = octoCoerced[1]
+                x = self.coerce(octoMax[0])
+                y = self.coerce(octoMax[2])
         
                 if iMax%2 == 1:
                     resX = abs(x - x0)
@@ -413,7 +403,8 @@ class AugerQuadOptimizer(Measurement):
     
 ###################### OLD METHODS FOR 2D VISUALIZATION ######################################    
         
-    def map_quad_intensity(self, pMin, pMax, pStep, fpga):
+    def map_quad_intensity(self, pMin, pMax, pStep, fpga, consoleMode=True):
+        
         #Mapping Method
         quad_vals = np.arange(pMin, pMax, pStep)
         N = len(quad_vals)
@@ -426,6 +417,9 @@ class AugerQuadOptimizer(Measurement):
         print(self.e_analyzer.settings['quad_Y1'])
         self.e_analyzer.settings['quad_Y1'] = quad_vals[0]
         
+        if consoleMode:
+            self.counter_dac_hc.engage_FIFO()
+        
         #Loop over quad positions
         for ii in range(N):
             self.e_analyzer.settings['quad_X1'] = quad_vals[ii]
@@ -434,17 +428,14 @@ class AugerQuadOptimizer(Measurement):
                     break
                 
                 self.e_analyzer.settings['quad_Y1'] = quad_vals[jj]
-                
                 time.sleep(0.015)
+                
+                self.counter_dac_hc.flush_FIFO()
+                time.sleep(0.05)
     
-                remaining, buf = self.fpga.Read_Fifo(numberOfElements=0)
-                read_elements = (remaining - (remaining % 8))
-                remaining, buf = self.fpga.Read_Fifo(numberOfElements=read_elements)
+                buf = self.counter_dac_hc.read_FIFO()
                 
-                print('->', buf.shape, len(buf)/8)
-                print('-->',  buf.reshape(-1,8).shape, buf.reshape(-1,8).mean(axis=0) ) #,  buf.reshape(-1,8))
-                
-                self.chan_spectra[ii, jj, :] = buf.reshape(-1,8).mean(axis=0)
+                self.chan_spectra[ii, jj, :] = buf.mean(axis=0)
                 self.summed_spectra[ii, jj] = np.sum(self.chan_spectra[ii, jj, :])
                 print(self.summed_spectra[ii, jj])
             
@@ -453,144 +444,62 @@ class AugerQuadOptimizer(Measurement):
         #Output the optimum value
         max_ind = np.unravel_index(self.summed_spectra.argmax(), self.summed_spectra.shape)
         return (quad_vals(max_ind[0]), quad_vals(max_ind[1]))
-        #Generate the image (not sure how to update in real time yet)
-        self.graph_layout.setImage(self.summed_spectra)
     
-    def quad_intensity(self, x, y, dwell=0.04):
-        #print((x, y))
-        self.e_analyzer.settings['quad_X1'] = x
-        self.e_analyzer.settings['quad_Y1'] = y
-        time.sleep(0.015)
+        #Generate the image (does not update in real time)
+        self.map_layout = pg.ImageView(title = 'X1 & Y1 Intensity Map')
+        self.map_layout.setImage(self.summed_spectra)
         
-        self.counter_dac_hc.flush_FIFO()
-        time.sleep(dwell)
-    
-        buf_reshaped = self.counter_dac_hc.read_FIFO()
-        
-        out = np.sum(buf_reshaped)
-        
-        #print(out)
-        return out
+        if consoleMode:
+            self.counter_dac_hc.disengage_FIFO()
+
  
 ####### FUNCTIONS TO RUN FROM CONSOLE FOR TESTING OCTOPOLE MOVEMENT SPEED ################ 
     
     def octopole_speed_test(self, consoleMode=True, numIter=20):
+        
+        quad_labels = ['X1', 'X2', 'Y1', 'Y2']
+        
         #Initialize octopole positions at zero
-        self.e_analyzer.settings['quad_X1'] = 0
-        self.e_analyzer.settings['quad_X2'] = 0
-        self.e_analyzer.settings['quad_Y1'] = 0
-        self.e_analyzer.settings['quad_Y2'] = 0
+        for kl in quad_labels:
+            self.e_analyzer.settings['quad_' + kl] = 0
+               
+        time_step = 0.001
+        time_data = time_step*np.arange(1, 20, 1)
         
         if consoleMode:
             self.counter_dac_hc.engage_FIFO()
         
-        time_step = 0.001
-        time_data = time_step*np.arange(1, 20, 1)
+        for ii in range(len(quad_labels)):
+            ql = quad_labels[ii]
+
+            self.plot_horz[ql] = time_data
+            self.plot_data[ql] = np.zeros(len(time_data))
+            err_count = np.zeros(len(time_data))
+            
+            for kl in quad_labels:
+                self.e_analyzer.settings['quad_' + kl] = 0
         
-        #Test X1
-        self.plot_horz_x1 = time_data
-        self.plot_data_x1 = np.zeros(len(time_data))
-        err_count = np.zeros(len(time_data))
-        
-        for jj in range(numIter):
-            
-            #print('Iteration: ' + str(jj))
-            self.e_analyzer.settings['quad_X1'] = -50
-            time.sleep(0.05)
-            self.counter_dac_hc.flush_FIFO()
-            
-            self.e_analyzer.settings['quad_X1'] = 30
-            err_count = 0
-            for ii in range(len(time_data)):
-                time.sleep(time_step)
-                buf_reshaped, read_elements = self.counter_dac_hc.read_FIFO(return_read_elements=True)
-                if read_elements == 0:
-                    err_count[ii] += 1
-                else:
-                    counts = np.sum(np.mean(buf_reshaped[0:7,:],axis=1))
-                    n = (ii + 1)  - err_count[ii]
-                    self.plot_data_x1[ii] = ((n-1)*self.plot_data_x1[ii] + counts)/n
-                print('Read elements: ' + str(read_elements))
-           
-            self.update_display()
-        
-        #Test Y1
-        self.e_analyzer.settings['quad_X1'] = 0
-        time.sleep(0.05)
-        self.e_analyzer.settings['quad_Y1'] = -50
-        time.sleep(0.05)
-              
-        self.plot_horz_y1 = time_data
-        self.plot_data_y1 = np.zeros(len(time_data))
-        
-        for jj in range(numIter):
-            
-            #print('Iteration: ' + str(jj))
-            self.e_analyzer.settings['quad_Y1'] = -50
-            time.sleep(0.05)
-            self.counter_dac_hc.flush_FIFO()
-            
-            self.e_analyzer.settings['quad_Y1'] = 30
-            for ii in range(len(time_data)):
-                time.sleep(time_step)
-                buf_reshaped, read_elements = self.counter_dac_hc.read_FIFO(return_read_elements=True)
-                counts = np.sum(np.mean(buf_reshaped[0:7,:],axis=1))
-                self.plot_data_y1[ii] += counts
-                #print('Read elements: ' + str(read_elements))
-            
-            self.update_display()
-        
-        #Test X2
-        self.e_analyzer.settings['quad_Y1'] = 0
-        time.sleep(0.05)
-        self.e_analyzer.settings['quad_X2'] = -50
-        time.sleep(0.05)
-        
-        self.plot_horz_x2 = time_data
-        self.plot_data_x2 = np.zeros(len(time_data))
-        
-        for jj in range(numIter):
-            
-            #print('Iteration: ' + str(jj))
-            self.e_analyzer.settings['quad_X2'] = -50
-            time.sleep(0.05)
-            self.counter_dac_hc.flush_FIFO()
-            
-            self.e_analyzer.settings['quad_X2'] = 30
-            for ii in range(len(time_data)):
-                time.sleep(time_step)
-                buf_reshaped, read_elements = self.counter_dac_hc.read_FIFO(return_read_elements=True)
-                counts = np.sum(np.mean(buf_reshaped[0:7,:],axis=1))
-                self.plot_data_x2[ii] += counts
-                #print('Read elements: ' + str(read_elements))
-            
-            self.update_display()
-        
-        #Test Y2
-        self.e_analyzer.settings['quad_X2'] = 0
-        time.sleep(0.05)
-        self.e_analyzer.settings['quad_Y2'] = -50
-        time.sleep(0.05)
-        
-        self.plot_horz_y2 = time_data
-        self.plot_data_y2 = np.zeros(len(time_data))
-        
-        for jj in range(numIter):
-            
-            #print('Iteration: ' + str(jj))
-            self.e_analyzer.settings['quad_Y2'] = -50
-            time.sleep(0.05)
-            self.counter_dac_hc.flush_FIFO()
-            
-            self.e_analyzer.settings['quad_Y2'] = 30
-            for ii in range(len(time_data)):
-                time.sleep(time_step)
-                buf_reshaped, read_elements = self.counter_dac_hc.read_FIFO(return_read_elements=True)
-                counts = np.sum(np.mean(buf_reshaped[0:7,:],axis=1))
-                self.plot_data_y2[ii] += counts
-                #print('Read elements: ' + str(read_elements))
-            
-            self.update_display()
+            for jj in range(numIter):
+                
+                #print('Iteration: ' + str(jj))
+                self.e_analyzer.settings['quad_' + ql] = -50
+                time.sleep(0.05)
+                self.counter_dac_hc.flush_FIFO()
+                
+                self.e_analyzer.settings['quad_' + ql] = 30
+                err_count = 0
+                for ii in range(len(time_data)):
+                    time.sleep(time_step)
+                    buf_reshaped, read_elements = self.counter_dac_hc.read_FIFO(return_read_elements=True)
+                    if read_elements == 0:
+                        err_count[ii] += 1
+                    else:
+                        counts = np.sum(np.mean(buf_reshaped[0:7,:],axis=1))
+                        n = (ii + 1)  - err_count[ii]
+                        self.plot_data[ql][ii] = ((n-1)*self.plot_data[ql][ii] + counts)/n
+                    print('Read elements: ' + str(read_elements))
+               
+                self.update_display()
         
         if consoleMode:
             self.counter_dac_hc.disengage_FIFO()

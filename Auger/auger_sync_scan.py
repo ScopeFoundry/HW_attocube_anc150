@@ -30,7 +30,7 @@ class AugerSyncScan(SemSyncRasterScan):
         t0 = time.time()
         #print "before start"
         self.counter_dac_hc.engage_FIFO()
-        time.sleep(0.010)
+        #time.sleep(0.0001)
         self.scanDAQ.sync_analog_io.start()            
         
         #print "after start", time.time() - t0 
@@ -39,8 +39,10 @@ class AugerSyncScan(SemSyncRasterScan):
 
         self.auger_buf_list = []
         
-        wait_time = 50.0/self.scanDAQ.settings['sample_rate']
-        for i in range(self.Npixels/50):
+        READ_BLOCKS = 10 
+        
+        wait_time = READ_BLOCKS*1.0/self.scanDAQ.settings['sample_rate']
+        for i in range(self.Npixels/READ_BLOCKS):
             buf = self.counter_dac_hc.read_FIFO()
             #print "-->", buf.shape
             self.auger_buf_list.append(buf)
@@ -94,5 +96,7 @@ class AugerSyncScan(SemSyncRasterScan):
         self.display_image_map[0,:,:] = filled_auger_buf.reshape(self.settings['Nv'], self.settings['Nh'])
         #self.display_image_map[0,0,0] = 0
         #self.display_image_map[0,:,:] = self.ai_data[:,1].reshape(self.settings['Nv'], self.settings['Nh'])
+        
+        self.counter_dac_hc.disengage_FIFO()
         
         

@@ -11,6 +11,7 @@ except Exception as err:
     
 import time
 import random
+import numpy as np
 
 class SEMDualChanSignal(HardwareComponent):
 
@@ -48,10 +49,9 @@ class SEMDualChanSignal(HardwareComponent):
         # Open connection to hardware
 
         if not self.dummy_mode.val:
-            # Normal APD:  "/Dev1/PFI0"
-            # APD on monochromator: "/Dev1/PFI2"
-            self.adc_InLens = Adc('X-6368/ai1')
-            self.adc_SE2 = Adc('X-6368/ai0')
+            self.adc = Adc('X-6368/ai0:1')
+            #self.adc_InLens = Adc('X-6368/ai1')
+            #self.adc_SE2 = Adc('X-6368/ai0')
         else:
             if self.debug_mode.val: print "Connecting to NI_Dac Adc (Dummy Mode)"
 
@@ -62,8 +62,9 @@ class SEMDualChanSignal(HardwareComponent):
 
     def disconnect(self):
         #disconnect hardware
-        self.adc_InLens.close()
-        self.adc_SE2.close()
+        self.adc.close()
+        #self.adc_InLens.close()
+        #self.adc_SE2.close()
         
         #disconnect logged quantities from hardware
         for lq in self.settings.as_dict().values():
@@ -74,27 +75,23 @@ class SEMDualChanSignal(HardwareComponent):
         del self.adc
         
     def read_inlens_signal(self):        
-        #Sofia: return tuple
-        if not self.dummy_mode.val:
-                x = 0.0
-                for i in range(self.signal_nsamples.val):  
-                    x += self.adc_InLens.get()
-                return x / self.signal_nsamples.val
-        else:
-            time.sleep(self.inLens_signal_nsamples.val * 20e-6)
-            signal = random.random()
-            if self.debug_mode.val: print self.name, "dummy read_count_rate", signal
-            return signal
+        return self.read_signals()[1]
         
     def read_se2_signal(self):        
-        #Sofia: return tuple
+        return self.read_signals()[0]
+    
+    
+    def read_signals(self):
+        t0 = time.time()
         if not self.dummy_mode.val:
-                y = 0.0
-                for i in range(self.signal_nsamples.val):
-                    y += self.adc_SE2.get()
-                return  y /self.signal_nsamples.val
+            X = np.zeros(2, dtype=float)
+            for i in range(self.signal_nsamples.val):          
+                X += self.adc.get()
+            print "read_signals", time.time() - t0, "sec", "nsamples", self.signal_nsamples.val
+            return X / self.signal_nsamples.val
         else:
-            time.sleep(self.signal_nsamples.val * 20e-6)
-            signal = random.random()
+            time.sleep(self.inLens_signal_nsamples.val * 20e-6)
+            signal = np.random.random(2)*100.
             if self.debug_mode.val: print self.name, "dummy read_count_rate", signal
-            return signal
+            return signal            
+

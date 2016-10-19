@@ -55,29 +55,37 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
         #Perform an initial FIFO flush
         self.counter_dac_hc.flush_FIFO()
 
+        self.t0 = time.time()
+        
     def collect_pixel(self, pixel_num, k, j, i):
         # collect data
         # store in arrays
         
+        
+        #inlens = self.app.hardware['sem_dualchan_signal'].settings.inLens_signal.read_from_hardware()
+        #sig = se2 = self.app.hardware['sem_dualchan_signal'].settings.se2_signal.read_from_hardware()
+        se2, inlens = self.app.hardware['sem_dualchan_signal'].read_signals()
+        
         buf_reshaped, read_elements = self.counter_dac_hc.read_FIFO(return_read_elements=True)
         
         #Store the seven analyzer channels in counts/s
-        dwell_time = self.counter_dac_hc.settings['counter_ticks']/40e6
+        dwell_time = self.counter_dac_hc.settings['counter_ticks']/40e6 #assume 40MHz FPGA clock
         spec = (np.mean(buf_reshaped[0:7,:],axis=1))/dwell_time
-        self.spec_map[k,j,i, :] =  spec
-        #Use the sum of the 7 auger channels to visualize the data   
-        sig = np.sum(spec)
-        
+        self.spec_map[k,j,i, :] =  spec        
         
         #Save the data to disk
         if self.settings['save_h5']:
-            self.in_lens_data_h5[k,j, i] = self.app.hardware['sem_dualchan_signal'].settings.inLens_signal.read_from_hardware()            
-            sig = self.se2_data_h5[k,j,i] = self.app.hardware['sem_dualchan_signal'].settings.se2_signal.read_from_hardware()
+            self.in_lens_data_h5[k,j, i] = inlens
+            self.se2_data_h5[k,j,i] = se2
             self.spec_map_h5[k,j,i,:] = spec[0:7]
             self.fpga_num_elements_h5[k,j,i] = read_elements
         
        
-        self.display_image_map[k,j,i] = sig
+        #self.display_image_map[k,j,i] = sig
+
+        t1 = time.time()
+        print "pixel", pixel_num, "time", t1 - self.t0, "sec"
+        self.t0 = t1 
 
     def post_scan_cleanup(self):
         #Flush the FIFO Counter
@@ -164,6 +172,9 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
                
     def update_display(self):
         kk, jj, ii = self.current_scan_index
+        
+        self.display_image_map = np.sum(self.spec_map, axis=3)
+    
         
         #self.display_image_map = self.in_lens_data_h5[kk,:,:]
         BaseCartesian2DSlowScan.update_display(self)

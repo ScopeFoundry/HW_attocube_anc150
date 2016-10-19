@@ -581,6 +581,9 @@ class Sync(object):
         # Route trigger output signal to trigger_output_term
         if trigger_output_term:
             self.adc.task.ExportSignal(mx.DAQmx_Val_SampleClock, trigger_output_term)
+            #self.adc.task.SetDOTristate(trigger_output_term, False)
+            self.adc.task.ExportSignal(mx.DAQmx_Val_SampleClock, "/X-6368/PFI12")
+            #mx.DAQmxConnectTerms(trigger_output_term, "/X-6368/PFI12", mx.DAQmx_Val_DoNotInvertPolarity )
             
     def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
         # Pad = true, acquire one extra input value per channel, strip off
