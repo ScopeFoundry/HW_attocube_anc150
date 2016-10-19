@@ -72,10 +72,10 @@ class WinSpecRemoteReadout(Measurement):
         px = np.linspace( 1 + 0.5*(hdr.bin_x-1), 1+ 0.5*((2*hdr.xdim-1)*(hdr.bin_x) + 1)-1, hdr.xdim)
         c = hdr.calib_coeffs
         for i in range(5):
-            print(c[i])
+            print('coeff', c[i])
         print(px)
         self.wls = c[0] + c[1]*(px) + c[2]*(px**2) # + c[3]*(px**3) + c[4]*(px**4)
-        self.wls = np.polynomial.polynomial.polyval(px, hdr.calib_coeffs) # need to verify
+        #self.wls = np.polynomial.polynomial.polyval(px, hdr.calib_coeffs) # need to verify, seems wrong
         print(self.wls)
 
         if self.settings['save_h5']:
