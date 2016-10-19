@@ -1,6 +1,7 @@
 from ScopeFoundry import Measurement
 import time
 import numpy as np
+from measurement_components.andor_ccd_readout import pixel2wavelength
 
 PM_SAMPLE_NUMBER = 5
 
@@ -25,8 +26,14 @@ class KineticSpectra(Measurement):
         #hardware
         ccd = self.gui.andor_ccd_hc.andor_ccd
         
+
+        
         width_px = ccd.Nx_ro
-        #height_px = ccd.Ny_ro
+        height_px = ccd.Ny_ro
+
+        self.wls  = pixel2wavelength(self.gui.acton_spec_hc.center_wl.val, 
+                      np.arange(width_px), binning=ccd.get_current_hbin())
+
         
         do_bgsub = bool(self.gui.ui.andor_ccd_bgsub_checkBox.checkState())
         if do_bgsub:
@@ -44,6 +51,7 @@ class KineticSpectra(Measurement):
         
         #create data arrays
         self.kinetic_spectra = np.zeros((N, width_px), dtype=float )
+        self.kinetic_images = np.zeros((N, height_px, width_px), dtype=float)
         self.start_times = np.zeros(N, dtype=float)
         self.stop_times  = np.zeros(N, dtype=float)
         self.pm_powers = np.zeros(N, dtype=float)
@@ -116,6 +124,7 @@ class KineticSpectra(Measurement):
 
                     spectrum_data = np.average(buffer_, axis=0)
                     self.kinetic_spectra[ii,:] = spectrum_data
+                    self.kinetic_images[ii,:,:] = buffer_
                     #print buffer_.shape
                     break
                 else:
@@ -129,9 +138,11 @@ class KineticSpectra(Measurement):
                 
         save_dict = {
                  'kinetic_spectra': self.kinetic_spectra,
+                 'kinetic_images': self.kinetic_images,
                  'start_times': self.start_times,
                  't0': t0,
-                 'pm_powers': self.pm_powers
+                 'pm_powers': self.pm_powers,
+                 'wls': self.wls
                     }               
         
         if self.gui.oceanoptics_spec_hc.connected.val:

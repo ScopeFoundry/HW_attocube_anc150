@@ -18,6 +18,8 @@ class data_header(ct.Structure):
         ('calib_coeffs', ct.c_double*5),
         ('frame_count', ct.c_int32),
         ('data_size', ct.c_int32),
+        ('bin_x', ct.c_int32),
+        ('bin_y', ct.c_int32)
         ]
 
 class WinSpecRemoteClient(object):

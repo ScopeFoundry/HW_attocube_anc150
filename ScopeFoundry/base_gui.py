@@ -137,6 +137,7 @@ class BaseApp(QtCore.QObject):
 
 class BaseMicroscopeApp(BaseApp):
     name = "ScopeFoundry"
+    mdi = True
     
     def __del__ ( self ): 
         self.ui = None
@@ -149,9 +150,15 @@ class BaseMicroscopeApp(BaseApp):
         BaseApp.__init__(self, argv)
         
         if not hasattr(self, 'ui_filename'):
-            self.ui_filename = sibling_path(__file__,"base_microscope_app.ui")
+            if self.mdi:
+                self.ui_filename = sibling_path(__file__,"base_microscope_app_mdi.ui")
+            else:
+                self.ui_filename = sibling_path(__file__,"base_microscope_app.ui")
         # Load Qt UI from .ui file
         self.ui = load_qt_ui_file(self.ui_filename)
+        if self.mdi:
+            self.ui.col_splitter.setStretchFactor(0,0)
+            self.ui.col_splitter.setStretchFactor(1,1)
         
         self.hardware = OrderedAttrDict()
         self.measurements = OrderedAttrDict()
@@ -173,8 +180,11 @@ class BaseMicroscopeApp(BaseApp):
 
         # Setup the figures         
         for name, measure in self.measurements.items():
-            print "setting up figures for", name, "measurement", measure.name
+            print "setting up figures for", name, "measurement", measure.name            
             measure.setup_figure()
+            if self.mdi and hasattr(measure, 'ui'):
+                self.ui.mdiArea.addSubWindow(measure.ui)
+                measure.ui.show()            
         
         if hasattr(self.ui, 'console_pushButton'):
             self.ui.console_pushButton.clicked.connect(self.console_widget.show)
@@ -189,6 +199,12 @@ class BaseMicroscopeApp(BaseApp):
             self.ui.settings_save_pushButton.clicked.connect(self.settings_save_dialog)
         if hasattr(self.ui, "settings_load_pushButton"):
             self.ui.settings_load_pushButton.clicked.connect(self.settings_load_dialog)
+        
+        
+    def add_quickbar(self, widget):
+        self.ui.scrollAreaWidgetContents.layout().addWidget(widget)
+        self.quickbar = widget
+        return self.quickbar
         
     def on_close(self):
         print("on_close")
@@ -263,6 +279,7 @@ class BaseMicroscopeApp(BaseApp):
     def add_measurement_component(self, measure):
         assert not measure.name in self.measurements.keys()
         self.measurements.add(measure.name, measure)
+
         return measure
     
     def settings_save_h5(self, fname):

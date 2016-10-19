@@ -10,6 +10,8 @@ class WinSpecRemoteClientHC(HardwareComponent):
         self.settings.New('host', dtype=str, initial='192.168.254.200')
         self.settings.New('port', dtype=int, initial=9000, si=False)
         self.settings.New('acq_time', dtype=float, initial=1.0, unit='s', vmin=0.0,)
+        
+        self.add_operation('reinitialize', self.reinitialize)
     
     def connect(self):
         # connect settings to hardware
@@ -20,6 +22,8 @@ class WinSpecRemoteClientHC(HardwareComponent):
         self.settings.acq_time.hardware_set_func = self.winspec_client.set_acq_time
         self.settings.acq_time.hardware_read_func = self.winspec_client.get_acq_time
         
+    def reinitialize(self):
+        self.winspec_client.reinitialize()
     
     def disconnect(self):
         #disconnect hardware

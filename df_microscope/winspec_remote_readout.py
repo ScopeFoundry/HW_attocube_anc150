@@ -3,6 +3,7 @@ import time
 from ScopeFoundry.helper_funcs import load_qt_ui_file, sibling_path
 import pyqtgraph as pg
 import numpy as np
+from ScopeFoundry import h5_io
 
 class WinSpecRemoteReadout(Measurement):
     
@@ -11,6 +12,7 @@ class WinSpecRemoteReadout(Measurement):
     def setup(self):
         self.SHOW_IMG_PLOT = False
         
+        self.settings.New('save_h5', dtype=bool, initial=True)
         
     
     def setup_figure(self):
@@ -45,13 +47,14 @@ class WinSpecRemoteReadout(Measurement):
             self.hist_lut.setImageItem(self.img_item)
             self.graph_layout.addItem(self.hist_lut)
 
-        self.show_ui()
+        #self.show_ui()
         
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
         self.app.hardware.WinSpecRemoteClient.settings.acq_time.connect_bidir_to_widget(self.ui.acq_time_doubleSpinBox)
     
     def run(self):
+        
         
         winspec_hc = self.app.hardware.WinSpecRemoteClient
         W = winspec_hc.winspec_client
@@ -65,13 +68,27 @@ class WinSpecRemoteReadout(Measurement):
         hdr, data = W.get_data()
         self.data = np.array(data).reshape(( hdr.frame_count, hdr.ydim, hdr.xdim) )
         
-        px = np.arange(hdr.xdim) +1
+        #px = (np.arange(hdr.xdim) +1) # works with no binning
+        px = np.linspace( 1 + 0.5*(hdr.bin_x-1), 1+ 0.5*((2*hdr.xdim-1)*(hdr.bin_x) + 1)-1, hdr.xdim)
         c = hdr.calib_coeffs
         for i in range(5):
-            print(c[i])
+            print('coeff', c[i])
         print(px)
         self.wls = c[0] + c[1]*(px) + c[2]*(px**2) # + c[3]*(px**3) + c[4]*(px**4)
+        #self.wls = np.polynomial.polynomial.polyval(px, hdr.calib_coeffs) # need to verify, seems wrong
         print(self.wls)
+
+        if self.settings['save_h5']:
+            self.t0 = time.time()
+            self.h5_file = h5_io.h5_base_file(self.app, "%i_%s.h5" % (self.t0, self.name) )
+            self.h5_file.attrs['time_id'] = self.t0
+            H = self.h5_meas_group  =  h5_io.h5_create_measurement_group(self, self.h5_file)
+        
+            #create h5 data arrays
+            H['wls'] = self.wls
+            H['spectrum'] = self.data
+        
+            self.h5_file.close()
 
     def update_display(self):
         

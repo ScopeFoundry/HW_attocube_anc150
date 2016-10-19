@@ -1,16 +1,15 @@
 from ScopeFoundry.scanning.base_cartesian_scan import BaseCartesian2DSlowScan
 import numpy as np
+import time
 
-class SEMSlowScan(BaseCartesian2DSlowScan):
+class SEMVoutSlowScan(BaseCartesian2DSlowScan):
     
-    name = "SEMSlowScan"
-    def __init__(self,app):
-        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")
-        
-    def scan_specific_setup(self):
-        #Hardware
+    name = "SEMVoutSlowScan"
+    
+    def __init__(self, app):
+        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")        
         self.stage = self.app.hardware['sem_slowscan_vout_stage']
-        self.singlechan_signal = self.app.hardware['sem_dualchan_signal']
+
 
     def move_position_start(self, x,y):
         self.stage.settings['x_position'] = x
@@ -21,14 +20,32 @@ class SEMSlowScan(BaseCartesian2DSlowScan):
         self.stage.settings['y_position'] = y
         
     def move_position_fast(self, x,y, dx,dy):
-        #self.stage.settings['x_position'] = x
-        #self.stage.settings['y_position'] = y
-        self.stage.dac.set((x,-1*y))
+        self.stage.settings['x_position'] = x
+        self.stage.settings['y_position'] = y
+        #self.stage.dac.set((x,-1*y))
+
+class SEMVoutDelaySlowScan(SEMVoutSlowScan):
+    name = "SEMVoutSlowScan"
+    
+    def scan_specific_setup(self):
+        self.settings.New('pixel_time', dtype=float, initial=0.1, unit='s')
         
+    def collect_pixel(self, pixel_num, k, j, i):
+        time.sleep(self.settings['pixel_time'])
+
+class SEMSlowScan(SEMVoutSlowScan):
+    
+    name = "SEMSlowScan"
+
+    def scan_specific_setup(self):
+        #Hardware
+        self.singlechan_signal = self.app.hardware['sem_dualchan_signal']
+    
     def pre_scan_setup(self):
         #Adding hdf5 datasets
-        H = self.h5_meas_group
-        self.se_data_h5 = H.create_dataset('SE_data', self.scan_shape, dtype=np.float)
+        if self.settings['save_h5']:
+            H = self.h5_meas_group
+            self.se_data_h5 = H.create_dataset('SE_data', self.scan_shape, dtype=np.float)
         
 
         #self.spec_map = np.zeros(self.scan_shape + (1340,), dtype=np.float)

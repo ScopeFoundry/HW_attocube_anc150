@@ -7,6 +7,8 @@ import time
 class MCLStage2DSlowScan(BaseCartesian2DSlowScan):
     
     name = "MCLStage2DSlowScan"
+    def __init__(self, app):
+        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(0,75), v_limits=(0,75), h_unit="um", v_unit="um")        
     
     def setup(self):
         BaseCartesian2DSlowScan.setup(self)
@@ -17,14 +19,20 @@ class MCLStage2DSlowScan(BaseCartesian2DSlowScan):
         #self.stage.y_position.update_value(x)
         #self.stage.y_position.update_value(y)
         self.stage.nanodrive.set_pos_slow(x,y,None)
+        self.stage.settings.x_position.read_from_hardware()
+        self.stage.settings.y_position.read_from_hardware()
     
     def move_position_slow(self, x,y, dx,dy):
         #self.stage.y_position.update_value(y)
         self.stage.nanodrive.set_pos_slow(x,y,None)
-        self.stage.x_position.read_from_hardware()
-        self.stage.y_position.read_from_hardware()
+        self.stage.settings.x_position.read_from_hardware()
+        self.stage.settings.y_position.read_from_hardware()
 
     def move_position_fast(self, x,y, dx,dy):
         #self.stage.x_position.update_value(x)
-        self.stage.nanodrive.set_pos(x, y, None)            
+        self.stage.nanodrive.set_pos(x, y, None)
+        #self.current_stage_pos_arrow.setPos(x, y)
+        #self.stage.settings.x_position.read_from_hardware()
+        #self.stage.settings.y_position.read_from_hardware()
+    
     

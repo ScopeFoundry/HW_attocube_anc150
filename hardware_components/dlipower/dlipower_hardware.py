@@ -12,7 +12,7 @@ class DLI_HardwareComponent(HardwareComponent):
 
     def setup(self):
 
-        self.name = "DLI_HardwareComponent"
+        self.name = "DLI_PowerSwitch"
 
         # Create logged quantities
         self.sockets = []

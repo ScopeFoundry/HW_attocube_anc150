@@ -29,7 +29,8 @@ class FlipMirrorHardwareComponent(HardwareComponent):
         self.POSITION_APD = True
         
         # connect GUI
-        self.flip_mirror_position.connect_bidir_to_widget(self.gui.ui.flip_mirror_checkBox)
+        if hasattr(self.gui.ui, 'flip_mirror_checkBox'):
+            self.flip_mirror_position.connect_bidir_to_widget(self.gui.ui.flip_mirror_checkBox)
         
     def connect(self):
         if self.debug: print "connecting to flip mirror arduino"

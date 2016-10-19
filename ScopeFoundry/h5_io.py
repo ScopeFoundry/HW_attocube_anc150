@@ -48,11 +48,13 @@ other thoughts:
 
 """
 
-def h5_base_file(app, fname):
+def h5_base_file(app, fname=None, measurement=None):
+    t0 = time.time()
+    if fname is None and measurement is not None:
+        fname = "%i_%s.h5" % (t0, measurement.name)
     h5_file = h5py.File(fname)
     root = h5_file['/']
     root.attrs["ScopeFoundry_version"] = 101
-    t0 = time.time()
     root.attrs['time_id'] = t0
 
     h5_save_app_lq(app, root)
@@ -94,8 +96,10 @@ def h5_save_lqcoll_to_attrs(settings, h5group):
             unit_group.attrs[lqname] = lq.unit
 
 
-def h5_create_measurement_group(measurement, h5group):
-    h5_meas_group = h5group.create_group('measurement/' + measurement.name)
+def h5_create_measurement_group(measurement, h5group, group_name=None):
+    if group_name is None:
+        group_name = 'measurement/' + measurement.name
+    h5_meas_group = h5group.create_group(group_name)
     h5_save_measurement_settings(measurement, h5_meas_group)
     return h5_meas_group
 

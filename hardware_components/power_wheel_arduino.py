@@ -24,6 +24,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         # logged quantity        
         self.encoder_pos = self.add_logged_quantity('encoder_pos', dtype=int, unit='steps', ro=True)
         self.move_steps  = self.add_logged_quantity('move_steps',  dtype=int, unit='steps', vmin=1, vmax=3200, initial=10, ro=False)
+        self.ser_port = self.add_logged_quantity('ser_port', dtype=str, initial='COM1')
 
         #  operations
         self.add_operation("zero_encoder", self.zero_encoder)
@@ -32,19 +33,21 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
 
 
         # connect to gui
-        self.move_steps.connect_bidir_to_widget(self.gui.ui.powerwheel_move_steps_doubleSpinBox)
-        self.gui.ui.powerwheel_move_fwd_pushButton.clicked.connect(self.move_fwd)
-        self.gui.ui.powerwheel_move_bkwd_pushButton.clicked.connect(self.move_bkwd)
-        self.encoder_pos.connect_bidir_to_widget(self.gui.ui.power_wheel_encoder_pos_doubleSpinBox)
+        if hasattr(self.gui.ui, 'powerwheel_move_steps_doubleSpinBox'):
+            self.move_steps.connect_bidir_to_widget(self.gui.ui.powerwheel_move_steps_doubleSpinBox)
+            self.gui.ui.powerwheel_move_fwd_pushButton.clicked.connect(self.move_fwd)
+            self.gui.ui.powerwheel_move_bkwd_pushButton.clicked.connect(self.move_bkwd)
+            self.encoder_pos.connect_bidir_to_widget(self.gui.ui.power_wheel_encoder_pos_doubleSpinBox)
 
     def connect(self):
         
-        PowerWheelArduinoPort = 'COM4'
+        PowerWheelArduinoPort = 'COM10'
         
         if self.debug: print "connecting to arduino power wheel"
         
         # Open connection to hardware
-        self.power_wheel = PowerWheelArduino(port=PowerWheelArduinoPort, debug=self.debug_mode.val)
+        self.power_wheel = PowerWheelArduino(port=self.ser_port.val, debug=self.debug_mode.val)
+        self.power_wheel.write_speed(100)
         
         # connect logged quantities
         self.encoder_pos.hardware_set_func = \
@@ -92,4 +95,9 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         self.power_wheel.write_zero_encoder()
         self.encoder_pos.read_from_hardware()
 
+    def move_relative(self, d_steps):
+        self.power_wheel.write_steps_and_wait(d_steps)
+        time.sleep(0.2)
+        #TODO really should wait until done
 
+        self.encoder_pos.read_from_hardware()

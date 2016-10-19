@@ -94,6 +94,15 @@ class AttoCubeECC100(object):
 
 
 
+    def read_enable_axis(self, axis):
+        cenable = c_int32()
+        handle_err(ecc.ECC_controlOutput(self.devhandle,
+                                 axis, #axis
+                                 byref(cenable), #Bln32 * enable,
+                                 0, # read
+                                 ))
+        return cenable.value
+        
     def enable_axis(self, axis, enable=True):
         cenable = c_int32(int(enable))
         handle_err(ecc.ECC_controlOutput(self.devhandle,
@@ -101,6 +110,15 @@ class AttoCubeECC100(object):
                                  byref(cenable), #Bln32 * enable,
                                  1, # set
                                  ))
+        
+    def read_enable_closedloop_axis(self, axis):
+        cenable = c_int32()
+        handle_err(ecc.ECC_controlMove(self.devhandle,
+                                 axis, #axis
+                                 byref(cenable), #Bln32 * enable,
+                                 0, # read
+                                 ))
+        return cenable.value
         
     def enable_closedloop_axis(self, axis, enable=True):
         cenable = c_int32(int(enable))
@@ -185,6 +203,8 @@ class AttoCubeECC100(object):
                             byref(tpos), # Int32* target
                             0, #Bln32 set
                             ))
+        if self.debug: print 'ecc100 read_target_position_axis', axis, tpos.value
+
         return tpos.value
 
     def read_frequency(self, axis):

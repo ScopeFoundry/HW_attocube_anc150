@@ -6,7 +6,7 @@ class ASCOMCamera(object):
     
     def __init__(self, com_name="ASCOM.Atik2.Camera"):
         
-        if com_name is None:
+        if com_name is None or com_name == 'chooser':
             chooser = win32com.client.Dispatch("ASCOM.Utilities.Chooser")
             chooser.DeviceType = "Camera"
             com_name = chooser.Choose(None)
@@ -35,8 +35,8 @@ class ASCOMCamera(object):
         
 if __name__ == "__main__":
     
-    ac = ASCOMCamera("ASCOM.Simulator.Camera")
-    
+    #ac = ASCOMCamera("ASCOM.Simulator.Camera")
+    ac = ASCOMCamera('chooser')
     #print "Gain:", ac.cam.Gain, list(ac.cam.Gains)
     
     #print "Readout", ac.cam.ReadoutMode, list(ac.cam.ReadoutModes)

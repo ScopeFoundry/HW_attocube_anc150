@@ -47,6 +47,7 @@ class HyperSpecPicam2DScan(BaseCartesian2DSlowScan):
 
     def post_scan_cleanup(self):
         #H['spec_map'] = self.h_array
+        
         print(self.name, "post_scan_cleanup")
         import scipy.io
         scipy.io.savemat(file_name="%i_%s.mat" % (self.t0, self.name), mdict=dict(spec_map=self.spec_map))
@@ -84,7 +85,8 @@ class HyperSpecPicam3DStack(Measurement):
             
             print(self.name, kk, z)
                         
-            self.stage.settings['z_position'] = z
+            self.stage.settings['z_target'] = z
+            time.sleep(1.)
             
             self.scan2d.start()
             while self.scan2d.is_measuring():

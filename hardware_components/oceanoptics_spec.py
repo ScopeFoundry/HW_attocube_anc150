@@ -34,8 +34,8 @@ class OceanOpticsSpectrometerHC(HardwareComponent):
 
         #connect GUI
        #self.oo_spec_int_time.connect_
-       
-        self.oo_spec_int_time.connect_bidir_to_widget(
+        if hasattr(self.gui.ui, 'oo_spec_int_time_doubleSpinBox'):
+            self.oo_spec_int_time.connect_bidir_to_widget(
                                   self.gui.ui.oo_spec_int_time_doubleSpinBox)
 
     def connect(self):

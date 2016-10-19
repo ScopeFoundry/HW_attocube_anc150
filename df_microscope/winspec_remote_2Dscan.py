@@ -15,14 +15,12 @@ class WinSpecMCL2DSlowScan(MCLStage2DSlowScan):
 
     
     def pre_scan_setup(self):
-        self.winspec_client = self.winspec_hc.winspec_client       
-
+        self.winspec_client = self.winspec_hc.winspec_client
+        
     def collect_pixel(self, pixel_num, k, j, i):
         # collect data
         # store in arrays        
-        
         winspec_readout = self.app.measurements.WinSpecRemoteReadout
-        
         winspec_readout.run()
         
         if pixel_num == 0:
@@ -40,11 +38,12 @@ class WinSpecMCL2DSlowScan(MCLStage2DSlowScan):
 
 
     def post_scan_cleanup(self):
-        #H['spec_map'] = self.h_array
-        #print(self.name, "post_scan_cleanup")
-        #import scipy.io
-        #scipy.io.savemat(file_name="%i_%s.mat" % (self.t0, self.name), mdict=dict(spec_map=self.spec_map))
-        pass
+        winspec_readout = self.app.measurements.WinSpecRemoteReadout
+        
+        self.wavelength = winspec_readout.wls
+        self.wavelength_h5 = self.h5_meas_group.create_dataset('wavelength', self.wavelength.shape, dtype=np.float)
+        self.wavelength_h5[:] = self.wavelength[:]
+        
     
     def update_display(self):
         MCLStage2DSlowScan.update_display(self)

@@ -45,11 +45,13 @@ class APDOptimizerMeasurement(Measurement):
     def _run(self):
         self.apd_counter_hc = self.gui.hardware_components['apd_counter']
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
-
+        self.ni_counter = self.apd_counter_hc.ni_counter
         # data arrays
         self.full_optimize_history = []
         self.full_optimize_history_time = []
         self.t0 = time.time()
+
+        #self.ni_counter.start()
 
         while not self.interrupt_measurement_called:
             self.optimize_ii += 1
@@ -58,11 +60,20 @@ class APDOptimizerMeasurement(Measurement):
             progress_pct = (100. * self.optimize_ii/self.OPTIMIZE_HISTORY_LEN)
             self.set_progress(progress_pct)
 
-            self.apd_count_rate.read_from_hardware()            
+            self.apd_count_rate.read_from_hardware()
             self.optimize_history[self.optimize_ii] = self.apd_count_rate.val
+            #time.sleep(self.apd_counter_hc.int_time.val)
+            #count_rate = self.ni_counter.read_average_freq_in_buffer()
+            #self.optimize_history[self.optimize_ii] = count_rate
             
             self.full_optimize_history.append(self.apd_count_rate.val  )
             self.full_optimize_history_time.append(time.time() - self.t0)
+
+    def pre_run(self):
+        return
+    
+    def post_run(self):
+        self.ni_counter.stop()
 
     def update_display(self):
         ii = self.optimize_ii

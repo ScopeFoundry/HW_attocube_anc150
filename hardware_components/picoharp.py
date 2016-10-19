@@ -35,7 +35,7 @@ class PicoHarpHardwareComponent(HardwareComponent):
 
         self.add_logged_quantity("stop_on_overflow", dtype=bool)
         
-        self.histogram_channels = self.add_logged_quantity("histogram_channels", dtype=int, ro=False, vmin=0, vmax=2**16, si=False)
+        self.histogram_channels = self.add_logged_quantity("histogram_channels", dtype=int, ro=False, vmin=0, vmax=2**16, initial=2**16, si=False)
 
     def connect(self):
         if self.debug: print "Connecting to PicoHarp"

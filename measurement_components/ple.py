@@ -12,6 +12,7 @@ from PySide import QtCore
 from scipy import interpolate
 
 from ScopeFoundry import Measurement 
+from equipment import power_wheel_arduino
 
 
 
@@ -59,11 +60,14 @@ class PLEPointMeasurement(Measurement):
         # Optional amount of time to wait between measurement steps to let sample relax to
         # ground state from one excitation energy to the next.  This only works if a shutter
         # is installed.  Set to 0 to disable.  Value is in seconds.
-        WAIT_TIME_BETWEEN_STEPS = 0.01       
-        SHUTTER_ENABLE          = True
-        COLLECT_INIT_SPEC       = False
-        MOVE_OBJECTIVE          = False
-        SAVE_STAGE_POS          = False       
+        WAIT_TIME_BETWEEN_STEPS  = 0.01       
+        SHUTTER_ENABLE           = True
+        COLLECT_INIT_SPEC        = False
+        MOVE_OBJECTIVE           = False
+        SAVE_STAGE_POS           = False
+        SET_POWER_WHEEL_POS      = False
+        SET_POWER_METER_WL       = True
+        REVERSE_SWEEP_DIR        = False
         
         # check the type of detector selected in GUI
         use_ccd = self.gui.ui.ple_point_scan_detector_comboBox.currentText() == "Andor CCD"
@@ -115,6 +119,9 @@ class PLEPointMeasurement(Measurement):
                           self.gui.ui.aotf_freq_stop_doubleSpinBox.value(),
                           self.gui.ui.aotf_freq_step_doubleSpinBox.value())
         
+        if REVERSE_SWEEP_DIR:
+            freqs1 = freqs1[::-1]
+        
         # Sweep the frequencies up and down or just up?
         if UP_AND_DOWN_SWEEP:            
             freqs2 = freqs1[::-1]
@@ -144,6 +151,26 @@ class PLEPointMeasurement(Measurement):
             # Assuming that we are starting at 90 MHz!
             self.z_positions = nanodrive.get_pos_ax(z_axis_id) + np.interp(freqs, dz_objective_func[0], dz_objective_func[1])
             print self.z_positions
+        
+        if SET_POWER_WHEEL_POS:
+            power_wheel_arduino = self.gui.power_wheel_arduino_hc.power_wheel
+            power_wheel_arduino_hc = self.gui.power_wheel_arduino_hc
+            
+            try:
+                power_wheel_positions = np.transpose(
+                    np.loadtxt('./measurement_components/ple_config_files/power_wheel_positions.txt'))
+            except():
+                print 'Failed to load power wheel position configuration file'
+                return
+                                                    
+            if np.min(self.freqs) < np.min(power_wheel_positions[0]):
+                print "Frequency scan range outside of powerwheel position calibration file frequency range (min).  Exitting."
+                return
+            if np.max(self.freqs) > np.max(power_wheel_positions[0]):
+                print "Frequency scan range outside of powerwheel position calibration file frequency range (max).  Exitting."
+                return
+            
+            self.power_wheel_positions = np.zeros(freqs.shape, dtype=int)
             
         if use_ccd:
             self.ccd_specs = np.zeros( (len(freqs), ccd.Nx_ro), dtype=int)
@@ -257,10 +284,30 @@ class PLEPointMeasurement(Measurement):
                 
                 # Set the wavelength correction for the power meter.  Try 10 times before 
                 # finally failing.
-                #power_meter.wavelength.update_value(wl)
+                if SET_POWER_METER_WL:
+                    try_count = 0
+                    while True:
+                        try:
+                            power_meter.wavelength.update_value(wl)
+                            break
+                        except:
+                            try_count = try_count+1
+                            if try_count > 9:
+                                break
+                            time.sleep(0.01)
                 
-                # Sleep for 10 ms to let power meter finish processing
-                #time.sleep(0.010)
+                
+                # Adjust the powerwheel if needed
+                if SET_POWER_WHEEL_POS:
+                    new_pos = int(np.interp(freq, power_wheel_positions[0], power_wheel_positions[1]))
+                    curr_pos = power_wheel_arduino_hc.encoder_pos.read_from_hardware()
+                    d_pos = new_pos - curr_pos 
+                    # negative values to move_fwd causes it to move backwards.
+                    print freq, new_pos, curr_pos, d_pos
+                    power_wheel_arduino_hc.move_relative(d_pos)
+                    time.sleep(0.2)
+                    
+                    self.power_wheel_positions[ii] = new_pos
                 
                 # Sample the power at least one time from the power meter.
                 samp_count = 0
@@ -288,7 +335,7 @@ class PLEPointMeasurement(Measurement):
                 
                 if MOVE_OBJECTIVE:
                     #nanodrive_hc.z_position.update_value(self.z_positions[ii])
-                    nanodrive.set_pos_ax(self.z_positions[ii], z_axis_id)
+                    nanodrive.set_pos_ax_slow(self.z_positions[ii], z_axis_id)
                     #print 'step stage %f' % self.z_positions[ii] 
                 
                 # Open the shutter
@@ -375,6 +422,9 @@ class PLEPointMeasurement(Measurement):
             if SAVE_STAGE_POS:
                 save_dict.update({'stage_x_pos':nanodrive_hc.x_position.val,
                                   'stage_y_pos':nanodrive_hc.y_position.val})
+            
+            if SET_POWER_WHEEL_POS:
+                save_dict.update({'power_wheel_positions': self.power_wheel_positions})
             
             for lqname,lq in self.gui.logged_quantities.items():
                 save_dict[lqname] = lq.val
@@ -475,7 +525,7 @@ class PLE2DScanMeasurement(Measurement):
     def _run(self):
         
         MASK_2D_WITH_APD_MAP = True
-        MASK_INT_THRESHOLD = 2.5e3
+        MASK_INT_THRESHOLD = 1.0e3
         
         #hardware 
         self.nanodrive = self.gui.mcl_xyz_stage_hc.nanodrive
@@ -519,26 +569,36 @@ class PLE2DScanMeasurement(Measurement):
             apd_extent = self.gui.apd_scan_measure.range_extent
             # 2D interpolation function is confusing.  Must have everything as x-y,
             apd_map_interp_func = interpolate.interp2d(apd_h_array, apd_v_array, apd_map)
-
+            
+            # Quick check to count how many points to acquire
+            num_points = 0
+            for i_v in range(self.Nv):
+                for i_h in range(self.Nh):
+                    v_pos = self.v_array[i_v]
+                    h_pos = self.h_array[i_h]
+                    
+                    if (apd_map_interp_func(h_pos, v_pos) >= MASK_INT_THRESHOLD):
+                        num_points = num_points + 1
+            print ('Scan will acquire %d points' % num_points)
+                        
         print "scanning PLE 2D"
         try:
             v_axis_id = self.nanodrive_hc.v_axis_id
             h_axis_id = self.nanodrive_hc.h_axis_id
             
-            
-            
             start_pos = [None, None,None]
             start_pos[v_axis_id-1] = self.v_array[0]
             start_pos[h_axis_id-1] = self.h_array[0]
             
+
             self.nanodrive.set_pos_slow(*start_pos)
-            
             # Scan!            
             line_time0 = time.time()
-            
+
             for i_v in range(self.Nv):
+
                 self.v_pos = self.v_array[i_v]
-                self.nanodrive.set_pos_ax(self.v_pos, v_axis_id)
+                self.nanodrive.set_pos_ax_slow(self.v_pos, v_axis_id)
                 #self.read_stage_position()       
                 if i_v % 2: #odd lines
                     h_line_indicies = range(self.Nh)[::-1]
@@ -549,10 +609,8 @@ class PLE2DScanMeasurement(Measurement):
                     if self.interrupt_measurement_called:
                         break
     
-                    print i_h, i_v
-    
                     self.h_pos = self.h_array[i_h]
-                    self.nanodrive.set_pos_ax(self.h_pos, h_axis_id)    
+                    self.nanodrive.set_pos_ax_slow(self.h_pos, h_axis_id)    
                     
                     # Determine whether or not to collect data at this poision
                     if MASK_2D_WITH_APD_MAP:
@@ -573,7 +631,6 @@ class PLE2DScanMeasurement(Measurement):
                             collect_data = False 
                     else:
                         collect_data = True
-                    
                     if collect_data:
                         ple_point_measure = self.gui.ple_point_measure
                         ple_point_measure.start()

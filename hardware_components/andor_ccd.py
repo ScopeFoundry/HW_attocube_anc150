@@ -110,16 +110,17 @@ class AndorCCDHardwareComponent(HardwareComponent):
         self.add_operation("set_readout", self.set_readout)
         self.add_operation("read_temp", self.read_temp_op)
         
-        #connect to custom gui - NOTE:  these are not disconnected! 
-        self.exposure_time.connect_bidir_to_widget(self.gui.ui.andor_ccd_int_time_doubleSpinBox) 
-        #self.gui.ui.andor_ccd_int_time_doubleSpinBox.valueChanged[float].connect(self.exposure_time.update_value)
-        self.exposure_time.updated_value[float].connect(self.gui.ui.andor_ccd_int_time_doubleSpinBox.setValue)
-        self.temperature.updated_value[float].connect(self.gui.ui.andor_ccd_temp_doubleSpinBox.setValue)
-        self.gui.ui.andor_ccd_emgain_doubleSpinBox.valueChanged[float].connect(self.em_gain.update_value)
-        self.em_gain.updated_value[float].connect(self.gui.ui.andor_ccd_emgain_doubleSpinBox.setValue)
-        self.gui.ui.andor_ccd_shutter_open_checkBox.stateChanged[int].connect(self.shutter_open.update_value)
-        self.shutter_open.updated_value[bool].connect(self.gui.ui.andor_ccd_shutter_open_checkBox.setChecked)
-        self.status.updated_text_value[str].connect(self.gui.ui.andor_ccd_status_label.setText)
+        #connect to custom gui - NOTE:  these are not disconnected!
+        if hasattr(self.gui.ui, 'andor_ccd_int_time_doubleSpinBox'):
+            self.exposure_time.connect_bidir_to_widget(self.gui.ui.andor_ccd_int_time_doubleSpinBox) 
+            #self.gui.ui.andor_ccd_int_time_doubleSpinBox.valueChanged[float].connect(self.exposure_time.update_value)
+            self.exposure_time.updated_value[float].connect(self.gui.ui.andor_ccd_int_time_doubleSpinBox.setValue)
+            self.temperature.updated_value[float].connect(self.gui.ui.andor_ccd_temp_doubleSpinBox.setValue)
+            self.gui.ui.andor_ccd_emgain_doubleSpinBox.valueChanged[float].connect(self.em_gain.update_value)
+            self.em_gain.updated_value[float].connect(self.gui.ui.andor_ccd_emgain_doubleSpinBox.setValue)
+            self.gui.ui.andor_ccd_shutter_open_checkBox.stateChanged[int].connect(self.shutter_open.update_value)
+            self.shutter_open.updated_value[bool].connect(self.gui.ui.andor_ccd_shutter_open_checkBox.setChecked)
+            self.status.updated_text_value[str].connect(self.gui.ui.andor_ccd_status_label.setText)
         
     def connect(self):
         if self.debug: print "Connecting to Andor EMCCD Counter"

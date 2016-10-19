@@ -181,6 +181,8 @@ class APDConfocalScanMeasurement(Base2DScan):
 
         #scan specific setup
         
+        #stop APD optimizer measurement
+        self.gui.apd_optimizer_measure.interrupt()
         
         # create data arrays
         self.count_rate_map = np.zeros((self.Nv, self.Nh), dtype=float)
@@ -299,8 +301,8 @@ class APDConfocalScan3DMeasurement(Base3DScan):
         
         # create data arrays
         self.count_rate_map = np.zeros((self.Nz, self.Ny, self.Nx), dtype=float)
-        self.count_rate_map_h5 = self.h5_meas_group.create_dataset('count_rate_map', 
-                                shape=(self.Nz, self.Ny, self.Nx), dtype=float, compression='gzip', shuffle=True)
+        #self.count_rate_map_h5 = self.h5_meas_group.create_dataset('count_rate_map', 
+        #                        shape=(self.Nz, self.Ny, self.Nx), dtype=float, compression='gzip', shuffle=True)
 
         #update figure
     
@@ -310,7 +312,7 @@ class APDConfocalScan3DMeasurement(Base3DScan):
                           
         # store in arrays
         self.count_rate_map[k,j,i] = self.apd_count_rate.val
-        self.count_rate_map_h5[k,j,i] = self.apd_count_rate.val
+        #self.count_rate_map_h5[k,j,i] = self.apd_count_rate.val
         
     
     def scan_specific_savedict(self):
