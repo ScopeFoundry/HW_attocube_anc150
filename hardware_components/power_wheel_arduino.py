@@ -40,9 +40,7 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
             self.encoder_pos.connect_bidir_to_widget(self.gui.ui.power_wheel_encoder_pos_doubleSpinBox)
 
     def connect(self):
-        
-        PowerWheelArduinoPort = 'COM10'
-        
+                
         if self.debug: print "connecting to arduino power wheel"
         
         # Open connection to hardware
