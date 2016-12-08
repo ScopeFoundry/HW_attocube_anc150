@@ -14,7 +14,7 @@ try:
     from equipment.NI_Daq import Sync
     from equipment.NI_CallBack import SyncCallBack
 except Exception as err:
-    print "could not load modules needed for AttoCubeECC100:", err
+    print "could not load modules needed for SemSyncRasterDAQ:", err
 
 import numpy as np
 
