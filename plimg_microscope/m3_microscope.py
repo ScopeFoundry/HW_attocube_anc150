@@ -33,6 +33,11 @@ from measurement_components.ascom_camera_capture import ASCOMCameraCapture
 from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
 from df_microscope.winspec_remote_readout import WinSpecRemoteReadout
 
+from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
+from df_microscope.power_scan_df import PowerScanDF
+from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
+from measurement_components.powermeter_optimizer_new import PowerMeterOptimizerMeasurement
+
 class M3MicroscopeApp(BaseMicroscopeApp):
 
     name = "M3_Microscope"
@@ -50,6 +55,9 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         self.add_hardware_component(PicoHarpHardwareComponent(self))
         self.add_hardware_component(WinSpecRemoteClientHC(self))
         self.add_hardware_component(ASCOMCameraHC(self))
+        
+        self.add_hardware_component(PowerWheelArduinoComponent(self))
+        self.add_hardware_component(ThorlabsPowerMeter(self))
 
         #self.add_hardware_component(PicamHardware(self))
         #self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
@@ -70,6 +78,8 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         self.add_measurement_component(ASCOMCameraCapture(self))
         self.add_measurement_component(WinSpecRemoteReadout(self))
 
+        self.add_measurement_component(PowerScanDF(self))
+        self.add_measurement_component(PowerMeterOptimizerMeasurement(self))
         #set some default logged quantities
         #self.hardware_components['apd_counter'].debug_mode.update_value(True)
         #self.hardware_components['apd_counter'].dummy_mode.update_value(True)

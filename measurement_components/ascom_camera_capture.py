@@ -1,6 +1,12 @@
 from ScopeFoundry import Measurement
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
 import pyqtgraph as pg
+import scipy.misc 
+import time
+#from libtiff import TIFF
+#import tifffile as tiff
+import PIL.Image
+import numpy as np
 
 class ASCOMCameraCapture(Measurement):
     
@@ -46,6 +52,12 @@ class ASCOMCameraCapture(Measurement):
             self.img = cam_hc.acq_single_exposure()
             
             if not self.settings['continuous']:
+                # save image
+                t0 = time.time()
+                print self.img.dtype
+                scipy.misc.imsave("%i_%s.png" % (t0, self.name), self.img)
+                im = PIL.Image.fromarray(self.img.T)
+                im.save("%i_%s.tif" % (t0, self.name))
                 break # end the while loop for non-continuous scans
             else:
                 pass

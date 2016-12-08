@@ -68,6 +68,8 @@ class ThorlabsPowerMeter(HardwareComponent):
         self.photodiode_response.hardware_read_func = self.power_meter.get_photodiode_response
 
         self.current_range.hardware_read_func = self.power_meter.get_current_range
+        
+        self.read_from_hardware()
 
     def disconnect(self):
         #disconnect logged quantities from hardware
