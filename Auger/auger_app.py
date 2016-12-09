@@ -6,6 +6,10 @@ from auger_point_spectrum import AugerPointSpectrum
 from analyzer_quad_optimizer import AugerQuadOptimizer
 from sem_slowscan2d import SEMSlowScan
 from auger_slow_map import AugerSlowMap
+
+from Auger.hardware.ion_gun import PhiIonGunHardwareComponent
+from Auger.measurement.ion_gun import IonGunStatus
+
 #from SEM.measurements.sem_raster_singlescan import SemRasterSingleScan
 #from SEM.hardware.sem_raster_scanner import SemRasterScanner
 from Auger.sem_sync_raster_hardware import SemSyncRasterDAQ
@@ -41,6 +45,8 @@ class AugerMicroscopeApp(BaseMicroscopeApp):
         #self.add_hardware_component(SemRasterScanner(self))       
         self.add_hardware_component(SemSyncRasterDAQ(self))
         
+
+        
         #self.add_measurement_component(SemRasterScan(self))
         self.add_measurement_component(AugerAnalyzerChannelHistory(self))
         self.add_measurement_component(AugerPointSpectrum(self))
@@ -51,6 +57,11 @@ class AugerMicroscopeApp(BaseMicroscopeApp):
         self.add_measurement_component(AugerSlowMap(self))
         self.add_measurement_component(SemSyncRasterScan(self))
         self.add_measurement_component(AugerSyncScan(self))
+
+
+        self.phi_ion_gun = self.add_hardware_component(PhiIonGunHardwareComponent(self))
+        self.ion_gun_status = self.add_measurement_component(IonGunStatus(self))
+
 
         self.settings_load_ini('auger_fast_scan_settings.ini')
 

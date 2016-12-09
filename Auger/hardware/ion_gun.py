@@ -157,7 +157,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.add_operation('timer start', self.timed_state)
         # operations
         self.add_operation('zero state command', self.zero_state_command)
-        self.add_operation('zero state gun on', self.zero_state_command_gunon)
+        #self.add_operation('zero state gun on', self.zero_state_command_gunon)
 
     def on_beam_voltage_target_updated(self):
         """Once the beam voltage is altered by the user, this signal triggers objective and 
