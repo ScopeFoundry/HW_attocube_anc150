@@ -17,19 +17,20 @@ class PowerScanDF(Measurement):
     def setup(self):
         
         self.power_wheel_min = self.add_logged_quantity("power_wheel_min", 
-                                                          dtype=int, unit='', initial=10, vmin=0, vmax=+3200, ro=False)
+                                                          dtype=int, unit='', initial=0, vmin=-3200, vmax=+3200, ro=False)
         self.power_wheel_max = self.add_logged_quantity("power_wheel_max", 
-                                                          dtype=int, unit='', initial=10, vmin=0, vmax=+3200, ro=False)
+                                                          dtype=int, unit='', initial=1000, vmin=-3200, vmax=+3200, ro=False)
         self.power_wheel_ndatapoints = self.add_logged_quantity("power_wheel_ndatapoints", 
-                                                          dtype=int, unit='', initial=100, vmin=-3200, vmax=+3200, ro=False)
-        
-        self.collect_apd      = self.add_logged_quantity("collect_apd",      dtype=bool, initial=True)
-        self.collect_spectrum = self.add_logged_quantity("collect_spectrum", dtype=bool, initial=False)
-        #self.collect_lifetime = self.add_logged_quantity("collect_lifetime", dtype=bool, initial=True)
+                                                          dtype=int, unit='', initial=100, vmin=1, vmax=3200, ro=False)
         
         self.up_and_down_sweep    = self.add_logged_quantity("up_and_down_sweep",dtype=bool, initial=True)
 
-        
+        self.collect_apd      = self.add_logged_quantity("collect_apd",      dtype=bool, initial=True)
+        self.collect_spectrum = self.add_logged_quantity("collect_spectrum", dtype=bool, initial=False)
+        #self.collect_lifetime = self.add_logged_quantity("collect_lifetime", dtype=bool, initial=True)
+        self.collect_ascom_img = self.add_logged_quantity('collect_ascom_img', dtype=bool, initial=False)
+    
+    
     
     def setup_figure(self):
         
@@ -40,17 +41,36 @@ class PowerScanDF(Measurement):
         self.power_wheel_max.connect_bidir_to_widget(self.ui.powerwheel_max_doubleSpinBox)
         self.power_wheel_ndatapoints.connect_bidir_to_widget(self.ui.num_datapoints_doubleSpinBox)
 
+        self.up_and_down_sweep.connect_bidir_to_widget(self.ui.updown_sweep_checkBox)
+
         self.collect_apd.connect_bidir_to_widget(self.ui.collect_apd_checkBox)
         self.collect_spectrum.connect_bidir_to_widget(self.ui.collect_spectrum_checkBox)
+        self.collect_ascom_img.connect_bidir_to_widget(self.ui.collect_ascom_img_checkBox)
         
-        self.app.hardware.apd_counter.settings.int_time.connect_bidir_to_widget(
-                                                                self.ui.apd_int_time_doubleSpinBox)
-        self.app.hardware.WinSpecRemoteClient.settings.acq_time.connect_bidir_to_widget(
-                                                                self.ui.spectrum_int_time_doubleSpinBox)
+        
+        # Hardware connections
+        if 'apd_counter' in self.app.hardware.keys():
+            self.app.hardware.apd_counter.settings.int_time.connect_bidir_to_widget(
+                                                                    self.ui.apd_int_time_doubleSpinBox)
+        else:
+            self.collect_apd.update_value(False)
+            self.collect_apd.change_readonly(True)
+        
+        if 'WinSpecRemoteClient' in self.app.hardware.keys():
+            self.app.hardware.WinSpecRemoteClient.settings.acq_time.connect_bidir_to_widget(
+                                                                    self.ui.spectrum_int_time_doubleSpinBox)
+        else:
+            self.collect_spectrum.update_value(False)
+            self.collect_spectrum.change_readonly(True)
 
-
+        if 'ascom_camera' in self.app.hardware.keys():
+            self.app.hardware.ascom_camera.settings.exp_time.connect_bidir_to_widget(
+                self.ui.ascom_img_int_time_doubleSpinBox)
+        else:
+            self.collect_ascom_img.update_value(False)
+            self.collect_ascom_img.change_readonly(True)
+            
         # Plot
-        
         if hasattr(self, 'graph_layout'):
             self.graph_layout.deleteLater() # see http://stackoverflow.com/questions/9899409/pyside-removing-a-widget-from-a-layout
             del self.graph_layout
@@ -62,14 +82,26 @@ class PowerScanDF(Measurement):
         self.plot_line1 = self.plot1.plot([0])
 
     def update_display(self):
+        ii = self.ii
+        #X = self.pm_powers[:self.ii]
+        X = self.power_wheel_position[:ii]
         
-        if self.settings['collect_spectrum']:
-            self.plot_line1.setData(self.pm_powers[:self.ii], self.integrated_spectra[:self.ii])
-        
+        if self.settings['collect_apd']:
+            self.plot_line1.setData(X, self.apd_count_rates[:ii])
+        elif self.settings['collect_spectrum']:
+            self.plot_line1.setData(X, self.integrated_spectra[:ii])
+            self.winspec_readout.update_display()
+        elif self.settings['collect_ascom_img']:
+            self.plot_line1.setData(X, self.ascom_img_integrated[:ii])
+            self.ascom_camera_capture.update_display()
+        else: # no detectors set, show pm_powers
+            self.plot_line1.setData(X, self.pm_powers[:ii])
 
 
     def run(self):
-        
+        # hardware and delegate measurements
+        self.power_wheel_hc = self.app.hardware.power_wheel_arduino
+        self.power_wheel = self.power_wheel_hc.power_wheel
         
         if self.settings['collect_apd']:
             self.apd_counter_hc = self.app.hardware.apd_counter
@@ -78,14 +110,20 @@ class PowerScanDF(Measurement):
         if self.settings['collect_spectrum']:
             self.winspec_readout = self.app.measurements.WinSpecRemoteReadout
         
+        if self.settings['collect_ascom_img']:
+            self.ascom_camera_capture = self.app.measurements.ascom_camera_capture
+            self.ascom_camera_capture.settings['continuous'] = False
+            
+        
         #####
         self.Np = Np = self.power_wheel_ndatapoints.val
         self.step_size = int( (self.power_wheel_max.val-self.power_wheel_min.val)/Np )
         
     
         if self.settings['up_and_down_sweep']:
-            self.direction = np.ones(Np*2)
-            self.direction[Np:] = -1
+            self.direction = np.ones(Np*2) # step up
+            self.direction[Np] = 0 # don't step at the top!
+            self.direction[Np+1:] = -1 # step down
             Np = self.Np = 2*Np
         else:
             self.direction = np.ones(Np)
@@ -101,6 +139,10 @@ class PowerScanDF(Measurement):
         if self.settings['collect_spectrum']:
             self.spectra = [] # don't know size of ccd until after measurement
             self.integrated_spectra = []
+        if self.settings['collect_ascom_img']:
+            self.ascom_img_stack = []
+            self.ascom_img_integrated = []
+            
         
         ### Acquire data
         
@@ -117,29 +159,36 @@ class PowerScanDF(Measurement):
                 break
             
             # record power wheel position
-            self.power_wheel_position[ii] = self.power_wheel.read_encoder()
+            self.power_wheel_position[ii] = self.power_wheel_hc.encoder_pos.read_from_hardware()
             
             # collect power meter value
             self.pm_powers[ii]=self.collect_pm_power_data()
             
             # read detectors
             if self.settings['collect_apd']:
-                self.apd_count_rates[ii] = self.collect_apd_data()                
+                self.apd_count_rates[ii] = \
+                    self.apd_counter_hc.apd_count_rate.read_from_hardware()
             if self.settings['collect_spectrum']:
                 self.winspec_readout.run()
                 spec = np.array(self.winspec_readout.data)
                 self.spectra.append( spec )
                 self.integrated_spectra.append(spec.sum())
+            if self.settings['collect_ascom_img']:
+                self.ascom_camera_capture.run()
+                img = self.ascom_camera_capture.img.copy()
+                self.ascom_img_stack.append(img)
+                self.ascom_img_integrated.append(img.astype(float).sum())
+                
                 
             # collect power meter value after measurement
             self.pm_powers_after[ii]=self.collect_pm_power_data()
 
-                            
             # move to new power wheel position
             self.power_wheel.write_steps_and_wait(self.step_size*self.direction[ii])
-            time.sleep(2.0)
+            time.sleep(0.5)
+            self.power_wheel_hc.encoder_pos.read_from_hardware()
 
-        # write data to data file disk
+        # write data to h5 file on disk
         
         self.t0 = time.time()
         self.fname = "%i_%s.h5" % (self.t0, self.name)
@@ -155,6 +204,10 @@ class PowerScanDF(Measurement):
             H['wls'] = self.winspec_readout.wls
             H['spectra'] = np.squeeze(np.array(self.spectra))
             H['integrated_spectra'] = np.array(self.integrated_spectra)
+        if self.settings['collect_ascom_img']:
+            H['ascom_img_stack'] = np.array(self.ascom_img_stack)
+            H['ascom_img_integrated'] = np.array(self.ascom_img_integrated)
+            
         H['pm_powers'] = self.pm_powers
         H['pm_powers_after'] = self.pm_powers_after
         H['power_wheel_position'] = self.power_wheel_position
@@ -163,29 +216,16 @@ class PowerScanDF(Measurement):
         
         print self.name, 'data saved', self.fname
 
-            
-            
 
     def move_to_min_pos(self):
-        self.power_wheel = self.app.hardware.power_wheel_arduino.power_wheel
         self.power_wheel.read_status()
         
-        stiep= self.power_wheel_min.val - self.power_wheel.encoder_pos
-        if stiep != 0:
+        delta_steps = self.power_wheel_min.val - self.power_wheel_hc.encoder_pos.read_from_hardware()
+        if delta_steps != 0:
             #print 'moving to min pos'
-            self.power_wheel.write_steps_and_wait(stiep)
+            self.power_wheel.write_steps_and_wait(delta_steps)
             #print 'done moving to min pos'
-            
-    def collect_apd_data(self):
-        apd = self.apd_counter_hc
-        
-        # collect data
-        apd.apd_count_rate.read_from_hardware()
-                                      
-        # read data
-        count_rate = apd.apd_count_rate.val
-        
-        return count_rate
+
     
     def collect_pm_power_data(self):
         PM_SAMPLE_NUMBER = 10
