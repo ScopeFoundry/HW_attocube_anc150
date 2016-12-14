@@ -20,9 +20,9 @@ class SEMVoutSlowScan(BaseCartesian2DSlowScan):
         self.stage.settings['y_position'] = y
         
     def move_position_fast(self, x,y, dx,dy):
-        self.stage.settings['x_position'] = x
-        self.stage.settings['y_position'] = y
-        #self.stage.dac.set((x,-1*y))
+        #self.stage.settings['x_position'] = x
+        #self.stage.settings['y_position'] = y
+        self.stage.dac.set((x,-1*y))
 
 class SEMVoutDelaySlowScan(SEMVoutSlowScan):
     name = "SEMVoutSlowScan"
@@ -39,7 +39,7 @@ class SEMSlowScan(SEMVoutSlowScan):
 
     def scan_specific_setup(self):
         #Hardware
-        self.singlechan_signal = self.app.hardware['sem_dualchan_signal']
+        self.sem_dualchan_signal = self.app.hardware['sem_dualchan_signal']
     
     def pre_scan_setup(self):
         #Adding hdf5 datasets
@@ -62,7 +62,7 @@ class SEMSlowScan(SEMVoutSlowScan):
         
         #self.spec_map_h5[k,j,i,:] = spec
         
-        sig = self.singlechan_signal.settings.sem_signal.read_from_hardware()
+        sig = self.app.hardware['sem_dualchan_signal'].settings.inLens_signal.read_from_hardware()
         
         self.display_image_map[k,j,i] = sig
         if self.settings['save_h5']:

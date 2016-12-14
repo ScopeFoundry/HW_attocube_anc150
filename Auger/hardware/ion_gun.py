@@ -43,7 +43,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         
         self.emission_current_target = self.add_logged_quantity(
                                     name = 'emission_current_target',
-                                    initial = 0, dtype=float, fmt="%.3f",
+                                    initial = 10, dtype=float, fmt="%.3f",
                                     ro=False, unit="mA", vmin=0, vmax=30)
         self.emission_current_readout = self.add_logged_quantity(
                                     name = 'emission_current_readout',
@@ -52,7 +52,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
 
         self.beam_voltage_target = self.add_logged_quantity(
                                     name='beam_voltage_target',
-                                    initial=0, dtype=float, fmt="%.0f",
+                                    initial=1000, dtype=float, fmt="%.0f",
                                     ro=False, unit="V", vmin=0, vmax=5000)
         self.beam_voltage_target.spinbox_decimals = 0
         self.beam_voltage_readout = self.add_logged_quantity(
@@ -72,7 +72,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         
         self.condenser_percentage_target = self.add_logged_quantity(
                                         name = 'condenser_percentage_target',
-                                        initial=0, dtype=float, fmt="%.1f",
+                                        initial=60, dtype=float, fmt="%.1f",
                                         ro=False, unit="%", vmin=0, vmax=110)
         self.condenser_percentage_readout = self.add_logged_quantity(
                                         name = 'condenser_percentage_readout',
@@ -90,7 +90,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         
         self.objective_percentage_target = self.add_logged_quantity(
                                         name = 'objective_percentage_target',
-                                        initial=0, dtype=float, fmt="%.1f",
+                                        initial=80, dtype=float, fmt="%.1f",
                                         ro=False, unit="%", vmin=0, vmax=110) 
         self.objective_percentage_readout = self.add_logged_quantity(
                                         name = 'objective_percentage_readout',
@@ -113,7 +113,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
 
         self.grid_target = self.add_logged_quantity(
                                         name = 'grid_target',
-                                        initial=0, dtype=float, fmt="%.3f", 
+                                        initial=180, dtype=float, fmt="%.3f", 
                                         ro=False, unit="V", vmin=120, vmax=200)
         
         self.extractor_readout = self.add_logged_quantity(name = 'extractor_pressure',
@@ -121,11 +121,11 @@ class PhiIonGunHardwareComponent(HardwareComponent):
                                         ro=True, unit="mPa", vmin=0, vmax=50)
 
         self.xsize_target = self.add_logged_quantity(name='xsize_target',
-                                        initial = 0, dtype=float, fmt="%.3f",
+                                        initial = 2, dtype=float, fmt="%.3f",
                                         ro=False, unit="mm", vmin=-10, vmax=10)
         
         self.ysize_target = self.add_logged_quantity(name='ysize_target',
-                                        initial=0, dtype=float, fmt="%.3f",
+                                        initial=1.1, dtype=float, fmt="%.3f",
                                         ro=False, unit='mm', vmin=-10, vmax=10)
         
         self.xoff_target = self.add_logged_quantity(name='xoff_target',
@@ -138,7 +138,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
 
         self.dummy_mode = self.add_logged_quantity(name='dummy mode', dtype=bool, initial=False, ro=False)
 
-        self.timer = self.add_logged_quantity(name='timer', dtype=float, fmt="%.2f",
+        self.timer = self.add_logged_quantity(name='timer', dtype=float, fmt="%.2f", initial=30,
                                         ro=False, unit='s', vmin=0, vmax=3600) 
                                         #set to an hour.. not sure what users want in terms of maximum times.
 
@@ -262,7 +262,7 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         # Open connection to Hardware
 
         if not self.dummy_mode.val:
-            self.phiiongun = PhiIonGun(port="COM7", address=3, debug=self.debug_mode.val)
+            self.phiiongun = PhiIonGun(debug=self.debug_mode.val)
         else:
             if self.debug_mode.val: print "Connecting to Phi Ion Gun (Dummy Mode)"
 
