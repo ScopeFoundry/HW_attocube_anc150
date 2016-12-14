@@ -74,7 +74,21 @@ class MCLNanoDrive(object):
         self.debug = debug
         
         self.MCL_ERROR_CODES = MCL_ERROR_CODES
+        
+        ver = c_short()
+        rev = c_short()
+        madlib.MCL_DLLVersion(byref(ver), byref(rev))
+        if self.debug:
+            print "MCL_DLLVersion", ver.value, rev.value
+            print "madlib.MCL_CorrectDriverVersion():", madlib.MCL_CorrectDriverVersion()
+        if not madlib.MCL_CorrectDriverVersion():
+            print "MCL_CorrectDriverVersion is False"
+        
         handle = self._handle = madlib.MCL_InitHandle()
+        assert handle > 0
+
+        dev_attached = madlib.MCL_DeviceAttached(2000, handle)
+        print("dev_attached", dev_attached)
 
         if self.debug: print "handle:", hex(handle)
 
@@ -85,6 +99,9 @@ class MCLNanoDrive(object):
         madlib.MCL_GetProductInfo(byref(self.prodinfo), handle)
         
         if self.debug: self.prodinfo.print_info()
+        
+        self.device_serial_number = madlib.MCL_GetSerialNumber(handle)
+        if self.debug: print "MCL_GetSerialNumber", self.device_serial_number
         
         self.cal_X = None
         self.cal_Y = None
@@ -110,7 +127,7 @@ class MCLNanoDrive(object):
             if debug: print "cal_%s: %g" % (axname, cal)
         
         self.set_max_speed(100)  # default speed for slow movement is 100 microns/second
-        self.get_pos()
+        #self.get_pos()
 
     def set_max_speed(self, max_speed):
         '''
@@ -207,16 +224,41 @@ class MCLNanoDrive(object):
         
     
     def get_pos_ax(self, axis):
-        pos = float(madlib.MCL_SingleReadN(axis, self._handle))
+        pos = float(self.singleReadN(axis))
         if self.debug: print "get_pos_ax", axis, pos
         return pos
     
     def get_pos(self):
-        self.x_pos = madlib.MCL_SingleReadN(1, self._handle)
-        self.y_pos = madlib.MCL_SingleReadN(2, self._handle)
-        self.z_pos = madlib.MCL_SingleReadN(3, self._handle)
+        self.x_pos = self.singleReadN(1)
+        self.y_pos = self.singleReadN(2)
+        self.z_pos = self.singleReadN(3)
         
         return (self.x_pos, self.y_pos, self.z_pos)
+    
+    def singleReadN(self, axis):
+        resp = madlib.MCL_SingleReadN(1, self._handle)
+        if resp in self.MCL_ERROR_CODES:
+            #raise IOError(self.MCL_ERROR_CODES[resp])
+            print('singleReadN', self.MCL_ERROR_CODES[resp])
+        return resp
+    
+    def monitorN(self, pos, axis):
+        resp = madlib.MCL_MonitorN(pos, axis, self._handle)
+        if resp in self.MCL_ERROR_CODES:
+            #raise IOError(self.MCL_ERROR_CODES[resp])
+            print('monitorN', pos, axis, self.MCL_ERROR_CODES[resp])        
+        return resp
+    
+    def getCommandedPosition(self):
+        xCom = c_double()
+        yCom = c_double()
+        zCom = c_double()
+        resp = madlib.MCL_GetCommandedPosition(byref(xCom), byref(yCom), byref(zCom), self._handle)
+        if resp < 0:
+            #raise IOError(self.MCL_ERROR_CODES[resp])
+            print('getCommandedPosition',  self.MCL_ERROR_CODES[resp])        
+        return xCom.value, yCom.value, zCom.value
+        
     
     def set_pos_ax_slow(self, pos, axis):
         if self.debug: print "set_pos_slow_ax ", pos, axis
@@ -253,14 +295,16 @@ if __name__ == '__main__':
     print "MCL nanodrive test"
     
     nanodrive = MCLNanoDrive(debug=True)
+    print nanodrive.getCommandedPosition()
+    #print nanodrive.monitorN(0, 1)
     
     #for x,y in [ (0,0), (10,10), (30,30), (50,50), (50,25), (50,0)]:
-    for x,y in [ (30,0), (30,10), (30,30), (30,50), (30,25), (30,0)]:
+    """for x,y in [ (30,0), (30,10), (30,30), (30,50), (30,25), (30,0)]:
         print "moving to ", x,y
         nanodrive.set_pos(x,y)
         x1,y1,z = nanodrive.get_pos()
         print "moved to ", x1, y1,z
-        time.sleep(1)
+        time.sleep(1)"""
     
     nanodrive.close()
     
