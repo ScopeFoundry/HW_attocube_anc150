@@ -44,9 +44,6 @@ class PowerMeterOptimizerMeasurement(Measurement):
         
         self.ui.power_readout_PGSpinBox = replace_widget_in_layout(self.ui.power_readout_doubleSpinBox,
                                                                        pg.widgets.SpinBox.SpinBox())
-        
-
-        
         self.powermeter.settings.power.connect_bidir_to_widget(self.ui.power_readout_PGSpinBox)
         
         self.powermeter.settings.power.connect_bidir_to_widget(self.ui.power_readout_label)
@@ -91,6 +88,9 @@ class PowerMeterOptimizerMeasurement(Measurement):
 
             self.optimize_history[self.optimize_ii] = pow_reading
             #self.pm_analog_readout_hc.voltage.read_from_hardware()
+            if self.save_data.val:
+                self.full_optimize_history.append(pow_reading)
+                self.full_optimize_history_time.append(time.time() - self.t0)
             
             #time.sleep(0.02)
             
