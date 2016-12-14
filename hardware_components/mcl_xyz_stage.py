@@ -102,7 +102,8 @@ class MclXYZStage(HardwareComponent):
         print "read_pos"
         self.x_position.read_from_hardware()
         self.y_position.read_from_hardware()
-        self.z_position.read_from_hardware()
+        if self.nanodrive.num_axes > 2:
+            self.z_position.read_from_hardware()
         
     def connect(self):
         if self.debug_mode.val: print "connecting to mcl_xyz_stage"
@@ -115,23 +116,31 @@ class MclXYZStage(HardwareComponent):
             lambda x: self.nanodrive.set_pos_ax_slow(x, self.MCL_AXIS_ID["X"])
         self.y_target.hardware_set_func  = \
             lambda y: self.nanodrive.set_pos_ax_slow(y, self.MCL_AXIS_ID["Y"])
-        self.z_target.hardware_set_func  = \
-            lambda z: self.nanodrive.set_pos_ax_slow(z, self.MCL_AXIS_ID["Z"])
+        if self.nanodrive.num_axes > 2:
+            self.z_target.change_readonly(False)
+            self.z_target.hardware_set_func  = \
+                lambda z: self.nanodrive.set_pos_ax_slow(z, self.MCL_AXIS_ID["Z"])
+        else:
+            self.z_target.change_readonly(True)
 
         self.x_position.hardware_read_func = \
             lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["X"])
         self.y_position.hardware_read_func = \
             lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["Y"])
-        self.z_position.hardware_read_func = \
-            lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["Z"])
+        if self.nanodrive.num_axes > 2:
+            self.z_position.hardware_read_func = \
+                lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["Z"])
             
             
         self.x_max.hardware_read_func = lambda: self.nanodrive.cal[self.MCL_AXIS_ID["X"]]
         self.y_max.hardware_read_func = lambda: self.nanodrive.cal[self.MCL_AXIS_ID["Y"]]
-        self.z_max.hardware_read_func = lambda: self.nanodrive.cal[self.MCL_AXIS_ID["Z"]]
+        if self.nanodrive.num_axes > 2:
+            self.z_max.hardware_read_func = lambda: self.nanodrive.cal[self.MCL_AXIS_ID["Z"]]
         
         self.move_speed.hardware_read_func = self.nanodrive.get_max_speed
         self.move_speed.hardware_set_func =  self.nanodrive.set_max_speed
+        
+        self.read_from_hardware()
 
     def disconnect(self):
         #disconnect logged quantities from hardware

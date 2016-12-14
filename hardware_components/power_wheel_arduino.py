@@ -45,15 +45,11 @@ class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
         
         # Open connection to hardware
         self.power_wheel = PowerWheelArduino(port=self.ser_port.val, debug=self.debug_mode.val)
-        self.power_wheel.write_speed(100)
+        self.power_wheel.write_speed(50)
         
         # connect logged quantities
-        self.encoder_pos.hardware_set_func = \
-             self.power_wheel.write_steps
-             
-        self.encoder_pos.hardware_read_func= \
-             self.power_wheel.read_encoder
-
+        self.encoder_pos.hardware_set_func = self.power_wheel.write_steps
+        self.encoder_pos.hardware_read_func= self.power_wheel.read_encoder
 
         print 'connected to ',self.name
     
