@@ -48,7 +48,7 @@ class PicoHarpHardwareComponent(HardwareComponent):
 
         # connect logged quantities
         
-        LQ = self.logged_quantities
+        LQ = self.settings.as_dict()
         
         LQ["count_rate0"].hardware_read_func = PH.read_count_rate0
         LQ["count_rate1"].hardware_read_func = PH.read_count_rate1
