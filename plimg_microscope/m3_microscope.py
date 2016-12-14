@@ -23,6 +23,7 @@ from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
 from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
 from Auger.sem_slowscan2d import SEMVoutDelaySlowScan
 
+
 from attocube_interface_measure import AttocubeInterface
 
 from pl_img_linescan import PLImgLineScan
@@ -37,6 +38,10 @@ from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
 from df_microscope.power_scan_df import PowerScanDF
 from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
 from measurement_components.powermeter_optimizer_new import PowerMeterOptimizerMeasurement
+
+from picoharp_mcl_2d_slow_scan import Picoharp_MCL_2DSlowScan
+from df_microscope.winspec_remote_2Dscan import WinSpecMCL2DSlowScan
+
 
 class M3MicroscopeApp(BaseMicroscopeApp):
 
@@ -80,6 +85,11 @@ class M3MicroscopeApp(BaseMicroscopeApp):
 
         self.add_measurement_component(PowerScanDF(self))
         self.add_measurement_component(PowerMeterOptimizerMeasurement(self))
+        
+        self.add_measurement_component(Picoharp_MCL_2DSlowScan(self))
+        self.add_measurement_component(WinSpecMCL2DSlowScan(self))
+
+        
         #set some default logged quantities
         #self.hardware_components['apd_counter'].debug_mode.update_value(True)
         #self.hardware_components['apd_counter'].dummy_mode.update_value(True)
