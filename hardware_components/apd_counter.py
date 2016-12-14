@@ -82,6 +82,7 @@ class APDCounterHardwareComponent(HardwareComponent):
 
     def disconnect(self):
         #disconnect hardware
+        self.ni_counter.stop()
         self.ni_counter.close()
         
         #disconnect logged quantities from hardware
