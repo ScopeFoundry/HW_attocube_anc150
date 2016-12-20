@@ -236,7 +236,7 @@ class MCLNanoDrive(object):
         return (self.x_pos, self.y_pos, self.z_pos)
     
     def singleReadN(self, axis):
-        resp = madlib.MCL_SingleReadN(1, self._handle)
+        resp = madlib.MCL_SingleReadN(axis, self._handle)
         if resp in self.MCL_ERROR_CODES:
             #raise IOError(self.MCL_ERROR_CODES[resp])
             print('singleReadN', self.MCL_ERROR_CODES[resp])
