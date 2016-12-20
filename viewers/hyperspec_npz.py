@@ -1,36 +1,32 @@
-from ScopeFoundry.data_browser import DataBrowser, DataBrowserView
-import pyqtgraph as pg
+from ScopeFoundry.data_browser import DataBrowser, HyperSpectralBaseView
 import numpy as np
 
-class HyperSpecNPZView(DataBrowserView):
+class HyperSpecNPZView(HyperSpectralBaseView):
 
     name = 'hyperspec_npz'
     
-    def setup(self):
-        
-        self.ui = self.imview = pg.ImageView()
-        
-        #self.graph_layout = pg.GraphicsLayoutWidget()
-        #self.graph_layout.addPlot()
-        
-    def on_change_data_filename(self, fname):
-        
-        try:
-            self.dat = np.load(fname)
-            self.imview.setImage(self.dat['spec_map'].sum(axis=2)[::-1,:].T)
-        except Exception as err:
-            self.imview.setImage(np.zeros((10,10)))
-            self.databrowser.ui.statusbar.showMessage("failed to load %s:\n%s" %(fname, err))
-            raise(err)
-
     def is_file_supported(self, fname):
-        return "_spec_scan.npz" in fname        
+        return "_spec_scan.npz" in fname   
+    
+    
+    def load_data(self, fname):    
+        self.dat = np.load(fname)
+        
+        self.spec_map = self.dat['spec_map']
+        self.integrated_count_map = self.dat['integrated_count_map']
 
+        self.hyperspec_data = self.spec_map
+        self.display_image = self.integrated_count_map
+        self.spec_x_array = self.dat['wls']
+        
+    def scan_specific_setup(self):
+        self.spec_plot.setLabel('left', 'Intensity', units='counts')
+        self.spec_plot.setLabel('bottom', 'Wavelength', units='nm')        
         
 if __name__ == '__main__':
     import sys
     
     app = DataBrowser(sys.argv)
-    #app.load_view(ApdConfocalNPZView(app))
+    app.load_view(HyperSpecNPZView(app))
     
     sys.exit(app.exec_())

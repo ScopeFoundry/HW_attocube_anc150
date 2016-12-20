@@ -4,7 +4,7 @@ import numpy as np
 import time
 import pyqtgraph as pg
 from PySide import QtGui
-from ScopeFoundry.data_browser import DataBrowserView
+from ScopeFoundry.data_browser import DataBrowserView, HyperSpectralBaseView
 
 
 class Picoharp_MCL_2DSlowScan(MCLStage2DSlowScan):
@@ -95,7 +95,7 @@ class Picoharp_MCL_2DSlowScan(MCLStage2DSlowScan):
         if not hasattr(self, 'lifetime_graph_layout'):
             self.lifetime_graph_layout = pg.GraphicsLayoutWidget()
             self.lifetime_plot = self.lifetime_graph_layout.addPlot()
-            self.lifetime_plotdata = self.lifetime_plot.plot()
+            self.lifetime_plotdata = self.lifetime_plot.spec_plot()
             self.lifetime_plot.setLogMode(False, True)
         self.lifetime_graph_layout.show()
         
@@ -104,93 +104,30 @@ class Picoharp_MCL_2DSlowScan(MCLStage2DSlowScan):
         self.lifetime_plotdata.setData(self.time_array,  1+ph.histogram_data[0:self.num_hist_chans])
         
 
-import h5py
 
-class Picoharp_MCL_2DSlowScan_View(DataBrowserView):
+class Picoharp_MCL_2DSlowScan_View(HyperSpectralBaseView):
     
     name = 'Picoharp_MCL_2DSlowScan_View'
-    
-    def setup(self):
-        
-        self.ui = QtGui.QWidget()
-        self.ui.setLayout(QtGui.QVBoxLayout())
-        self.imview = pg.ImageView()
-        self.imview.getView().invertY(False) # lower left origin
-        self.ui.layout().addWidget(self.imview)
-        self.graph_layout = pg.GraphicsLayoutWidget()
-        self.ui.layout().addWidget(self.graph_layout)
 
-        self.plot = self.graph_layout.addPlot()
-        self.rect_plotdata = self.plot.plot()
-        self.point_plotdata = self.plot.plot(pen=(0,9))
-        
-        
-        # Rectangle ROI
-        self.rect_roi = pg.RectROI([20, 20], [20, 20], pen=(0,9))
-        self.rect_roi.addTranslateHandle((0.5,0.5))        
-        self.imview.getView().addItem(self.rect_roi)        
-        self.rect_roi.sigRegionChanged.connect(self.on_change_rect_roi)
-        
-        # Point ROI
-        self.circ_roi = pg.CircleROI( (0,0), (2,2) , movable=True, pen=(0,9))
-        #self.circ_roi.removeHandle(self.circ_roi.getHandles()[0])
-        h = self.circ_roi.addTranslateHandle((0.5,.5))
-        h.pen = pg.mkPen('r')
-        h.update()
-        self.imview.getView().addItem(self.circ_roi)
-        self.circ_roi.removeHandle(0)
-        self.circ_roi_plotline = pg.PlotCurveItem([0], pen=(0,9))
-        self.imview.getView().addItem(self.circ_roi_plotline) 
-        self.circ_roi.sigRegionChanged.connect(self.on_update_circ_roi)
-        
-        self.plot.setLogMode(False, True)
-        
     def is_file_supported(self, fname):
         return "Picoharp_MCL_2DSlowScan.h5" in fname
     
-    def on_change_data_filename(self, fname):
+    def scan_specific_setup(self):
+        # set spectral plot to be semilog-y
+        self.spec_plot.setLogMode(False, True)
+        self.spec_plot.setLabel('left', 'Intensity', units='counts')
+        self.spec_plot.setLabel('bottom', 'Time', units='ns')
 
-        try:
-            self.dat = h5py.File(fname, 'r')
-            self.time_trace_map = np.array(self.dat['/measurement/Picoharp_MCL_2DSlowScan/time_trace_map'])
-            # pyqtgraph axes are x,y, but data is stored in (frame, y,x, time), so we need to transpose
-            self.imview.setImage(self.time_trace_map[0].sum(axis=2).T)
-        except Exception as err:
-            self.imview.setImage(np.zeros((10,10)))
-            self.databrowser.ui.statusbar.showMessage("failed to load %s:\n%s" %(fname, err))
-            raise(err)
+    
+    def load_data(self, fname):
+        # return hyperspec data, display image
+        import h5py
         
-    def on_change_rect_roi(self):
-        # pyqtgraph axes are x,y, but data is stored in (frame, y,x, time)
-        roi_slice, roi_tr = self.rect_roi.getArraySlice(self.time_trace_map[0], self.imview.getImageItem(), axes=(1,0)) 
-        
-        print "roi_slice", roi_slice
-        self.rect_plotdata.setData(self.time_trace_map[0,:,:,:][roi_slice].mean(axis=(0,1))+1)
-        
-    def on_update_circ_roi(self, roi):
-        self.plot.setLogMode(False, True)
+        self.dat = h5py.File(fname, 'r')
+        self.time_trace_map = np.array(self.dat['/measurement/Picoharp_MCL_2DSlowScan/time_trace_map'])
+        self.time_array = np.array(self.dat['measurement/Picoharp_MCL_2DSlowScan/time_array'])
 
-        roi_state = roi.saveState()
-        #print roi_state
-        #xc, y
-        x0, y0 = roi_state['pos']
-        xc = x0 + 1
-        yc = y0 + 1
-        
-        
-        # CHECK IF X, Y, I, J ARE SWAPPED!!!!
-        
-        Nframe, Ny, Nx, Nt = self.time_trace_map.shape 
-        print 'Nframe, Ny, Nx, Nt', Nframe, Ny, Nx, Nt, 
-        
-        i = max(0, min(int(xc),  Nx-1))
-        j = max(0, min(int(yc),  Ny-1))
-        
-        print "xc,yc,i,j", xc,yc, i,j
-        
-        self.circ_roi_plotline.setData([xc, i+0.5], [yc, j + 0.5])        
-        
-        self.point_plotdata.setData(self.time_trace_map[0,j,i,:] +1)
-        
-
-        
+        self.hyperspec_data = self.time_trace_map[0]+1
+        self.display_image = self.time_trace_map[0,:,:,:].sum(axis=2)
+        self.spec_x_array = self.time_array
+    
