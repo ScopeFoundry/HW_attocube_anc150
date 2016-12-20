@@ -13,11 +13,12 @@ from PySide import QtCore
 
 class MclXYZStage(HardwareComponent):
     
-    MCL_AXIS_ID = dict(X = 2, Y = 1, Z = 3)
+
 
     
     def setup(self):
         self.name = 'mcl_xyz_stage'
+
         
         # Created logged quantities
         lq_params = dict(  dtype=float, ro=True,
@@ -48,6 +49,11 @@ class MclXYZStage(HardwareComponent):
         lq_params = dict(dtype=str, choices=[("X","X"), ("Y","Y"),("Z","Z")])
         self.h_axis = self.add_logged_quantity("h_axis", initial="X", **lq_params)
         self.v_axis = self.add_logged_quantity("v_axis", initial="Y", **lq_params)
+        
+        self.MCL_AXIS_ID = dict(X = 2, Y = 1, Z = 3)
+        self.xyz_axis_map = self.add_logged_quantity('xyz_axis_map', dtype=str, initial='213')
+        self.xyz_axis_map.updated_value.connect(self.on_update_xyz_axis_map)
+        
         
         self.move_speed = self.add_logged_quantity(name='move_speed',
                                                              initial = 1.0,
@@ -86,6 +92,13 @@ class MclXYZStage(HardwareComponent):
         self.x_target.updated_value[()].connect(self.read_pos)
         self.y_target.updated_value[()].connect(self.read_pos)
         self.z_target.updated_value[()].connect(self.read_pos)
+        
+    def on_update_xyz_axis_map(self):
+        print "on_update_xyz_axis_map"
+        map_str = self.xyz_axis_map.val
+        self.MCL_AXIS_ID['X'] = int(map_str[0])
+        self.MCL_AXIS_ID['Y'] = int(map_str[1])
+        self.MCL_AXIS_ID['Z'] = int(map_str[2])
     
     def move_pos_slow(self, x=None,y=None,z=None):
         # move slowly to new position
@@ -96,6 +109,14 @@ class MclXYZStage(HardwareComponent):
         self.nanodrive.set_pos_slow(*new_pos)
 
         self.read_pos()
+        
+    def move_pos_fast(self,  x=None,y=None,z=None):
+        new_pos = [None, None,None]
+        new_pos[self.MCL_AXIS_ID['X']-1] = x
+        new_pos[self.MCL_AXIS_ID['Y']-1] = y
+        new_pos[self.MCL_AXIS_ID['Z']-1] = z
+        self.nanodrive.set_pos(*new_pos)
+
     
     @QtCore.Slot()
     def read_pos(self):
@@ -124,9 +145,9 @@ class MclXYZStage(HardwareComponent):
             self.z_target.change_readonly(True)
 
         self.x_position.hardware_read_func = \
-            lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["X"])
+            lambda: self.nanodrive.get_pos_ax(int(self.MCL_AXIS_ID["X"]))
         self.y_position.hardware_read_func = \
-            lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["Y"])
+            lambda: self.nanodrive.get_pos_ax(int(self.MCL_AXIS_ID["Y"]))
         if self.nanodrive.num_axes > 2:
             self.z_position.hardware_read_func = \
                 lambda: self.nanodrive.get_pos_ax(self.MCL_AXIS_ID["Z"])
@@ -144,7 +165,7 @@ class MclXYZStage(HardwareComponent):
 
     def disconnect(self):
         #disconnect logged quantities from hardware
-        for lq in self.logged_quantities.values():
+        for lq in self.settings.as_dict().values():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
         
