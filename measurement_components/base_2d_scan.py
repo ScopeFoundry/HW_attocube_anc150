@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from PySide import QtCore
+from qtpy import QtCore
 
 from ScopeFoundry import h5_io
 from ScopeFoundry import Measurement 

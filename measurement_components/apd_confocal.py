@@ -1,6 +1,7 @@
 import numpy as np
 import time
-from PySide import QtCore, QtGui
+#from PySide import QtCore, QtGui
+from qtpy import QtCore
 import pyqtgraph as pg
 import random
 

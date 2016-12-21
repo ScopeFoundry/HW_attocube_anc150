@@ -3,7 +3,7 @@ from measurement_components.mcl_stage_slowscan import MCLStage2DSlowScan
 import numpy as np
 import time
 import pyqtgraph as pg
-from PySide import QtGui
+#from PySide import QtGui
 from ScopeFoundry.data_browser import DataBrowserView, HyperSpectralBaseView
 
 
