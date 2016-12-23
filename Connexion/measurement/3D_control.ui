@@ -183,6 +183,29 @@
      </property>
     </widget>
    </widget>
+   <widget class="QGroupBox" name="device_groupbox">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>220</y>
+      <width>591</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Connexion Device:</string>
+    </property>
+    <widget class="QComboBox" name="device_cb">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>571</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

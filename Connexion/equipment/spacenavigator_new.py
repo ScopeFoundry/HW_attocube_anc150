@@ -21,6 +21,7 @@ def to_int16(y1,y2):
 
 # tuple for 6DOF results
 SpaceNavigator = namedtuple('SpaceNavigator', ['t','x', 'y', 'z', 'roll', 'pitch', 'yaw', 'button'])
+SpaceMouse = namedtuple('SpaceMouse', ['t','x', 'y', 'z', 'roll', 'pitch', 'yaw', 'button'])
 
 class DeviceSpec(object):
     """Holds the specification of a single 3Dconnexion device"""
@@ -164,6 +165,22 @@ device_specs = {
                         button_mapping = [ButtonSpec(channel=3, byte=1, left_shift=0)],
                         axis_scale = 350.0
                         ),        
+    "SpaceMouse":       DeviceSpec(name="SpaceMouse",
+                
+                        hid_id=[0x256f, 0xc62f],
+                        led_id=[0x8, 0x4b],
+                        
+                        mappings= {     "x":        AxisSpec(channel=1, byte1=1, byte2=2, scale=1),
+                                        "y":        AxisSpec(channel=1, byte1=3, byte2=4, scale=-1),
+                                        "z":        AxisSpec(channel=1, byte1=5, byte2=6, scale=-1),
+                                        "pitch":    AxisSpec(channel=1, byte1=7, byte2=8, scale=-1),
+                                        "roll":     AxisSpec(channel=1, byte1=9, byte2=10, scale=-1),
+                                        "yaw":      AxisSpec(channel=1, byte1=11, byte2=12, scale=1),
+                                        },
+                                   
+                        button_mapping = [ButtonSpec(channel=3, byte=1, left_shift=0)],
+                        axis_scale = 350.0
+                        ),
     }
     
     
@@ -238,6 +255,7 @@ def open(callback=None, button_callback=None, device=None):
         Device object if the device was opened successfully
         None if the device could not be opened
     """
+    
     # only used if the module-level functions are used
     global _active_device
     
@@ -246,6 +264,7 @@ def open(callback=None, button_callback=None, device=None):
         all_devices = list_devices()
         if len(all_devices)>0:
             device = all_devices[0]
+            print("Device:", device)
         else:
             return None
         

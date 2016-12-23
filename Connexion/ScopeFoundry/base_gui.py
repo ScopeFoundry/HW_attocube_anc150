@@ -22,18 +22,9 @@ else:
     from qtconsole.rich_jupyter_widget import RichJupyterWidget
     from qtconsole.inprocess import QtInProcessKernelManager
 
-#import matplotlib
-#matplotlib.rcParams['backend.qt4'] = 'PySide'
-#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-#from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar2
-
-#from matplotlib.figure import Figure
-
 from logged_quantity import LoggedQuantity, LQCollection
 
 from helper_funcs import confirm_on_close, load_qt_ui_file, OrderedAttrDict, sibling_path
-
-#from equipment.image_display import ImageDisplay
 
 import h5_io
 import warnings
@@ -52,7 +43,8 @@ class BaseApp(QtCore.QObject):
         self.settings = LQCollection()
         
         self.setup_console_widget()
-        #self.setup()
+#         if hasattr(self, "setup"):
+#             self.setup()
 
         if not hasattr(self, 'name'):
             self.name = "ScopeFoundry"
@@ -156,6 +148,9 @@ class BaseMicroscopeApp(BaseApp):
                 self.ui_filename = sibling_path(__file__,"base_microscope_app.ui")
         # Load Qt UI from .ui file
         self.ui = load_qt_ui_file(self.ui_filename)
+        if self.mdi:
+            self.ui.col_splitter.setStretchFactor(0,0)
+            self.ui.col_splitter.setStretchFactor(1,1)
         
         self.hardware = OrderedAttrDict()
         self.measurements = OrderedAttrDict()

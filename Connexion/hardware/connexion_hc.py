@@ -1,5 +1,5 @@
 from ScopeFoundry import HardwareComponent
-import spacenavigator
+import equipment.spacenavigator_new as spacenavigator
 
 
 class Connexion_HC(HardwareComponent):
@@ -7,8 +7,7 @@ class Connexion_HC(HardwareComponent):
     name = "connexion_hc"
 
     def setup(self):
-        
-        self.initialize = spacenavigator.open()
+                
         self.x = self.settings.New(name='x_axis', initial=0,
                                             dtype=float, fmt="%.2f", 
                                             ro=True, vmin=-1.0, vmax=1.0)
@@ -38,22 +37,25 @@ class Connexion_HC(HardwareComponent):
                                             ro=True)
         self.none_setting = self.settings.New(name='none', initial=0, dtype=bool,
                                             ro=True)
+        self.devices = self.settings.New(name='devices', initial="Auto", dtype=str, choices = [("Auto", "Auto"),("SpaceNavigator", "SpaceNavigator"),("SpaceMouse", "SpaceMouse")])
 
+    
     def connect(self):
-
+        print("connect connexion")
+        ##self.dev = self.open()
+        self.dev()
+        assert not self.dev is None
+                
+        self.x.hardware_read_func = self.read_x
+        self.y.hardware_read_func = self.read_y
+        self.z.hardware_read_func = self.read_z
+        self.roll.hardware_read_func = self.read_roll
+        self.pitch.hardware_read_func = self.read_pitch
+        self.yaw.hardware_read_func = self.read_yaw
+        self.button.hardware_read_func = self.read_button
+        print("done")
         
-        
-        self.dev = spacenavigator.open()
-
-
-        self.x.hardware_read_func = self.read_state_x
-        self.y.hardware_read_func = self.read_state_y
-        self.z.hardware_read_func = self.read_state_z
-        self.roll.hardware_read_func = self.read_state_roll
-        self.pitch.hardware_read_func = self.read_state_pitch
-        self.yaw.hardware_read_func = self.read_state_yaw
-        self.button.hardware_read_func = self.read_state_button
-         
+    
     def disconnect(self):
         self.dev.close()
         
@@ -62,34 +64,32 @@ class Connexion_HC(HardwareComponent):
         
         # delete object
         del self.dev
-        
-    
-    def read_state_x(self):
-        return self.dev.read().x
-    
-    def read_state_y(self):
-        return self.dev.read().y
-    
-    def read_state_z(self):
-        return self.dev.read().z
-    
-    def read_state_roll(self):
-        return self.dev.read().roll
-    
-    def read_state_pitch(self):
-        return self.dev.read().pitch
-    
-    def read_state_yaw(self):
-        return self.dev.read().yaw
-    
-    def read_state_button(self):
-        return self.dev.read().button
     
 
+    
+    def dev(self):
+        if self.devices.val == "Auto":
+            self.success = spacenavigator.open()
+        else:
+            self.success = spacenavigator.open(device=self.devices.val)
         
-#     def read_all(self):
-#         state = self.dev.read()
-#         self.x.update_value(state.x)
-#         self.y.update_value(state.y)
-#         return 0
-        
+    def read_x(self):
+        return self.success.read().x
+    
+    def read_y(self):
+        return self.success.read().y
+    
+    def read_z(self):
+        return self.success.read().z
+
+    def read_roll(self):
+        return self.success.read().roll
+
+    def read_pitch(self):
+        return self.success.read().pitch
+    
+    def read_yaw(self):
+        return self.success.read().yaw
+
+    def read_button(self):
+        return self.success.read().button

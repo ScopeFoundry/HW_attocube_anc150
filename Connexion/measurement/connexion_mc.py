@@ -25,10 +25,6 @@ class Connexion_MC(Measurement):
         self.ui.setWindowTitle(self.name)
         
         self.connexion = self.app.hardware.connexion_hc
-
-        #self.open = self.connexion.initialize()
-        #self.open = self.connexion.initialize
-        
         
         self.connexion.x.connect_bidir_to_widget(
                 self.ui.x_dsb)
@@ -50,26 +46,28 @@ class Connexion_MC(Measurement):
                 self.ui.right_cb)
         self.connexion.left_right.connect_bidir_to_widget(
                 self.ui.lr_cb)
+        self.connexion.devices.connect_bidir_to_widget(
+                self.ui.device_cb)
+
 
     def run(self):
         print "run"
+        
         while not self.interrupt_measurement_called:
-            
-            self.state = self.connexion.dev.read()
             """Hardware object: self.connexion = self.app.hardware.connexion_hc"""
-            self.connexion.settings['x_axis'] = self.state.x
-            self.connexion.settings['y_axis'] = self.state.y
-            self.connexion.settings['z_axis'] = self.state.z
-            self.connexion.settings['roll_axis'] = self.state.roll
-            self.connexion.settings['pitch_axis'] = self.state.pitch
-            self.connexion.settings['yaw_axis'] = self.state.yaw
-            self.connexion.settings['button'] = self.state.button
+            self.connexion.settings['x_axis'] = self.connexion.read_x()
+            self.connexion.settings['y_axis'] = self.connexion.read_y()
+            self.connexion.settings['z_axis'] = self.connexion.read_z()
+            self.connexion.settings['roll_axis'] = self.connexion.read_roll()
+            self.connexion.settings['pitch_axis'] = self.connexion.read_pitch()
+            self.connexion.settings['yaw_axis'] = self.connexion.read_yaw()
+            self.connexion.settings['button'] = self.connexion.read_button()
             for k in set(self.button_map.values()):
                 self.connexion.settings[k] = False
-            self.button_resp = self.state.button
+            self.button_resp = self.connexion.read_button()
             try:
                 self.connexion.settings[self.button_map[self.button_resp]] = True
             except KeyError:
                 print("Unknown button/button out of range. %i" % self.button_resp)
             time.sleep(self.dt)
-
+    
