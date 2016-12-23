@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>855</width>
+    <width>1105</width>
     <height>797</height>
    </rect>
   </property>
@@ -19,9 +19,15 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
-     <widget class="QSplitter" name="splitter_2">
+     <widget class="QSplitter" name="col_splitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="handleWidth">
+       <number>20</number>
+      </property>
+      <property name="childrenCollapsible">
+       <bool>true</bool>
       </property>
       <widget class="QScrollArea" name="quickaccess_scrollArea">
        <property name="widgetResizable">
@@ -32,14 +38,20 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>77</width>
-          <height>728</height>
+          <width>69</width>
+          <height>736</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2"/>
        </widget>
       </widget>
       <widget class="QGroupBox" name="lq_trees_groupBox">
+       <property name="minimumSize">
+        <size>
+         <width>325</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="title">
         <string>Logged Quantities</string>
        </property>
@@ -131,8 +143,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>855</width>
-     <height>22</height>
+     <width>1105</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuWindows">

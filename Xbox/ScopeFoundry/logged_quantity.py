@@ -148,8 +148,9 @@ class LoggedQuantity(QtCore.QObject):
             self.updated_text_value.emit(str_val)
                 
             self.updated_value[float].emit(self.val)
-            if self.dtype != float:
-                self.updated_value[int].emit(self.val)
+            if self.dtype in [float, int]:
+                #print 'emit', self.name, "updated_value[int]"
+                self.updated_value[int].emit(int(self.val))
             self.updated_value[bool].emit(self.val)
             self.updated_value[()].emit()
             
@@ -275,6 +276,11 @@ class LoggedQuantity(QtCore.QObject):
             widget.valueChanged.connect(self.update_value)
         elif type(widget) == QtGui.QLabel:
             self.updated_text_value.connect(widget.setText)
+        elif type(widget) == QtGui.QProgressBar:
+            def set_progressbar(x, widget=widget):
+                print "set_progressbar", x
+                widget.setValue(int(x))
+            self.updated_value.connect(set_progressbar)
         else:
             raise ValueError("Unknown widget type")
         
