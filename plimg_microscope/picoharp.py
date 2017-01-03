@@ -1,5 +1,8 @@
 from ScopeFoundry import Measurement
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
+import numpy as np
+import time
+
 
 class PicoHarpHistogramMeasurement(Measurement):    
     name = "picoharp_histogram"

@@ -1,5 +1,6 @@
+from __future__ import print_function, absolute_import, division
 import sys
-from PySide import QtGui
+from qtpy import QtGui
 
 from ScopeFoundry import BaseMicroscopeApp
 
@@ -24,9 +25,9 @@ from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
 from Auger.sem_slowscan2d import SEMVoutDelaySlowScan
 
 
-from attocube_interface_measure import AttocubeInterface
+from .attocube_interface_measure import AttocubeInterface
 
-from pl_img_linescan import PLImgLineScan
+from .pl_img_linescan import PLImgLineScan
 from hardware_components.picoharp import PicoHarpHardwareComponent
 
 from hardware_components.ascom_camera_hc import ASCOMCameraHC
@@ -39,7 +40,7 @@ from df_microscope.power_scan_df import PowerScanDF
 from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
 from measurement_components.powermeter_optimizer_new import PowerMeterOptimizerMeasurement
 
-from picoharp_mcl_2d_slow_scan import Picoharp_MCL_2DSlowScan
+from .picoharp_mcl_2d_slow_scan import Picoharp_MCL_2DSlowScan
 from df_microscope.winspec_remote_2Dscan import WinSpecMCL2DSlowScan
 
 
@@ -52,7 +53,7 @@ class M3MicroscopeApp(BaseMicroscopeApp):
     def setup(self):
         
         #Add hardware components
-        print "Adding Hardware Components"
+        print("Adding Hardware Components")
         self.add_hardware_component(APDCounterHardwareComponent(self))
         #self.add_hardware_component(DummyXYStage(self))
         self.add_hardware_component(MclXYZStage(self))
@@ -69,7 +70,7 @@ class M3MicroscopeApp(BaseMicroscopeApp):
 
         self.add_hardware_component(AttoCubeXYStage(self))
         #Add measurement components
-        print "Create Measurement objects"
+        print("Create Measurement objects")
         self.add_measurement_component(APDOptimizerMeasurement(self))
         self.add_measurement_component(APD_MCL_2DSlowScan(self))
         

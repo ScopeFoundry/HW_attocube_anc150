@@ -7,7 +7,7 @@ from ScopeFoundry import HardwareComponent
 try:
     from equipment.attocube_ecc100 import AttoCubeECC100
 except Exception as err:
-    print "could not load modules needed for AttoCubeECC100:", err
+    print("could not load modules needed for AttoCubeECC100:", err)
     
 
 class AttoCubeXYStage(HardwareComponent):
@@ -66,7 +66,7 @@ class AttoCubeXYStage(HardwareComponent):
         # no custom gui yet
         
     def connect(self):
-        if self.settings['debug_mode']: print "connecting to attocube_xy_stage"
+        if self.settings['debug_mode']: print("connecting to attocube_xy_stage")
                 
         self.settings.device_num.change_readonly(True)
         self.settings.axis_map.change_readonly(True)
@@ -75,7 +75,7 @@ class AttoCubeXYStage(HardwareComponent):
         self.ecc100 = AttoCubeECC100(device_num=self.settings['device_num'], debug=self.settings['debug_mode'])
         
         for axis_num, axis_name in enumerate(self.settings['axis_map']):
-            print axis_num, axis_name
+            print(axis_num, axis_name)
             if axis_name in 'xyz':
 
                 # Enable Axes

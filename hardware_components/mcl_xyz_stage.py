@@ -3,12 +3,13 @@ Created on Jul 27, 2014
 
 @author: Edward Barnard
 '''
+from __future__ import absolute_import, print_function, division
 from ScopeFoundry import HardwareComponent
 try:
     from equipment.mcl_nanodrive import MCLNanoDrive
 except Exception as err:
-    print "Cannot load required modules for MclXYZStage:", err
-from PySide import QtCore
+    print("Cannot load required modules for MclXYZStage:", err)
+from qtpy import QtCore
 
 
 class MclXYZStage(HardwareComponent):
@@ -94,7 +95,7 @@ class MclXYZStage(HardwareComponent):
         self.z_target.updated_value[()].connect(self.read_pos)
         
     def on_update_xyz_axis_map(self):
-        print "on_update_xyz_axis_map"
+        print("on_update_xyz_axis_map")
         map_str = self.xyz_axis_map.val
         self.MCL_AXIS_ID['X'] = int(map_str[0])
         self.MCL_AXIS_ID['Y'] = int(map_str[1])
@@ -120,14 +121,14 @@ class MclXYZStage(HardwareComponent):
     
     @QtCore.Slot()
     def read_pos(self):
-        print "read_pos"
+        print("read_pos")
         self.x_position.read_from_hardware()
         self.y_position.read_from_hardware()
         if self.nanodrive.num_axes > 2:
             self.z_position.read_from_hardware()
         
     def connect(self):
-        if self.debug_mode.val: print "connecting to mcl_xyz_stage"
+        if self.debug_mode.val: print("connecting to mcl_xyz_stage")
         
         # Open connection to hardware
         self.nanodrive = MCLNanoDrive(debug=self.debug_mode.val)

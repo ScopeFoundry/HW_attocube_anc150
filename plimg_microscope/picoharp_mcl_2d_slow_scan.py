@@ -1,10 +1,10 @@
+from __future__ import print_function, absolute_import, division
 from measurement_components.mcl_stage_slowscan import MCLStage2DSlowScan
 
 import numpy as np
 import time
 import pyqtgraph as pg
-#from PySide import QtGui
-from ScopeFoundry.data_browser import DataBrowserView, HyperSpectralBaseView
+from ScopeFoundry.data_browser import HyperSpectralBaseView
 
 
 class Picoharp_MCL_2DSlowScan(MCLStage2DSlowScan):
@@ -73,20 +73,18 @@ class Picoharp_MCL_2DSlowScan(MCLStage2DSlowScan):
         #ta = time.time()
         ph.read_histogram_data()
 
-        print ph.histogram_data
+        print(ph.histogram_data)
 
         # store in arrays
         self.time_trace_map[k,j,i, :] = ph.histogram_data[0:self.num_hist_chans]
         self.time_trace_map_h5[k,j,i, :] = ph.histogram_data[0:self.num_hist_chans]
         
-        print "asdf"
         self.elapsed_time[k,j,i] = ph.read_elapsed_meas_time()
-        print "asdf2"
 
         # display count-rate
         self.display_image_map[k,j,i] = ph.histogram_data[0:self.num_hist_chans].sum() * 1.0/self.elapsed_time[k,j,i]
         
-        print 'pixel done'
+        print( 'pixel done' )
         
     def update_display(self):
         MCLStage2DSlowScan.update_display(self)

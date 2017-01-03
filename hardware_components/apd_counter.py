@@ -2,7 +2,7 @@ from ScopeFoundry import HardwareComponent
 try:
     from equipment.ni_freq_counter import NI_FreqCounter
 except Exception as err:
-    print "Cannot load required modules for APDCounter:", err
+    print("Cannot load required modules for APDCounter:", err)
     
 import time
 import random
@@ -51,10 +51,10 @@ class APDCounterHardwareComponent(HardwareComponent):
         try:
             self.int_time.connect_bidir_to_widget(self.gui.ui.apd_counter_int_doubleSpinBox)
         except Exception as err:
-            print "APDCounterHardwareComponent: could not connect to custom GUI", err
+            print("APDCounterHardwareComponent: could not connect to custom GUI", err)
 
     def connect(self):
-        if self.debug_mode.val: print "Connecting to APD Counter", self.input_terminal.val
+        if self.debug_mode.val: print("Connecting to APD Counter", self.input_terminal.val)
         
         # Open connection to hardware
         self.input_terminal.change_readonly(True)
@@ -69,7 +69,7 @@ class APDCounterHardwareComponent(HardwareComponent):
                                              input_terminal = self.input_terminal.val)
             self.ni_counter.start()
         else:
-            if self.debug_mode.val: print "Connecting to APD Counter (Dummy Mode)"
+            if self.debug_mode.val: print("Connecting to APD Counter (Dummy Mode)")
 
         # connect logged quantities
         self.apd_count_rate.hardware_read_func = self.read_count_rate
@@ -78,7 +78,7 @@ class APDCounterHardwareComponent(HardwareComponent):
             self.apd_count_rate.updated_text_value.connect(
                                            self.gui.ui.apd_counter_output_lineEdit.setText)
         except Exception as err:
-            print "missing gui", err
+            print("missing gui", err)
 
     def disconnect(self):
         #disconnect hardware
@@ -102,7 +102,7 @@ class APDCounterHardwareComponent(HardwareComponent):
                 self.c0_rate = self.ni_counter.read_average_freq_in_buffer()
             except Exception as E:
                 self.c0_rate = -1
-                print E
+                print( E )
                 #self.ni_counter.reset()
             finally:
                 pass # self.ni_counter.stop()
@@ -111,5 +111,5 @@ class APDCounterHardwareComponent(HardwareComponent):
         else:
             time.sleep(self.int_time.val)
             self.c0_rate = random.random()*1e4
-            if self.debug_mode.val: print self.name, "dummy read_count_rate", self.c0_rate
+            if self.debug_mode.val: print(self.name, "dummy read_count_rate", self.c0_rate)
             return self.c0_rate
