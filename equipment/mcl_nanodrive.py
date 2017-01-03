@@ -1,13 +1,21 @@
-from __future__ import division
+from __future__ import division, print_function, absolute_import
 import ctypes
 from ctypes import c_int, c_byte, c_ubyte, c_short, c_double, cdll, pointer, byref
 import time
-
-import os
-import platform
 import numpy as np
 
-print platform.architecture()
+
+### IMPORTANT NOTE: DLL's of the same MADLIB version can be different for different
+###                 serial numbers of Nanodrives and cause subtle errors!
+###                 thus using the local repo copy of the DLL is a bad idea,
+###                 point directly the system installed DLL instead.
+
+# previous version to use local copy of DLL
+"""
+import os
+import platform
+
+print(platform.architecture())
 
 if platform.architecture()[0] == '64bit':
     madlib_path = os.path.abspath(
@@ -19,13 +27,17 @@ else:
     wdapilib_path = os.path.abspath(
                 os.path.join(os.path.dirname(__file__),"wdapi1010.dll"))
     wdapidll = cdll.LoadLibrary(wdapilib_path)
+"""
 
+# tested with 64bit windows
+madlib_path = r"C:\Program Files\Mad City Labs\NanoDrive\madlib.dll"
 
-print "loading DLL:", repr(madlib_path)
+print("loading DLL:", repr(madlib_path))
 
-
+## Load DLL
 madlib = cdll.LoadLibrary(madlib_path)
 
+# set return types of certain function
 madlib.MCL_SingleReadZ.restype = c_double
 madlib.MCL_SingleReadN.restype = c_double
 madlib.MCL_MonitorZ.restype = c_double
@@ -61,10 +73,10 @@ class MCLProductInformation(ctypes.Structure):
     _pack_ = 1 # important for field alignment
     
     def print_info(self):
-        print "MCL Product Information"
+        print("MCL Product Information")
         for fieldname, fieldtype in self._fields_:
             fieldval = self.__getattribute__(fieldname)
-            print "\t", fieldname, "\t\t", fieldval, "\t\t", bin(fieldval)
+            print("\t", fieldname, "\t\t", fieldval, "\t\t", bin(fieldval))
         
         
 
@@ -79,10 +91,10 @@ class MCLNanoDrive(object):
         rev = c_short()
         madlib.MCL_DLLVersion(byref(ver), byref(rev))
         if self.debug:
-            print "MCL_DLLVersion", ver.value, rev.value
-            print "madlib.MCL_CorrectDriverVersion():", madlib.MCL_CorrectDriverVersion()
+            print("MCL_DLLVersion", ver.value, rev.value)
+            print("madlib.MCL_CorrectDriverVersion():", madlib.MCL_CorrectDriverVersion())
         if not madlib.MCL_CorrectDriverVersion():
-            print "MCL_CorrectDriverVersion is False"
+            print("MCL_CorrectDriverVersion is False")
         
         handle = self._handle = madlib.MCL_InitHandle()
         assert handle > 0
@@ -90,10 +102,10 @@ class MCLNanoDrive(object):
         dev_attached = madlib.MCL_DeviceAttached(2000, handle)
         print("dev_attached", dev_attached)
 
-        if self.debug: print "handle:", hex(handle)
+        if self.debug: print("handle:", hex(handle))
 
         if not handle:
-            print "MCLNanoDrive failed to grab device handle ", hex(handle)
+            print("MCLNanoDrive failed to grab device handle ", hex(handle))
 
         self.prodinfo = MCLProductInformation()
         madlib.MCL_GetProductInfo(byref(self.prodinfo), handle)
@@ -101,7 +113,7 @@ class MCLNanoDrive(object):
         if self.debug: self.prodinfo.print_info()
         
         self.device_serial_number = madlib.MCL_GetSerialNumber(handle)
-        if self.debug: print "MCL_GetSerialNumber", self.device_serial_number
+        if self.debug: print("MCL_GetSerialNumber", self.device_serial_number)
         
         self.cal_X = None
         self.cal_Y = None
@@ -112,10 +124,10 @@ class MCLNanoDrive(object):
         self.cal = dict()
         for axname, axnum, axbitmap in [('X', 1, 0b001), ('Y', 2, 0b010), ('Z', 3, 0b100)]:
             axvalid = bool(self.prodinfo.axis_bitmap & axbitmap)
-            if debug: print axname, axnum, "axbitmap:", bin(axbitmap), "axvalid", axvalid
+            if debug: print(axname, axnum, "axbitmap:", bin(axbitmap), "axvalid", axvalid)
             
             if not axvalid:
-                if debug: print "No %s axis, skipping" % axname
+                if debug: print("No %s axis, skipping" % axname)
                 continue
             
             self.num_axes += 1
@@ -124,7 +136,7 @@ class MCLNanoDrive(object):
 
             setattr(self, 'cal_%s' % axname, cal)
             self.cal[axnum] = cal
-            if debug: print "cal_%s: %g" % (axname, cal)
+            if debug: print("cal_%s: %g" % (axname, cal))
         
         self.set_max_speed(100)  # default speed for slow movement is 100 microns/second
         #self.get_pos()
@@ -217,7 +229,7 @@ class MCLNanoDrive(object):
         #madlib.MCL_DeviceAttached(100, self._handle)
         
     def set_pos_ax(self, pos, axis):
-        if self.debug: print "set_pos_ax ", pos, axis
+        if self.debug: print("set_pos_ax ", pos, axis)
         assert 1 <= axis <= self.num_axes
         assert 0 <= pos <= self.cal[axis]
         self.handle_err(madlib.MCL_SingleWriteN(c_double(pos), axis, self._handle))
@@ -225,7 +237,7 @@ class MCLNanoDrive(object):
     
     def get_pos_ax(self, axis):
         pos = float(self.singleReadN(axis))
-        if self.debug: print "get_pos_ax", axis, pos
+        if self.debug: print("get_pos_ax", axis, pos)
         return pos
     
     def get_pos(self):
@@ -261,7 +273,7 @@ class MCLNanoDrive(object):
         
     
     def set_pos_ax_slow(self, pos, axis):
-        if self.debug: print "set_pos_slow_ax ", pos, axis
+        if self.debug: print("set_pos_slow_ax ", pos, axis)
         assert 1 <= axis <= self.num_axes
         assert 0 <= pos <= self.cal[axis]
         
@@ -274,7 +286,7 @@ class MCLNanoDrive(object):
         steps = int(np.ceil(dt/SLOW_STEP_PERIOD))
         l_step = dl/steps
         
-        print "\t", steps, l_step, dl, dt, start        
+        print("\t", steps, l_step, dl, dt, start)        
         
         for i in range(1,steps+1):
             t1 = time.time()         
@@ -292,10 +304,10 @@ class MCLNanoDrive(object):
         return retcode
         
 if __name__ == '__main__':
-    print "MCL nanodrive test"
+    print("MCL nanodrive test")
     
     nanodrive = MCLNanoDrive(debug=True)
-    print nanodrive.getCommandedPosition()
+    print(nanodrive.getCommandedPosition())
     #print nanodrive.monitorN(0, 1)
     
     #for x,y in [ (0,0), (10,10), (30,30), (50,50), (50,25), (50,0)]:
