@@ -8,8 +8,6 @@ try:
     from equipment.acton_spec import ActonSpectrometer
 except Exception as err:
     print "Cannot load required modules for ActonSpectrometer:", err
-import time
-from PySide import QtCore
 
 
 

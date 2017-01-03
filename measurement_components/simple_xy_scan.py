@@ -4,7 +4,7 @@ import pyqtgraph as pg
 import time
 import ScopeFoundry.h5_io as h5_io
 from hardware_components import apd_counter
-from PySide import QtCore
+from qtpy import QtCore
 from ScopeFoundry import LQRange
 import os
 
