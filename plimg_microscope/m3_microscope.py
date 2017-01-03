@@ -1,8 +1,7 @@
 from __future__ import print_function, absolute_import, division
-import sys
-from qtpy import QtGui
 
 from ScopeFoundry import BaseMicroscopeApp
+
 
 
 # Import Hardware Components
@@ -25,9 +24,9 @@ from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
 from Auger.sem_slowscan2d import SEMVoutDelaySlowScan
 
 
-from .attocube_interface_measure import AttocubeInterface
+from attocube_interface_measure import AttocubeInterface
 
-from .pl_img_linescan import PLImgLineScan
+from pl_img_linescan import PLImgLineScan
 from hardware_components.picoharp import PicoHarpHardwareComponent
 
 from hardware_components.ascom_camera_hc import ASCOMCameraHC
@@ -40,7 +39,7 @@ from df_microscope.power_scan_df import PowerScanDF
 from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
 from measurement_components.powermeter_optimizer_new import PowerMeterOptimizerMeasurement
 
-from .picoharp_mcl_2d_slow_scan import Picoharp_MCL_2DSlowScan
+from picoharp_mcl_2d_slow_scan import Picoharp_MCL_2DSlowScan
 from df_microscope.winspec_remote_2Dscan import WinSpecMCL2DSlowScan
 
 
@@ -108,6 +107,7 @@ class M3MicroscopeApp(BaseMicroscopeApp):
 
 
 if __name__ == '__main__':
+    import sys
 
     app = M3MicroscopeApp(sys.argv)
     
