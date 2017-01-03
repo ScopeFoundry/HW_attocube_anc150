@@ -1,5 +1,8 @@
 from ScopeFoundry import HardwareComponent
-from equipment.ascom_camera import ASCOMCamera
+try:
+    from equipment.ascom_camera import ASCOMCamera
+except Exception as err:
+    print("could not load equipment.ascom_camera", err)
 import numpy as np
 
 class ASCOMCameraHC(HardwareComponent):

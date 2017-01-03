@@ -5,9 +5,10 @@ Created on Oct 29, 2015
 '''
 import ScopeFoundry
 from ScopeFoundry import HardwareComponent
-from equipment.NI_Daq import Dac
-import random
-
+try:
+    from equipment.NI_Daq import Dac
+except Exception as err:
+    print("could not load equipment.NI_Daq")
 
 
 class SEMSlowscanVoutStage(HardwareComponent):
