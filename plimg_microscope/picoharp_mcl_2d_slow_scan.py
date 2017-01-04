@@ -4,8 +4,6 @@ from measurement_components.mcl_stage_slowscan import MCLStage2DSlowScan
 import numpy as np
 import time
 import pyqtgraph as pg
-from ScopeFoundry.data_browser import HyperSpectralBaseView
-
 
 class Picoharp_MCL_2DSlowScan(MCLStage2DSlowScan):
     
@@ -100,32 +98,5 @@ class Picoharp_MCL_2DSlowScan(MCLStage2DSlowScan):
         kk, jj, ii = self.current_scan_index
         ph = self.picoharp_hc.picoharp
         self.lifetime_plotdata.setData(self.time_array,  1+ph.histogram_data[0:self.num_hist_chans])
-        
 
-
-class Picoharp_MCL_2DSlowScan_View(HyperSpectralBaseView):
-    
-    name = 'Picoharp_MCL_2DSlowScan_View'
-
-    def is_file_supported(self, fname):
-        return "Picoharp_MCL_2DSlowScan.h5" in fname
-    
-    def scan_specific_setup(self):
-        # set spectral plot to be semilog-y
-        self.spec_plot.setLogMode(False, True)
-        self.spec_plot.setLabel('left', 'Intensity', units='counts')
-        self.spec_plot.setLabel('bottom', 'Time', units='ns')
-
-    
-    def load_data(self, fname):
-        # return hyperspec data, display image
-        import h5py
-        
-        self.dat = h5py.File(fname, 'r')
-        self.time_trace_map = np.array(self.dat['/measurement/Picoharp_MCL_2DSlowScan/time_trace_map'])
-        self.time_array = np.array(self.dat['measurement/Picoharp_MCL_2DSlowScan/time_array'])
-
-        self.hyperspec_data = self.time_trace_map[0]+1
-        self.display_image = self.time_trace_map[0,:,:,:].sum(axis=2)
-        self.spec_x_array = self.time_array
     
