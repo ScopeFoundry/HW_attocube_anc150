@@ -16,3 +16,4 @@ build
 dist
 *.autosave
 *.mat
+ScopeFoundry/ScopeFoundry.egg-info
