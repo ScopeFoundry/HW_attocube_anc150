@@ -1,4 +1,0 @@
-pip install pyserial
-pip install pydaqmx
-conda install pyside
-pip install enum34
