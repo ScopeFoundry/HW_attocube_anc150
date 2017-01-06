@@ -1,10 +1,11 @@
+from __future__ import absolute_import
 from ScopeFoundry import HardwareComponent
-from equipment.xbcontrol_ec import XboxControl_EC
+from ..equipment.xbcontrol_ec import XboxControlDevice
 
 
-class XboxControl_HC(HardwareComponent):
+class XboxControlHW(HardwareComponent):
 
-    name = "xbcontrol_hc"
+    name = "xbox_controller"
 
     def setup(self):
         """Create logged quantities for each HID object including all hats, 
@@ -24,6 +25,11 @@ class XboxControl_HC(HardwareComponent):
         self.rs_lr = self.settings.New(name='Axis_4', initial=0,
                                             dtype=float, fmt="%.3f", 
                                             ro=True, vmin=-1.0, vmax=1.0)
+
+        self.axis5 = self.settings.New(name='Axis_5', initial=0,
+                                            dtype=float, fmt="%.3f", 
+                                            ro=True, vmin=-1.0, vmax=1.0)
+
         
         self.A = self.settings.New(name='A', initial=0,
                                             dtype=bool, ro=True)
@@ -72,14 +78,14 @@ class XboxControl_HC(HardwareComponent):
     def connect(self):
         """Creates joystick object and connects to controller upon clicking "connect" in ScopeFoundry app."""
         # Reference to equipment level joystick object
-        self.joystick = XboxControl_EC().joystick
-        XboxControl_EC().connect()
+        self.xb_dev = XboxControlDevice()
+        #self.joystick = self.xb_interface.joystick
         
     def disconnect(self):
         """Disconnects and removes modules when no longer needed by the application."""
-        self.dev.disconnect()
+        self.xb_dev.close()
         # delete object
-        del self.dev
+        del self.xb_dev
         
     
 

@@ -1,13 +1,14 @@
 """Written by Alan Buckley with suggestions for improvement 
 from Ed Barnard and Lev Lozhkin"""
+from __future__ import absolute_import
 from ScopeFoundry.measurement import Measurement
 import time
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
 import pygame.event
 from pygame.constants import JOYAXISMOTION, JOYHATMOTION, JOYBUTTONDOWN, JOYBUTTONUP
-from equipment.xbcontrol_ec import XboxControl_EC
+from ..equipment.xbcontrol_ec import XboxControlDevice
 
-class XboxControl_MC(Measurement):
+class XboxControlMeasure(Measurement):
     """This class contains connections to logged quantities and ui elements. 
     Dicts included under class header are referenced by functions and are used as a kind of 
     directory to interpret different signals emitted by the Pygame module."""
@@ -42,88 +43,90 @@ class XboxControl_MC(Measurement):
         self.dt = 0.05
         self.gui
         
-        self.ui_filename = "measurement/Controller.ui"
+        self.ui_filename = sibling_path(__file__, "Controller.ui")
         # UI
         self.ui = load_qt_ui_file(self.ui_filename)
         self.ui.setWindowTitle(self.name)
         
-        self.control = self.app.hardware.xbcontrol_hc
+        self.hw = self.app.hardware['xbox_controller']
 
-
-        #Access equipment class:
-        EC = XboxControl_EC()
-        EC.connect()
-        self.joystick = EC.joystick
-        self.range_axes = EC.joystick.get_numaxes()
-        self.range_buttons = EC.joystick.get_numbuttons()
-        self.range_hats = EC.joystick.get_numhats()
         
         # Buttons
-        self.control.A.connect_bidir_to_widget(self.ui.a_radio)
-        self.control.B.connect_bidir_to_widget(self.ui.b_radio)
-        self.control.X.connect_bidir_to_widget(self.ui.x_radio)
-        self.control.Y.connect_bidir_to_widget(self.ui.y_radio)
-        self.control.LB.connect_bidir_to_widget(self.ui.LB_radio)
-        self.control.RB.connect_bidir_to_widget(self.ui.RB_radio)
-        self.control.ls_lr.connect_bidir_to_widget(self.ui.ls_hdsb)
-        self.control.ls_ud.connect_bidir_to_widget(self.ui.ls_vdsb)
-        self.control.rs_lr.connect_bidir_to_widget(self.ui.rs_hdsb)
-        self.control.rs_ud.connect_bidir_to_widget(self.ui.rs_vdsb)
-        self.control.triggers.connect_bidir_to_widget(self.ui.trig_dsb)
-        self.control.Back.connect_bidir_to_widget(self.ui.back_radio)
-        self.control.Start.connect_bidir_to_widget(self.ui.start_radio)
-        self.control.LP.connect_bidir_to_widget(self.ui.lpress)
-        self.control.RP.connect_bidir_to_widget(self.ui.rpress)
+        self.hw.A.connect_bidir_to_widget(self.ui.a_radio)
+        self.hw.B.connect_bidir_to_widget(self.ui.b_radio)
+        self.hw.X.connect_bidir_to_widget(self.ui.x_radio)
+        self.hw.Y.connect_bidir_to_widget(self.ui.y_radio)
+        self.hw.LB.connect_bidir_to_widget(self.ui.LB_radio)
+        self.hw.RB.connect_bidir_to_widget(self.ui.RB_radio)
+        self.hw.ls_lr.connect_bidir_to_widget(self.ui.ls_hdsb)
+        self.hw.ls_ud.connect_bidir_to_widget(self.ui.ls_vdsb)
+        self.hw.rs_lr.connect_bidir_to_widget(self.ui.rs_hdsb)
+        self.hw.rs_ud.connect_bidir_to_widget(self.ui.rs_vdsb)
+        self.hw.triggers.connect_bidir_to_widget(self.ui.trig_dsb)
+        self.hw.Back.connect_bidir_to_widget(self.ui.back_radio)
+        self.hw.Start.connect_bidir_to_widget(self.ui.start_radio)
+        self.hw.LP.connect_bidir_to_widget(self.ui.lpress)
+        self.hw.RP.connect_bidir_to_widget(self.ui.rpress)
         
         # Dpad positions
-        self.control.N.connect_bidir_to_widget(self.ui.north)
-        self.control.NW.connect_bidir_to_widget(self.ui.northwest)
-        self.control.W.connect_bidir_to_widget(self.ui.west)
-        self.control.SW.connect_bidir_to_widget(self.ui.southwest)
-        self.control.S.connect_bidir_to_widget(self.ui.south)
-        self.control.SE.connect_bidir_to_widget(self.ui.southeast)
-        self.control.E.connect_bidir_to_widget(self.ui.east)
-        self.control.NE.connect_bidir_to_widget(self.ui.northeast)
-        self.control.origin.connect_bidir_to_widget(self.ui.origin)
+        self.hw.N.connect_bidir_to_widget(self.ui.north)
+        self.hw.NW.connect_bidir_to_widget(self.ui.northwest)
+        self.hw.W.connect_bidir_to_widget(self.ui.west)
+        self.hw.SW.connect_bidir_to_widget(self.ui.southwest)
+        self.hw.S.connect_bidir_to_widget(self.ui.south)
+        self.hw.SE.connect_bidir_to_widget(self.ui.southeast)
+        self.hw.E.connect_bidir_to_widget(self.ui.east)
+        self.hw.NE.connect_bidir_to_widget(self.ui.northeast)
+        self.hw.origin.connect_bidir_to_widget(self.ui.origin)
         
         # Controller name readout in ui element
-        self.control.controller_name.connect_bidir_to_widget(self.ui.control_name_field)
-        self.control.settings['Controller_Name'] = self.joystick.get_name()
+        self.hw.controller_name.connect_bidir_to_widget(self.ui.control_name_field)
 
     def run(self):
         """This function is run after having clicked "start" in the ScopeFoundry GUI.
         It essentially runs and listens for Pygame event signals and updates the status
         of every button in a specific category (such as hats, sticks, or buttons) in
         intervals of self.dt seconds."""
-        print "run"
+        print("run")
+        
+        #Access equipment class:
+        self.hw.connect()
+        self.xb_dev = self.hw.xb_dev 
+        self.joystick = self.xb_dev.joystick
+        
+        self.log.debug("ran")
+        
+        self.hw.settings['Controller_Name'] = self.joystick.get_name()
+        
+                
         while not self.interrupt_measurement_called:  
             time.sleep(self.dt)
             event_list = pygame.event.get()
             for event in event_list:
                 if event.type == pygame.JOYAXISMOTION:
-                    for i in range(self.range_axes):
-                        self.control.settings['Axis_' + str(i)] = self.joystick.get_axis(i)
+                    for i in range(self.xb_dev.num_axes):
+                        self.hw.settings['Axis_' + str(i)] = self.joystick.get_axis(i)
 
                 elif event.type == pygame.JOYHATMOTION:
-                    for i in range(self.range_hats):
+                    for i in range(self.xb_dev.num_hats):
                         # Clear Directional Pad values
                         for k in set(self.direction_map.values()):
-                            self.control.settings[k] = False
+                            self.hw.settings[k] = False
 
                         # Check button status and record it
                         resp = self.joystick.get_hat(i)
                         try:
-                            self.control.settings[XboxControl_MC.direction_map[resp]] = True
+                            self.hw.settings[self.direction_map[resp]] = True
                         except KeyError:
                             print("Unknown dpad hat: ", resp)
 
                 elif event.type in [pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP]:
                     button_state = (event.type == pygame.JOYBUTTONDOWN)
 
-                    for i in range(self.range_buttons):
+                    for i in range(self.xb_dev.num_buttons):
                         if self.joystick.get_button(i) == button_state:
                             try:
-                                self.control.settings[XboxControl_MC.button_map[i]] = button_state
+                                self.hw.settings[self.button_map[i]] = button_state
                             except KeyError:
                                 print("Unknown button: %i (target state: %s)" % (i,
                                     'down' if button_state else 'up'))
