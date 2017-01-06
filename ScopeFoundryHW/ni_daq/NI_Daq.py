@@ -16,7 +16,7 @@ class NamedTask(mx.Task):
         self.taskHandle = mx.TaskHandle(0)
         mx.DAQmxCreateTask(name, mx.byref(self.taskHandle))
 
-class NI(object):
+class NI_TaskWrap(object):
     '''
     class to wrap National Instruments tasks using DAQmx drivers
     '''
@@ -119,16 +119,16 @@ class NI(object):
         self._device_list = dev_list       
         #mx.DAQmxGetDevAIPhysicalChans( AIdev, chanList, buffSize )
     
-class Adc(NI):
+class NI_AdcTask(NI_TaskWrap):
     '''
-    Analog to digital input task, inherits from abstract NI task
+    Analog to digital input task, inherits from abstract NI_TaskWrap task
     '''
     def __init__(self, channel, range = 10.0, name = '', terminalConfig='default'  ):
         ''' creates ADC task
         Range [+/- 1, 2, 5, 10]
         terminalConfig in ['default', 'rse', 'nrse', 'diff', 'pdiff']
         '''
-        NI.__init__(self, name)
+        NI_TaskWrap.__init__(self, name)
         
         self.terminalConfig = terminalConfig
         self._terminalConfig_enum = dict(
@@ -270,13 +270,13 @@ class Adc(NI):
         return data
     
             
-class Dac(NI):
+class NI_DacTask(NI_TaskWrap):
     '''
-    Digital-to-Analog output task, inherits from abstract NI task
+    Digital-to-Analog output task, inherits from abstract NI_TaskWrap task
     '''
     def __init__(self, channel, name = '' ):
         ''' creates DAC task'''
-        NI.__init__(self, name)       
+        NI_TaskWrap.__init__(self, name)       
         if self.task:
             self.set_channel(channel)
             
@@ -402,15 +402,15 @@ class Dac(NI):
         assert writeCount.value == 1, \
             "sample count {} transfer count {}".format( 1, writeCount.value )
 
-class Counter( NI ):
+class NI_CounterTask( NI_TaskWrap ):
     '''
-    Event counting input task, inherits from abstract NI task
+    Event counting input task, inherits from abstract NI_TaskWrap task
     '''
     def __init__(self, channel, input_terminal='PFI0', name = ''  ):
         ''' creates Counter task, default channel names ctr0, ctr1...
             uses input 'PFI0' by default
         '''
-        NI.__init__(self, name)
+        NI_TaskWrap.__init__(self, name)
 
         if self.task:
             self.set_channel(channel, input_terminal)
@@ -437,7 +437,7 @@ class Counter( NI ):
             
     def set_rate(self,rate = 1e4, count = 1000,  clock_source = 'ao/SampleClock', finite = True):
         """
-        NOTE analog output and input clocks are ONLY available when Dac or Adc task are running. This
+        NOTE analog output and input clocks are ONLY available when NI_DacTask or NI_AdcTask task are running. This
         is OK for simultaneous acquisition. Otherwise use dummy task or use another crt as a clock. If the 
         analog task completes before the counter task, the sample trigger will no longer arrive
         
@@ -541,7 +541,7 @@ class Counter( NI ):
         return data  
             
 
-class Sync(object):
+class NI_SyncTaskSet(object):
     '''
     creates simultaneous input and output tasks with synchronized start triggers
     input and output task elapsed time need not be equal, but typically will be, 
@@ -554,8 +554,8 @@ class Sync(object):
     
         self.clock_source = clock_source
         # create input and output tasks
-        self.dac = Dac( out_chan, out_name)        
-        self.adc = Adc( in_chan, vin_range, in_name, terminalConfig )
+        self.dac = NI_DacTask( out_chan, out_name)        
+        self.adc = NI_AdcTask( in_chan, vin_range, in_name, terminalConfig )
         self.ctr_chans=ctr_chans
         self.ctr_terms=ctr_terms
         self.ctr_num=len(self.ctr_chans)
@@ -564,7 +564,7 @@ class Sync(object):
 #             print(ctr_chans)
 #             print(ctr_terms)
         for i in xrange(0,self.ctr_num):
-            self.ctr.append(Counter(ctr_chans[i],ctr_terms[i],''))
+            self.ctr.append(NI_CounterTask(ctr_chans[i],ctr_terms[i],''))
         #sync dac start to adc start
         buffSize = 512
         buff = mx.create_string_buffer( buffSize )

@@ -7,19 +7,18 @@ from ScopeFoundry import BaseMicroscopeApp
 # Import Hardware Components
 #from hardware_components.apd_counter_usb import APDCounterUSBHardwareComponent
 #from hardware_components.dummy_xy_stage import DummyXYStage
-from hardware_components.picam import PicamHardware
-from hardware_components.mcl_xyz_stage import MclXYZStage
-from hardware_components.apd_counter import APDCounterHardwareComponent
-from hardware_components.attocube_xy_stage import AttoCubeXYStage
+#from ScopeFoundryHW.picam.picam import PicamHardware
+from ScopeFoundryHW.apd_counter.apd_counter import APDCounterHW
+from hardware_components.attocube_xy_stage import AttoCubeXYStageHW
 
 from measurement_components.apd_confocal import APD_MCL_2DSlowScan
 
 
 # Import Measurement Components
-from measurement_components.apd_optimizer_simple import APDOptimizerMeasurement
+from ScopeFoundryHW.apd_counter.measure.apd_optimizer_simple import APDOptimizerMeasure
 from measurement_components.simple_xy_scan import SimpleXYScan
 from measurement_components.picam_readout import PicamReadout
-from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
+from ScopeFoundryHW.acton_spec.acton_spec import ActonSpectrometerHW
 from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
 from Auger.sem_slowscan2d import SEMVoutDelaySlowScan
 
@@ -29,8 +28,8 @@ from attocube_interface_measure import AttocubeInterface
 from pl_img_linescan import PLImgLineScan
 from hardware_components.picoharp import PicoHarpHardwareComponent
 
-from hardware_components.ascom_camera_hc import ASCOMCameraHC
-from measurement_components.ascom_camera_capture import ASCOMCameraCapture
+from ScopeFoundryHW.ascom_camera.ascom_camera_hc import ASCOMCameraHW
+from measurement_components.ascom_camera_capture import ASCOMCameraCaptureMeasure
 from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
 from df_microscope.winspec_remote_readout import WinSpecRemoteReadout
 
@@ -53,21 +52,24 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         
         #Add hardware components
         print("Adding Hardware Components")
-        self.add_hardware_component(APDCounterHardwareComponent(self))
+        self.add_hardware_component(APDCounterHW(self))
         #self.add_hardware_component(DummyXYStage(self))
-        self.add_hardware_component(MclXYZStage(self))
+        
+        from ScopeFoundryHW.mcl_stage.mcl_xyz_stage import MclXYZStageHW
+        self.add_hardware_component(MclXYZStageHW(self))
+        
         self.add_hardware_component(SEMSlowscanVoutStage(self)) 
         self.add_hardware_component(PicoHarpHardwareComponent(self))
         self.add_hardware_component(WinSpecRemoteClientHC(self))
-        self.add_hardware_component(ASCOMCameraHC(self))
+        self.add_hardware_component(ASCOMCameraHW(self))
         
         self.add_hardware_component(PowerWheelArduinoComponent(self))
         self.add_hardware_component(ThorlabsPowerMeter(self))
 
         #self.add_hardware_component(PicamHardware(self))
-        #self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
+        #self.add_hardware_component(ActonSpectrometerHW(self))
 
-        self.add_hardware_component(AttoCubeXYStage(self))
+        self.add_hardware_component(AttoCubeXYStageHW(self))
         #Add measurement components
         print("Create Measurement objects")
         self.add_measurement_component(APDOptimizerMeasurement(self))
@@ -80,7 +82,7 @@ class M3MicroscopeApp(BaseMicroscopeApp):
         #self.add_measurement_component(SimpleXYScan(self))
         #self.add_measurement_component(PicamReadout(self))
                 
-        self.add_measurement_component(ASCOMCameraCapture(self))
+        self.add_measurement_component(ASCOMCameraCaptureMeasure(self))
         self.add_measurement_component(WinSpecRemoteReadout(self))
 
         self.add_measurement_component(PowerScanDF(self))

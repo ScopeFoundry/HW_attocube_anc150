@@ -1,18 +1,18 @@
 import numpy as np
 import PyDAQmx as mx
-from equipment.NI_Daq import NI
+from equipment.NI_Daq import NI_TaskWrap
 import sched
 import time
 
-class BuffTest(NI):
+class BuffTest(NI_TaskWrap):
     
     def __init__(self, channel, range = 10.0, name = '', terminalConfig='default'  ):
-        NI.__init__(self, name)
+        NI_TaskWrap.__init__(self, name)
         ''' creates ADC task
         Range [+/- 1, 2, 5, 10]
         terminalConfig in ['default', 'rse', 'nrse', 'diff', 'pdiff']
         '''
-        NI.__init__(self, name)
+        NI_TaskWrap.__init__(self, name)
         
         self.terminalConfig = terminalConfig
         self._terminalConfig_enum = dict(

@@ -3,10 +3,11 @@ Created on Jul 30, 2014
 
 @author: Frank
 '''
+from __future__ import absolute_import
 import time
 print 'atto test here'
 try:
-    from equipment.attocube_ecc100 import AttoCubeECC100
+    from .attocube_ecc100 import AttoCubeECC100
 except Exception as err:
     print "could not load modules needed for AttoCubeECC100:", err
     

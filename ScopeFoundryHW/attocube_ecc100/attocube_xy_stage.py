@@ -3,14 +3,15 @@ Created on Jul 24, 2014
 
 @author: Edward Barnard
 '''
+from __future__ import absolute_import
 from ScopeFoundry import HardwareComponent
 try:
-    from equipment.attocube_ecc100 import AttoCubeECC100
+    from .attocube_ecc100 import AttoCubeECC100
 except Exception as err:
     print("could not load modules needed for AttoCubeECC100:", err)
     
 
-class AttoCubeXYStage(HardwareComponent):
+class AttoCubeXYStageHW(HardwareComponent):
 
     def setup(self):
         self.name = 'attocube_xy_stage'

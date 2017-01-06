@@ -1,12 +1,12 @@
 from __future__ import division, print_function
 from ScopeFoundry import BaseMicroscopeApp
 
-from hardware_components.apd_counter_usb import APDCounterUSBHardwareComponent
+from hardware_components.apd_counter_usb import APDCounterUSBHW
 
 from hardware_components.picoharp import PicoHarpHardwareComponent
 from hardware_components.apd_counter import APDCounterHardwareComponent
-from hardware_components.andor_ccd import AndorCCDHardwareComponent
-from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
+from hardware_components.andor_ccd import AndorCCDHW
+from hardware_components.acton_spec import ActonSpectrometerHW
 from hardware_components.flip_mirror import FlipMirrorHardwareComponent
 from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
 from hardware_components.thorlabs_powermeter_analog_readout import ThorlabsPowerMeterAnalogReadOut
@@ -39,8 +39,8 @@ class TRPLMicroscopeApp(BaseMicroscopeApp):
         print("Adding Hardware Components")
         self.picoharp_hc = self.add_hardware_component(PicoHarpHardwareComponent(self))
         self.apd_counter_hc = self.add_hardware_component(APDCounterHardwareComponent(self))
-        self.andor_ccd_hc = self.add_hardware_component(AndorCCDHardwareComponent(self))
-        self.acton_spec_hc = self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
+        self.andor_ccd_hc = self.add_hardware_component(AndorCCDHW(self))
+        self.acton_spec_hc = self.add_hardware_component(ActonSpectrometerHW(self))
         self.flip_mirror_hc = self.add_hardware_component(FlipMirrorHardwareComponent(self))
         self.thorlabs_powermeter_hc = self.add_hardware_component(ThorlabsPowerMeter(self))
         self.thorlabs_powermeter_analog_readout_hc = self.add_hardware_component(ThorlabsPowerMeterAnalogReadOut(self))

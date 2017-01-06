@@ -1,7 +1,7 @@
 from __future__ import division, print_function
 from ScopeFoundry import BaseMicroscopeApp
 
-from hardware_components.apd_counter_usb import APDCounterUSBHardwareComponent
+from hardware_components.apd_counter_usb import APDCounterUSBHW
 from hardware_components.mcl_xyz_stage import MclXYZStage
 from measurement_components.apd_confocal import APD_MCL_2DSlowScan
 from measurement_components.apd_optimizer import APDOptimizerMeasurement
@@ -23,7 +23,7 @@ class DFMicroscopeApp(BaseMicroscopeApp):
     
     def setup(self):
         print("Adding Hardware Components")
-        self.add_hardware_component(APDCounterUSBHardwareComponent(self))
+        self.add_hardware_component(APDCounterUSBHW(self))
         #self.add_hardware_component(DummyXYStage(self))
         self.add_hardware_component(MclXYZStage(self))
         self.add_hardware_component(WinSpecRemoteClientHC(self))

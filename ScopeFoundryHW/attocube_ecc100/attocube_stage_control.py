@@ -1,7 +1,7 @@
 from ScopeFoundry import Measurement
 
 
-class AttoCubeStageControl(Measurement):
+class AttoCubeStageControlMeasure(Measurement):
     
     def setup(self):
         pass

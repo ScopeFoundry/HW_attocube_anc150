@@ -1,8 +1,8 @@
 from ScopeFoundry import HardwareComponent
 try:
-    from equipment.NI_Daq import Adc
+    from equipment.NI_Daq import NI_AdcTask
 except Exception as err:
-    print "Cannot load NI_Daq Adc:", err
+    print "Cannot load NI_Daq NI_AdcTask:", err
     
 import time
 import random
@@ -31,17 +31,17 @@ class SEMSingleChanSignal(HardwareComponent):
         self.dummy_mode = self.add_logged_quantity(name='dummy_mode', dtype=bool, initial=False, ro=False)
         
     def connect(self):
-        if self.debug_mode.val: print "Connecting to NI_Dac Adc"
+        if self.debug_mode.val: print "Connecting to NI_Dac NI_AdcTask"
         
         # Open connection to hardware
 
         if not self.dummy_mode.val:
             # Normal APD:  "/Dev1/PFI0"
             # APD on monochromator: "/Dev1/PFI2"
-            self.adc_InLens = Adc('X-6368/ai1')
-            self.adc_SE2 = Adc('X-6368/ai0')
+            self.adc_InLens = NI_AdcTask('X-6368/ai1')
+            self.adc_SE2 = NI_AdcTask('X-6368/ai0')
         else:
-            if self.debug_mode.val: print "Connecting to NI_Dac Adc (Dummy Mode)"
+            if self.debug_mode.val: print "Connecting to NI_Dac NI_AdcTask (Dummy Mode)"
 
         # connect logged quantities
         self.sem_signal.hardware_read_func = self.read_signal

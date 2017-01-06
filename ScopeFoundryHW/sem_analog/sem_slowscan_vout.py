@@ -6,7 +6,7 @@ Created on Oct 29, 2015
 import ScopeFoundry
 from ScopeFoundry import HardwareComponent
 try:
-    from equipment.NI_Daq import Dac
+    from equipment.NI_Daq import NI_DacTask
 except Exception as err:
     print("could not load equipment.NI_Daq")
 
@@ -46,12 +46,12 @@ class SEMSlowscanVoutStage(HardwareComponent):
         self.x_position.change_min_max(self.v_min.val, self.v_max.val)
     
     def connect(self):
-        if self.debug_mode.val: print "connecting to NI Dac output task"
+        if self.debug_mode.val: print "connecting to NI NI_DacTask output task"
 
         self.chan_addr.change_readonly(True)
 
         # Open connection to hardware
-        self.dac = Dac(self.chan_addr.val,'SEM_slowscan_dac_out')
+        self.dac = NI_DacTask(self.chan_addr.val,'SEM_slowscan_dac_out')
         self.dac.start()
 
         # connect logged quantities
@@ -59,7 +59,7 @@ class SEMSlowscanVoutStage(HardwareComponent):
         self.y_position.hardware_set_func  = self.write_y
 
     def disconnect(self):
-        if self.debug_mode.val: print "disconnecting from NI Dac output"
+        if self.debug_mode.val: print "disconnecting from NI NI_DacTask output"
         
         self.chan_addr.change_readonly(False)
 

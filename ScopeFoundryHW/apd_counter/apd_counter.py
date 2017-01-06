@@ -1,13 +1,13 @@
 from ScopeFoundry import HardwareComponent
 try:
-    from equipment.ni_freq_counter import NI_FreqCounter
+    from ScopeFoundryHW.ni_daq.ni_freq_counter import NI_FreqCounter
 except Exception as err:
     print("Cannot load required modules for APDCounter:", err)
     
 import time
 import random
 
-class APDCounterHardwareComponent(HardwareComponent):
+class APDCounterHW(HardwareComponent):
 
     name = "apd_counter"
 

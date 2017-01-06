@@ -70,7 +70,7 @@ class SemRasterContScan(Measurement):
 
     def _run(self):
         from equipment.SEM.raster_generator import  RasterGenerator
-        from equipment.NI_Daq import Sync
+        from equipment.NI_Daq import NI_SyncTaskSet
 
         self.raster_gen = RasterGenerator(points=self.points.val, lines=self.lines.val, 
                                           xoffset=self.xoffset.val, yoffset=self.yoffset.val,
@@ -84,7 +84,7 @@ class SemRasterContScan(Measurement):
        
         #setup tasks
         
-        self.sync_analog_io = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
+        self.sync_analog_io = NI_SyncTaskSet('X-6368/ao0:1', 'X-6368/ai1:3')
         
         #self.sync_analog_io.setup(rate_out=self.sample_rate.val, count_out=self.num_pixels, 
         #                          rate_in=self.sample_rate.val, count_in=self.num_pixels )
