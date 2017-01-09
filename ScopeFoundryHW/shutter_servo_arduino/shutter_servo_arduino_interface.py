@@ -3,8 +3,12 @@ Created on Oct 27, 2014
 
 @author: Edward Barnard
 '''
+from __future__ import division, absolute_import, print_function
 import serial
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ShutterServoArduino(object):
 
@@ -15,13 +19,13 @@ class ShutterServoArduino(object):
         self.port = port
         self.debug = debug
         
-        if self.debug: print "ShutterServoArduino init, port=%s" % self.port
+        if self.debug: logger.debug( "ShutterServoArduino init, port=%s" % self.port)
         
         self.ser = serial.Serial(port=self.port, baudrate=9600, timeout=0.1)
                                  
-                                 #baudrate=9600, 
-                                 #bytesize=8, parity='N', stopbits=1, 
-                                 #xonxoff=0, rtscts=0, timeout=1.0)
+                                #baudrate=9600, 
+                                #bytesize=8, parity='N', stopbits=1, 
+                                #xonxoff=0, rtscts=0, timeout=1.0)
         self.ser.flush()
         time.sleep(0.1)
         #self.write_posititon(1)
@@ -29,14 +33,14 @@ class ShutterServoArduino(object):
         self.position=0
         
     def send_cmd(self, cmd):
-        if self.debug: print "send_cmd:", repr(cmd)
+        if self.debug: logger.debug( "send_cmd:" + repr(cmd))
         self.ser.write(cmd + "\n")
     
     def ask(self, cmd):
-        if self.debug: print "ask:", repr(cmd)
+        if self.debug: logger.debug( "ask:" +  repr(cmd) )
         self.send_cmd(cmd)
         resp = self.ser.readline()
-        if self.debug: print "resp:", repr(resp)
+        if self.debug: self.log.debug( "resp: " + repr(resp) )
         return resp 
     
     

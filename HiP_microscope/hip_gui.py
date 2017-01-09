@@ -6,12 +6,12 @@ from ScopeFoundry import BaseMicroscopeApp
 # Import Hardware Components
 from hardware_components.apd_counter import APDCounterHardwareComponent
 #from hardware_components.dummy_xy_stage import DummyXYStage
-from hardware_components.picam import PicamHardware
+from hardware_components.picam import PicamHW
 from hardware_components.mcl_xyz_stage import MclXYZStage
 
 # Import Measurement Components
 from measurement_components.apd_optimizer_simple import APDOptimizerMeasurement
-from measurement_components.picam_readout import PicamReadout
+from measurement_components.picam_readout import PicamReadoutMeasure
 from hardware_components.acton_spec import ActonSpectrometerHW
 from hardware_components.omega_pt_pid_controller import OmegaPtPIDControllerHardware
 from measurement_components.hip_dual_temperature import HiPMicroscopeDualTemperature
@@ -30,14 +30,14 @@ class HiPMicroscopeApp(BaseMicroscopeApp):
         #self.add_hardware_component(APDCounterHardwareComponent(self))
         #self.add_hardware_component(DummyXYStage(self))
         self.add_hardware_component(MclXYZStage(self))
-        self.add_hardware_component(PicamHardware(self))
+        self.add_hardware_component(PicamHW(self))
         self.add_hardware_component(ActonSpectrometerHW(self))
         self.add_hardware_component(OmegaPtPIDControllerHardware(self))
         #Add measurement components
         print "Create Measurement objects"
         #self.add_measurement_component(APDOptimizerMeasurement(self))
         #self.add_measurement_component(SimpleXYScan(self))
-        self.add_measurement_component(PicamReadout(self))
+        self.add_measurement_component(PicamReadoutMeasure(self))
         self.add_measurement_component(HyperSpecPicam2DScan(self))
         self.add_measurement_component(HiPMicroscopeDualTemperature(self))
         self.add_measurement_component(HyperSpecPicam3DStack(self))

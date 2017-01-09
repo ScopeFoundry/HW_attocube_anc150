@@ -3,17 +3,18 @@ Created on Oct 27, 2014
 
 @author: Edward Barnard
 '''
+from __future__ import division, absolute_import, print_function
 from ScopeFoundry import HardwareComponent
 
 try:
-    from equipment.shutter_servo_arduino import ShutterServoArduino
+    from .shutter_servo_arduino_interface import ShutterServoArduino
 except Exception as err:
-    print "Cannot load required modules for ShutterServoArduino:", err
+    print("Cannot load required modules for ShutterServoArduino:", err)
 
 
 SHUTTER_SERVO_ARDUINO_PORT = "COM6"
 
-class ShutterServoHardwareComponent(HardwareComponent):
+class ShutterServoHW(HardwareComponent):
     
     def setup(self):
         self.name = 'shutter_servo'
@@ -31,7 +32,7 @@ class ShutterServoHardwareComponent(HardwareComponent):
         
         
     def connect(self):
-        if self.debug_mode.val: print "connecting to shutter servo arduino"
+        if self.debug_mode.val: self.log.debug( "connecting to shutter servo arduino" )
         
         # Open connection to hardware
         self.shutter_servo = ShutterServoArduino(port=SHUTTER_SERVO_ARDUINO_PORT, debug=self.debug_mode.val)

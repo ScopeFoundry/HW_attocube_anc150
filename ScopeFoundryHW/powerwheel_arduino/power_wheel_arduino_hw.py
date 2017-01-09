@@ -7,13 +7,13 @@ from ScopeFoundry import HardwareComponent
 import time
 
 try:
-    from equipment.power_wheel_arduino import PowerWheelArduino
+    from .power_wheel_arduino_dev import PowerWheelArduino
 except Exception as err:
     print "Cannot load required modules for arduino power wheel:", err
 
 
 
-class PowerWheelArduinoComponent(HardwareComponent): #object-->HardwareComponent
+class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
     
     name = 'power_wheel_arduino'
     debug = False

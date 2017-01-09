@@ -1,18 +1,16 @@
 """Wrapper written by Alan Buckley and Ed Barnard. Dlipower module written by Dwight Hubbard."""
-
-from ScopeFoundry import HardwareComponent, LoggedQuantity
+from __future__ import division, absolute_import, print_function
+from ScopeFoundry import HardwareComponent
 import dlipower
     
 import time
 import random
 
-class DLI_HardwareComponent(HardwareComponent):
-
-    
+class DLIPowerSwitchHW(HardwareComponent):
 
     def setup(self):
 
-        self.name = "DLI_PowerSwitch"
+        self.name = "dli_powerswitch"
 
         # Create logged quantities
         self.sockets = []
@@ -44,7 +42,7 @@ class DLI_HardwareComponent(HardwareComponent):
 
     def read_status(self, socket):
         status = self.switch[socket].state
-        print "dlipower read_status", socket, status
+        self.log.debug( "dlipower read_status {} {}".format( socket, status ) )
 
         if status == 'ON':
             return True
@@ -53,18 +51,18 @@ class DLI_HardwareComponent(HardwareComponent):
 
     def read_name(self, socket):
         outlet_name = self.switch[socket].name
-        print "dlipower read_name", socket, outlet_name
+        self.log.debug( "dlipower read_name {} {}".format( socket, outlet_name ) )
         return outlet_name
 
     def write_status(self, socket, new_val):
-        print "dlipower write_status", socket, new_val
+        self.log.debug( "dlipower write_status {} {}".format( socket, new_val ))
         if new_val:
             self.switch[socket].state = 'ON'
         else:
             self.switch[socket].state = 'OFF'        
 
     def connect(self):
-        if self.debug_mode.val: print "Connecting to Power Switch (Debug)"
+        if self.debug_mode.val: self.log.debug( "Connecting to Power Switch (Debug)" )
         
         # Open connection to hardware
 
@@ -74,7 +72,7 @@ class DLI_HardwareComponent(HardwareComponent):
             self.switch = dlipower.PowerSwitch(hostname=self.host.val, userid=self.userid.val, password=self.key.val) #ParameterstoLQ
             #self.ni_counter = NI_FreqCounter(debug = self.debug_mode.val, mode='high_freq', input_terminal = "/Dev1/PFI0")
         else:
-            if self.debug_mode.val: print "Connecting to Power Switch (Dummy Mode)"
+            if self.debug_mode.val: self.log.debug( "Connecting to Power Switch (Dummy Mode)" )
 
         # connect logged quantities
 
@@ -106,7 +104,7 @@ class DLI_HardwareComponent(HardwareComponent):
 
     def read_all_states(self):
         status_list = self.switch.statuslist()
-        print status_list
+        self.log.debug( repr(status_list))
         #[1, u'Cool Outlet 2', u'ON']
         for outlet_data in status_list:
             outlet_num, outlet_name, outlet_status = outlet_data
@@ -128,24 +126,3 @@ class DLI_HardwareComponent(HardwareComponent):
         # clean up hardware object
         del self.switch
         
-    #def read_count_rate(self):
-    #    if not self.dummy_mode.val:
-    #        try:
-    #            self.ni_counter.start()
-    #            time.sleep(self.int_time.val)
-    #            self.c0_rate = self.ni_counter.read_average_freq_in_buffer()
-    #        except Exception as E:
-    #            print E
-                #self.ni_counter.reset()
-    #        finally:
-    #            self.ni_counter.stop()
-    #        return self.c0_rate
-
-    #    else:
-    #        time.sleep(self.int_time.val)
-    #        self.c0_rate = random.random()*1e4
-    #        if self.debug_mode.val: print self.name, "dummy read_count_rate", self.c0_rate
-    #        return self.c0_rate
-
-
-

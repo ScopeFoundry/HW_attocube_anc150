@@ -10,9 +10,9 @@ from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
 from winspec_remote_readout import WinSpecRemoteReadout
 from winspec_remote_2Dscan import WinSpecMCL2DSlowScan
 
-from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
+from hardware_components.power_wheel_arduino import PowerWheelArduinoHW
 
-from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
+from hardware_components.thorlabs_powermeter import ThorlabsPowerMeterHW
 
 
 from power_scan_df import PowerScanDF
@@ -27,11 +27,11 @@ class DFMicroscopeApp(BaseMicroscopeApp):
         #self.add_hardware_component(DummyXYStage(self))
         self.add_hardware_component(MclXYZStage(self))
         self.add_hardware_component(WinSpecRemoteClientHC(self))
-        power_meter = self.add_hardware_component(ThorlabsPowerMeter(self))
+        power_meter = self.add_hardware_component(ThorlabsPowerMeterHW(self))
 
         power_meter.settings['port'] = 'USB0::0x1313::0x8078::P0013111::INSTR'
 
-        self.power_wheel = self.add_hardware_component(PowerWheelArduinoComponent(self))
+        self.power_wheel = self.add_hardware_component(PowerWheelArduinoHW(self))
 
         self.power_wheel.settings['ser_port'] = 'COM5'
 

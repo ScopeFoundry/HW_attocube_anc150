@@ -3,17 +3,18 @@ Created on Jun 27, 2014
 
 @author: Edward Barnard
 '''
+from __future__ import division, absolute_import, print_function
 from ScopeFoundry import HardwareComponent
 
 try:
-    from equipment.flip_mirror_arduino import FlipMirrorArduino
+    from .flip_mirror_arduino_interface import FlipMirrorArduino
 except Exception as err:
-    print "Cannot load required modules for FlipMirrorArduino:", err
+    print("Cannot load required modules for FlipMirrorArduino:", err)
 
 
 FLIP_MIRROR_PORT = "COM8"
 
-class FlipMirrorHardwareComponent(HardwareComponent):
+class FlipMirrorHW(HardwareComponent):
     
     def setup(self):
         self.name = 'flip_mirror'
@@ -33,7 +34,7 @@ class FlipMirrorHardwareComponent(HardwareComponent):
             self.flip_mirror_position.connect_bidir_to_widget(self.gui.ui.flip_mirror_checkBox)
         
     def connect(self):
-        if self.debug: print "connecting to flip mirror arduino"
+        if self.debug: self.log.debug( "connecting to flip mirror arduino")
         
         # Open connection to hardware
         self.flip_mirror = FlipMirrorArduino(port=FLIP_MIRROR_PORT, debug=True)
