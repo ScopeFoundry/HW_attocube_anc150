@@ -2,7 +2,7 @@ from ScopeFoundry import Measurement
 import pyqtgraph as pg
 import numpy as np
 
-class PicamReadout(Measurement):
+class PicamReadoutMeasure(Measurement):
 
     name = "picam_readout"
     
@@ -16,8 +16,8 @@ class PicamReadout(Measurement):
 
     def run(self):
 
-        picam_hc = self.app.hardware.picam
-        cam = picam_hc.cam
+        picam_hw = self.app.hardware.picam
+        cam = picam_hw.cam
 
         print "rois|-->", cam.read_rois()
 
