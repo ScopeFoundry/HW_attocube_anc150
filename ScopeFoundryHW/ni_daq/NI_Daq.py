@@ -3,9 +3,12 @@ Created on Aug 22, 2014
 
 @author: Frank Ogletree
 '''
-from __future__ import division
+from __future__ import division, print_function
 import numpy as np
 import PyDAQmx as mx
+import logging
+
+logger = logging.getLogger(__name__)
 
 class NamedTask(mx.Task):
     ''' replaces __init__ with one that accepts a name for the task, otherwise identical to PyDaqmx task
@@ -40,7 +43,7 @@ class NI_TaskWrap(object):
         
     def error(self, err ):
             self._error_list.append(err)
-            print 'Error calling "{}": {}'.format( err.fname, err.mess )
+            logger.error('Error calling "{}": {}'.format( err.fname, err.mess ))
 
     def stop(self):
         try:
@@ -263,7 +266,7 @@ class NI_AdcTask(NI_TaskWrap):
             self.error(err)
             #not sure how to handle actual samples read, resize array??
         if read_count.value < count:
-            print 'requested {} values for {} channels, only {} read'.format( count, self._chan_count, read_count.value)
+            logger.warning( 'requested {} values for {} channels, only {} read'.format( count, self._chan_count, read_count.value) )
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
 #        assert read_count.value == 1, \
 #           "sample count {} transfer count {}".format( 1, read_count.value )
@@ -534,7 +537,7 @@ class NI_CounterTask( NI_TaskWrap ):
             self.error(err)
             #not sure how to handle actual samples read, resize array??
         if read_count.value < count:
-            print 'requested {} values for {} channels, only {} read'.format( count, self._chan_count, read_count.value)
+            logger.warn('requested {} values for {} channels, only {} read'.format( count, self._chan_count, read_count.value))
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
 #        assert read_count.value == 1, \
 #           "sample count {} transfer count {}".format( 1, read_count.value )
@@ -593,7 +596,7 @@ class NI_SyncTaskSet(object):
         else:
             self.delta = 0
         self.dac.set_rate(rate_out, count_out, finite=is_finite, clk_source=self.clock_source)
-        print "setup", self.clock_source
+        logger.debug( "setup clock_source" + repr( self.clock_source) )
         self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite, clk_source=self.clock_source)
         for i in range(self.ctr_num):
             self.ctr[i].set_rate(rate_in,count_in+self.delta,clock_source='ai/SampleClock',finite=is_finite)
@@ -630,8 +633,8 @@ class NI_SyncTaskSet(object):
         return x[self.delta*self.ctr[i].get_chan_count()::]
     
     def stop(self):
-        print self.dac.task
-        print self.adc.task
+        logger.debug('dac.task {}'.format( self.dac.task ))
+        logger.debug('adc.task {}'.format( self.adc.task ))
         self.dac.stop() 
         self.adc.stop()
         for i in range(self.ctr_num):

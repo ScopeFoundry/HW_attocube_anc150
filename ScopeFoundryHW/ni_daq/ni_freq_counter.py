@@ -1,3 +1,4 @@
+from __future__ import division, absolute_import, print_function
 from ctypes import byref, c_uint32, c_int32
 import numpy as np
 
@@ -8,6 +9,9 @@ from PyDAQmx import DAQmx_Val_Hz, DAQmx_Val_Low, DAQmx_Val_LargeRng2Ctr, DAQmx_V
 from PyDAQmx import DAQmx_Val_DMA, DAQmx_Val_HighFreq2Ctr, DAQmx_Val_LowFreq1Ctr
 
 import time
+import logging
+logger = logging.getLogger(__name__)
+
 
 SAMPLE_BUFFER_SIZE = 32000
 
@@ -36,8 +40,8 @@ class NI_FreqCounter(object):
         mx.DAQmxCreateTask("",byref(self.task_handle))
         
         if self.mode == 'large_range':
-            print 'counter_chan', self.counter_chan
-            print 'input_terminal', self.input_terminal
+            logger.debug( 'counter_chan {}'.format( self.counter_chan))
+            logger.debug( 'input_terminal {}'.format( self.input_terminal))
             
             mx.DAQmxCreateCIFreqChan(self.task_handle,
                 counter = str(self.counter_chan) ,
@@ -112,11 +116,11 @@ class NI_FreqCounter(object):
     
     def start(self):
         status = mx.DAQmxStartTask(self.task_handle)
-        print 'start status', status
+        logger.debug( 'start status {}'.format( status ))
     
     def stop(self):
         status = mx.DAQmxStopTask(self.task_handle)
-        print 'stop status', status
+        logger.debug( 'stop status {}'.format( status ))
 
     
     def reset(self):
@@ -135,12 +139,12 @@ class NI_FreqCounter(object):
             sampsPerChanRead = byref(self._sample_buffer_count),
             reserved = None
             )
-        if self.debug: print 'read_freq_buffer', status, self._sample_buffer_count, np.max(self.sample_buffer)
+        if self.debug: logger.debug( 'read_freq_buffer {} {} {}'.format( status, self._sample_buffer_count, np.max(self.sample_buffer)))
         return self._sample_buffer_count.value, self.sample_buffer
 
     def read_average_freq_in_buffer(self):
         num_samples, _buffer = self.read_freq_buffer()
-        if self.debug: print num_samples, _buffer
+        if self.debug: logger.debug("read_average_freq_in_buffer {} {}".format( num_samples, _buffer))
         result =  np.average(_buffer[:num_samples])
         if np.isnan(result):
             return -1
@@ -169,4 +173,4 @@ if __name__ == '__main__':
             time.sleep(0.1)
             hz = fc.read_average_freq_in_buffer()
             fc.stop()
-            print "%i: %e Hz" % (i, hz)
+            print("%i: %e Hz" % (i, hz))
