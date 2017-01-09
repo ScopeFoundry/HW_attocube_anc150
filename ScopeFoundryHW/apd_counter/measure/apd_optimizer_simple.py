@@ -22,7 +22,7 @@ class APDOptimizerMeasure(Measurement):
         self.optimize_ii = 0
         
         # Connect events
-        self.gui.hardware['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
+        self.app.hardware['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
 

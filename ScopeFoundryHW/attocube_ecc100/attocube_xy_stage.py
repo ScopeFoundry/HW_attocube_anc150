@@ -8,7 +8,7 @@ from ScopeFoundry import HardwareComponent
 try:
     from .attocube_ecc100 import AttoCubeECC100
 except Exception as err:
-    print("could not load modules needed for AttoCubeECC100:", err)
+    print("could not load modules needed for AttoCubeECC100: {}".format(err))
     
 
 class AttoCubeXYStageHW(HardwareComponent):
@@ -126,16 +126,16 @@ class AttoCubeXYStageHW(HardwareComponent):
         
     def disconnect(self):
         
-
-        #disconnect logged quantities from hardware
+        #disconnect logged quantities from device
         for lq in self.settings.as_list():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
         
-        #disconnect hardware
-        self.ecc100.close()
-        
-        # clean up hardware object
-        del self.ecc100
+        if hasattr(self, 'ecc100'):
+            #disconnect device
+            self.ecc100.close()
+            
+            # clean up device object
+            del self.ecc100
         
         

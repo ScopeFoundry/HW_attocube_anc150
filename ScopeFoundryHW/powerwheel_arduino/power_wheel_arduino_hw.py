@@ -56,14 +56,17 @@ class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
 
     def disconnect(self):
 
-        # disconnect logged quantities from hardware
-        # ///\
+        #disconnect logged quantities from hardware
+        for lq in self.settings.as_list():
+            lq.hardware_read_func = None
+            lq.hardware_set_func = None
     
-        #disconnect hardware
-        self.power_wheel.close()
-        
-        # clean up hardware object
-        del self.power_wheel
+        if hasattr(self, 'power_wheel'):
+            #disconnect hardware
+            self.power_wheel.close()
+            
+            # clean up hardware object
+            del self.power_wheel
         
         print 'disconnected ',self.name
         

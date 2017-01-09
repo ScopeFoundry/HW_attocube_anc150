@@ -81,17 +81,19 @@ class APDCounterHW(HardwareComponent):
             print("missing gui", err)
 
     def disconnect(self):
-        #disconnect hardware
-        self.ni_counter.stop()
-        self.ni_counter.close()
         
         #disconnect logged quantities from hardware
         for lq in self.settings.as_dict().values():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
-        
-        # clean up hardware object
-        del self.ni_counter
+            
+        if hasattr(self, 'ni_counter'):
+            #disconnect hardware
+            self.ni_counter.stop()
+            self.ni_counter.close()
+                        
+            # clean up hardware object
+            del self.ni_counter
         
     def read_count_rate(self):
         if not self.dummy_mode.val:
