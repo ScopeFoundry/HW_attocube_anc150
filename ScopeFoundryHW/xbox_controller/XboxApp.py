@@ -1,8 +1,11 @@
 #from PySide import QtGui
 from __future__ import absolute_import, print_function, division
 from ScopeFoundry import BaseMicroscopeApp
-from .measurement.xbcontrol_mc import XboxControlMeasure
-from .hardware.xbcontrol_hc import XboxControlHW
+from ScopeFoundryHW.xbox_controller.measurement.xbcontrol_mc import XboxControlMeasure
+from ScopeFoundryHW.xbox_controller.hardware.xbcontrol_hc import XboxControlHW
+import logging
+
+logging.basicConfig(level='DEBUG')
 
 class XboxApp(BaseMicroscopeApp):
 	"""This class loads ScopeFoundry modules into the ScopeFoundry app related to

@@ -87,7 +87,7 @@ class XboxControlMeasure(Measurement):
         It essentially runs and listens for Pygame event signals and updates the status
         of every button in a specific category (such as hats, sticks, or buttons) in
         intervals of self.dt seconds."""
-        print("run")
+        self.log.debug("run")
         
         #Access equipment class:
         self.hw.connect()
@@ -98,7 +98,6 @@ class XboxControlMeasure(Measurement):
         
         self.hw.settings['Controller_Name'] = self.joystick.get_name()
         
-                
         while not self.interrupt_measurement_called:  
             time.sleep(self.dt)
             event_list = pygame.event.get()
@@ -118,7 +117,7 @@ class XboxControlMeasure(Measurement):
                         try:
                             self.hw.settings[self.direction_map[resp]] = True
                         except KeyError:
-                            print("Unknown dpad hat: ", resp)
+                            self.log.error("Unknown dpad hat: "+ repr(resp))
 
                 elif event.type in [pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP]:
                     button_state = (event.type == pygame.JOYBUTTONDOWN)
@@ -128,9 +127,9 @@ class XboxControlMeasure(Measurement):
                             try:
                                 self.hw.settings[self.button_map[i]] = button_state
                             except KeyError:
-                                print("Unknown button: %i (target state: %s)" % (i,
+                                self.log.error("Unknown button: %i (target state: %s)" % (i,
                                     'down' if button_state else 'up'))
 
                 else:
-                    print("Unknown event type: ", event.type)
+                    self.log.error("Unknown event type: {}".format(event.type))
 

@@ -1,8 +1,9 @@
-#import pygame
 import pygame.joystick
 import time
-from pygame.constants import JOYAXISMOTION, JOYHATMOTION, JOYBUTTONDOWN, JOYBUTTONUP
+#from pygame.constants import JOYAXISMOTION, JOYHATMOTION, JOYBUTTONDOWN, JOYBUTTONUP
+import logging
 
+logger = logging.getLogger(__name__)
 class XboxControlDevice(object):
         
     def __init__(self):
@@ -12,10 +13,11 @@ class XboxControlDevice(object):
         pygame.init()
         pygame.joystick.init()
         if pygame.joystick.get_init():
-            print("Joystick module initialized!")
-            print("%s joysticks detected." % pygame.joystick.get_count())
-        self.joystick = pygame.joystick.Joystick(0)
-        print("Joystick instance created.")
+            logger.debug("Joystick module initialized!")
+            logger.debug("%s joysticks detected." % pygame.joystick.get_count())
+        for i in range(pygame.joystick.get_count()):
+            self.joystick = pygame.joystick.Joystick(i)
+        logger.debug("Joystick instance created.")
         
         """Initializes joystick hardware and scans for number of 
         available HID features such as hats, sticks and buttons."""
