@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function
 import ctypes
 from ctypes import (c_int, c_int32, c_int16, c_uint32, c_int64, 
                     c_byte, c_ubyte, c_short, c_double, cdll, pointer, 
@@ -60,7 +60,7 @@ class AttoCubeECC100(object):
         self.device_num = device_num
         
         if self.debug:
-            print "Initializing AttoCubeECC100", device_num
+            print("Initializing AttoCubeECC100", device_num)
         
         self.num_devices = ecc.ECC_Check()
         
@@ -203,7 +203,7 @@ class AttoCubeECC100(object):
                             byref(tpos), # Int32* target
                             0, #Bln32 set
                             ))
-        if self.debug: print 'ecc100 read_target_position_axis', axis, tpos.value
+        if self.debug: print('ecc100 read_target_position_axis', axis, tpos.value)
 
         return tpos.value
 
@@ -308,27 +308,27 @@ if __name__ == '__main__':
     e = AttoCubeECC100(device_num=0, debug=True)
 
     for ax in [0,1,2]:
-        print ax, e.read_actor_info(ax)
-        print ax, "electrical", e.is_electrically_connected(ax)
-        print ax, "reference_status", e.read_reference_status(ax)
-        print ax, "reference_pos", e.read_reference_position(ax)
-        print ax, "step_voltage", e.read_step_voltage(ax)
+        print(ax, e.read_actor_info(ax))
+        print(ax, "electrical", e.is_electrically_connected(ax))
+        print(ax, "reference_status", e.read_reference_status(ax))
+        print(ax, "reference_pos", e.read_reference_position(ax))
+        print(ax, "step_voltage", e.read_step_voltage(ax))
         ##print ax, "dc_voltage", e.read_openloop_voltage(ax)
         #needs pro version
-        print ax, "frequency", e.read_frequency(ax)
-        print ax, "enable_axis", e.enable_axis(ax)
-        print ax, "position", e.read_position_axis(ax)
+        print(ax, "frequency", e.read_frequency(ax))
+        print(ax, "enable_axis", e.enable_axis(ax))
+        print(ax, "position", e.read_position_axis(ax))
         for i in range(10):
             e.single_step(ax, backward=False)
-            print ax, "position", e.read_position_axis(ax)
+            print(ax, "position", e.read_position_axis(ax))
             time.sleep(0.05)
 
-        print ax, "enable_closedloop_axis", e.enable_closedloop_axis(ax, enable=True)
-        print ax, "moving", e.write_target_position_axis(ax, 3e6)
+        print(ax, "enable_closedloop_axis", e.enable_closedloop_axis(ax, enable=True))
+        print(ax, "moving", e.write_target_position_axis(ax, 3e6))
         for i in range(10):
-            print ax, "position", e.read_position_axis(ax)
+            print(ax, "position", e.read_position_axis(ax))
             time.sleep(0.05)
         
     e.close()
     
-    print "done"
+    print("done")

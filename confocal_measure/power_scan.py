@@ -213,7 +213,7 @@ class PowerScanMeasure(Measurement):
         H['direction'] = self.direction
         self.h5_file.close()
         
-        print self.name, 'data saved', self.fname
+        print(self.name, 'data saved', self.fname)
 
 
     def move_to_min_pos(self):
@@ -245,14 +245,14 @@ class PowerScanMeasure(Measurement):
                 except Exception as err:
                     try_count = try_count + 1
                     if try_count > 9:
-                        print "failed to collect power meter sample:", err
+                        print("failed to collect power meter sample:", err)
                         break
                     time.sleep(0.010)
          
         if samp_count > 0:              
             pm_power = pm_power/samp_count
         else:
-            print "  Failed to read power"
+            print("  Failed to read power")
             pm_power = 10000.  
 
         

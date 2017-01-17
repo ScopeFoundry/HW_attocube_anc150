@@ -9,7 +9,7 @@ import time
 try:
     from .power_wheel_arduino_dev import PowerWheelArduino
 except Exception as err:
-    print "Cannot load required modules for arduino power wheel:", err
+    print("Cannot load required modules for arduino power wheel:", err)
 
 
 
@@ -41,7 +41,7 @@ class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
 
     def connect(self):
                 
-        if self.debug: print "connecting to arduino power wheel"
+        if self.debug: print("connecting to arduino power wheel")
         
         # Open connection to hardware
         self.power_wheel = PowerWheelArduino(port=self.ser_port.val, debug=self.debug_mode.val)
@@ -51,7 +51,7 @@ class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
         self.encoder_pos.hardware_set_func = self.power_wheel.write_steps
         self.encoder_pos.hardware_read_func= self.power_wheel.read_encoder
 
-        print 'connected to ',self.name
+        print('connected to ',self.name)
     
 
     def disconnect(self):
@@ -68,7 +68,7 @@ class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
             # clean up hardware object
             del self.power_wheel
         
-        print 'disconnected ',self.name
+        print('disconnected ',self.name)
         
     #@QtCore.Slot()
     def move_fwd(self):
