@@ -129,7 +129,7 @@ class NI_FreqCounterUSB(object):
 
     def read_average_freq_in_buffer(self):
         num_samples, _buffer = self.read_freq_buffer()
-        if self.debug: print num_samples, _buffer
+        if self.debug: print(num_samples, _buffer)
         result =  np.average(_buffer[:num_samples])
         if np.isnan(result):
             return -1

@@ -14,7 +14,7 @@ class PowerWheelArduino(object):
         self.port = port
         self.debug = debug
         
-        if self.debug: print "PowerWheelArduino init, port=%s" % self.port
+        if self.debug: print("PowerWheelArduino init, port=%s" % self.port)
         
         self.ser = serial.Serial(port=self.port, baudrate=57600, timeout=1.0)
                           
@@ -32,15 +32,15 @@ class PowerWheelArduino(object):
 
 
     def send_cmd(self, cmd):
-        if self.debug: print "send_cmd:", repr(cmd)
+        if self.debug: print("send_cmd:", repr(cmd))
         self.ser.write(cmd + "\n")
     
     def ask_cmd(self, cmd):
-        if self.debug: print "ask:", repr(cmd)
+        if self.debug: print("ask:", repr(cmd))
         self.send_cmd(cmd)
         time.sleep(0.01)
         resp = self.ser.readline()
-        if self.debug: print "resp:", repr(resp)
+        if self.debug: print("resp:", repr(resp))
         return resp 
 
     def write_steps(self,steps):
@@ -57,7 +57,7 @@ class PowerWheelArduino(object):
         self.read_status()
         
         while(self.is_moving_to):
-            if self.debug: print 'sleep'
+            if self.debug: print('sleep')
             time.sleep(0.050)
             self.read_status()
         
@@ -79,7 +79,7 @@ class PowerWheelArduino(object):
         self.distance_to_go = int(status[3])
         
         if self.debug:
-            print "read_status", status, self.is_moving_to, self.stored_speed, self.encoder_pos, self.distance_to_go
+            print("read_status", status, self.is_moving_to, self.stored_speed, self.encoder_pos, self.distance_to_go)
         
         return status    
     
@@ -88,7 +88,7 @@ class PowerWheelArduino(object):
         resp=self.ser.readline() 
         self.encoder_pos = int(resp)       
         if self.debug:
-            print "read_encoder", self.encoder_pos
+            print("read_encoder", self.encoder_pos)
 
         return self.encoder_pos
         

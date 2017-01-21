@@ -22,7 +22,7 @@ class APDOptimizerMeasure(Measurement):
         self.optimize_ii = 0
         
         # Connect events
-        self.gui.hardware['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
+        self.app.hardware['apd_counter'].int_time.connect_bidir_to_widget(self.ui.int_time_doubleSpinBox)
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
 
@@ -43,7 +43,7 @@ class APDOptimizerMeasure(Measurement):
         self.opt_plot.addItem(self.vLine, ignoreBounds=True)
 
     def run(self):
-        self.apd_counter_hc = self.gui.hardware['apd_counter']
+        self.apd_counter_hc = self.app.hardware['apd_counter']
         self.apd_count_rate = self.apd_counter_hc.apd_count_rate
         self.ni_counter = self.apd_counter_hc.ni_counter
         # data arrays
@@ -80,4 +80,4 @@ class APDOptimizerMeasure(Measurement):
         #print "display update", ii, self.optimize_history[ii]
         self.vLine.setPos(ii)
         self.optimize_plot_line.setData(self.optimize_history)
-        #self.gui.app.processEvents()
+        

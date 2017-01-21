@@ -1,9 +1,10 @@
+from __future__ import division, absolute_import, print_function
 from ScopeFoundry import HardwareComponent
-from equipment.winspec_remote_client import WinSpecRemoteClient
+from .winspec_remote_client import WinSpecRemoteClient
 
-class WinSpecRemoteClientHC(HardwareComponent):
+class WinSpecRemoteClientHW(HardwareComponent):
     
-    name="WinSpecRemoteClient"
+    name="winspec_remote_client"
     
     def setup(self):
         
@@ -14,7 +15,7 @@ class WinSpecRemoteClientHC(HardwareComponent):
         self.add_operation('reinitialize', self.reinitialize)
     
     def connect(self):
-        # connect settings to hardware
+        # connect settings to device
         S = self.settings
         self.winspec_client = WinSpecRemoteClient(host=S['host'], port=S['port'], debug=S['debug_mode'])
         self.winspec_client.set_acq_time(S['acq_time'])
@@ -26,17 +27,15 @@ class WinSpecRemoteClientHC(HardwareComponent):
         self.winspec_client.reinitialize()
     
     def disconnect(self):
-        #disconnect hardware
-        #self.W.close()
         
         #disconnect logged quantities from hardware
-        for lq in list(self.logged_quantities.values()):
+        for lq in self.settings.as_list():
             lq.hardware_read_func = None
             lq.hardware_set_func = None
-        
-        # clean up hardware object
-        del self.W
-        
 
-        
-        
+        if hasattr(self, 'winspec_client'):
+            #disconnect device
+            #self.winspec_client.close()
+            
+            # clean up device object
+            del self.winspec_client

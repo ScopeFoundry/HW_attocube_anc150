@@ -5,9 +5,9 @@ import pyqtgraph as pg
 import numpy as np
 from ScopeFoundry import h5_io
 
-class WinSpecRemoteReadout(Measurement):
+class WinSpecRemoteReadoutMeasure(Measurement):
     
-    name = "WinSpecRemoteReadout"
+    name = "winspec_readout"
     
     def setup(self):
         self.SHOW_IMG_PLOT = False
@@ -51,12 +51,12 @@ class WinSpecRemoteReadout(Measurement):
         
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
-        self.app.hardware.WinSpecRemoteClient.settings.acq_time.connect_bidir_to_widget(self.ui.acq_time_doubleSpinBox)
+        self.app.hardware['winspec_remote_client'].settings.acq_time.connect_bidir_to_widget(self.ui.acq_time_doubleSpinBox)
     
     def run(self):
         
         
-        winspec_hc = self.app.hardware.WinSpecRemoteClient
+        winspec_hc = self.app.hardware['winspec_remote_client']
         W = winspec_hc.winspec_client
         W.start_acq()
         
