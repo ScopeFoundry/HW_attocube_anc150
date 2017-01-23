@@ -25,18 +25,19 @@ class RandomNumberGenHW(HardwareComponent):
         self.randgen_dev = RandomNumberGenDev(amplitude=self.settings['amplitude'])
         
         # Connect settings to hardware:
-        self.settings.amplitude.hardware_set_func  = self.randgen_dev.write_amp
-        self.settings.rand_data.hardware_read_func = self.randgen_dev.read_rand_num
-        self.settings.sine_data.hardware_read_func = self.randgen_dev.read_sine_wave
+        self.settings.amplitude.connect_to_hardware(
+            write_func = self.randgen_dev.write_amp)
+        self.settings.rand_data.connect_to_hardware(
+            read_func  = self.randgen_dev.read_rand_num)
+        self.settings.sine_data.connect_to_hardware(
+            read_func  = self.randgen_dev.read_sine_wave)
         
         #Take an initial sample of the data.
         self.read_from_hardware()
         
     def disconnect(self):
         # remove all hardware connections to settings
-        for lq in self.settings.as_list():
-            lq.hardware_read_func = None
-            lq.hardware_set_func = None
+        self.settings.disconnect_all_from_hardware()
         
         # Don't just stare at it, clean up your objects when you're done!
         if hasattr(self, 'randgen_dev'):
