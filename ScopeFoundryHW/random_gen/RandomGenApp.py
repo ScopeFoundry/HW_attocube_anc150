@@ -8,6 +8,7 @@ from ScopeFoundry.base_app import BaseMicroscopeApp
 from ScopeFoundryHW.random_gen.rand_gen_measure import RandomNumberGenOptimizerMeasure
 from ScopeFoundryHW.random_gen.rand_gen_hw import RandomNumberGenHW
 from ScopeFoundryHW.random_gen.sine_wave_measure import SineWaveOptimizerMeasure
+from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
 
 class FancyMicroscopeApp(BaseMicroscopeApp):
     
@@ -25,6 +26,10 @@ class FancyMicroscopeApp(BaseMicroscopeApp):
         self.ui.activateWindow()
         #self.ui.mdiArea.addSubWindow(self.rand_measure.ui)
         #self.ui.mdiArea.addSubWindow(self.sine_measure.ui)
+        
+        self.side_ui_filename = sibling_path(__file__, "df_sidepanel.ui")
+        
+        self.side_ui = load_qt_ui_file(self.side_ui_filename)
         
         
 if __name__ == '__main__':
