@@ -20,7 +20,7 @@ class SineWaveOptimizerMeasure(Measurement):
         
         self.ui = load_qt_ui_file(self.ui_filename)
         
-        self.ui.setWindowTitle("Sine Wave Graph")
+        self.ui.setWindowTitle(self.name)
         
         Measurement.__init__(self, app)
         

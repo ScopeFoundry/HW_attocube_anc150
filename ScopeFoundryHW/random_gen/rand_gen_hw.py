@@ -10,25 +10,34 @@ from ScopeFoundryHW.random_gen.random_gen_dev import RandomNumberGenDev
 
 class RandomNumberGenHW(HardwareComponent):
     
+    ## Define name of this hardware plug-in
     name = 'random_gen'
     
     def setup(self):
-        # Define your logged quantities here. These are slots which can be updated and read by all parties.
-        self.settings.New(name='y_data', initial=0, dtype=float, ro=True)
+        # Define your hardware settings here.
+        # These settings will be displayed in the GUI and auto-saved with data files
+        self.settings.New(name='amplitude', initial=1.0, dtype=float, ro=False)
+        self.settings.New(name='rand_data', initial=0, dtype=float, ro=True)
         self.settings.New(name="sine_data", initial=0, dtype=float, ro=True)
     
     def connect(self):
-        # Open connection to hardware:
-        self.randgendev = RandomNumberGenDev(start=10,stop=50,range=40)
+        # Open connection to the device:
+        self.randgen_dev = RandomNumberGenDev(amplitude=self.settings['amplitude'])
         
+        # Connect settings to hardware:
+        self.settings.amplitude.hardware_set_func  = self.randgen_dev.write_amp
+        self.settings.rand_data.hardware_read_func = self.randgen_dev.read_rand_num
+        self.settings.sine_data.hardware_read_func = self.randgen_dev.read_sine_wave
         
-        # Connect logged quantity to hardware:
-        self.settings.y_data.hardware_read_func = self.randgendev.rand_func
-        self.settings.sine_data.hardware_read_func = self.randgendev.read_wave_data
-        #Take an inital sample of the data.
+        #Take an initial sample of the data.
         self.read_from_hardware()
         
     def disconnect(self):
+        # remove all hardware connections to settings
+        for lq in self.settings.as_list():
+            lq.hardware_read_func = None
+            lq.hardware_set_func = None
+        
         # Don't just stare at it, clean up your objects when you're done!
-        #del self.randgendev
-        pass
+        if hasattr(self, 'randgen_dev'):
+            del self.randgen_dev

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>PowerMeterOptmizerWindow</class>
- <widget class="QMainWindow" name="PowerMeterOptmizerWindow">
+ <class>sine_optmizer_Window</class>
+ <widget class="QMainWindow" name="sine_optmizer_Window">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Power Meter Optimizer</string>
+   <string>Sine Optimizer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout" stretch="1">
@@ -31,7 +31,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

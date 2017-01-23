@@ -7,26 +7,37 @@ import numpy as np
 import time
 
 class RandomNumberGenDev(object):
-    
-    name = 'random_gen_equipment'
-    
-    def __init__(self, start, stop, range):
-        """Define some variables here from the get-go."""
-        self.start = start
-        self.stop = stop
-        self.range = range
+    """
+    This is the low level dummy device object.
+    Typically when instantiated it will connect to the real-world
+    Methods allow for device read and write functions
+    """
         
-    def read_num(self):
-        """Some other function"""
-        read = np.linspace(self.start, self.stop, self.range)
-        return read
+    def __init__(self, amplitude=1.0):
+        """We would connect to the real-world here
+        if this were a real device
+        """
+        self.write_amp(amplitude)
     
-    def rand_func(self):
-        """Random number generator. Acts as our scientific device picking up a lot of noise."""
-        y_data = np.random.ranf()
-        return y_data
+    def write_amp(self, amplitude):
+        """
+        A write function to change the device's amplitude
+        normally this would talk to the real-world to change
+        a setting on the device
+        """
+        self._amplitude = amplitude
+            
+    def read_rand_num(self):
+        """Random number generator. 
+        Acts as our scientific device picking up a lot of noise."""
+        rand_data = np.random.ranf() * self._amplitude
+        return rand_data
     
-    def read_wave_data(self):
-        #x = np.linspace(self.start, self.stop, self.range)
-        data = np.sin(time.time())
-        return data
+    def read_sine_wave(self):
+        """ Acts like the device is generating a 1Hz sine wave
+        with an amplitude set by write_amp
+        """
+        sine_data = np.sin(time.time()) * self._amplitude
+        return sine_data
+    
+    
