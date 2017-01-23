@@ -15,7 +15,7 @@ This software is not made by or endorsed by the device manufacturer
 Author
 ----------
 
-Edward S. Barnard <esbarnard@lbl.gov>
+Edward S. Barnard <esbarnard@lbl.gov> and Alan Buckley
 
 
 Requirements
