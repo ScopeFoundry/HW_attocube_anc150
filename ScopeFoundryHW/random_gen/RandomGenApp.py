@@ -29,7 +29,7 @@ class FancyMicroscopeApp(BaseMicroscopeApp):
         
         self.side_ui_filename = sibling_path(__file__, "df_sidepanel.ui")
         
-        self.side_ui = load_qt_ui_file(self.side_ui_filename)
+        self.add_quickbar( load_qt_ui_file(self.side_ui_filename) )
         
         
 if __name__ == '__main__':
