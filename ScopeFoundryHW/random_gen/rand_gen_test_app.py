@@ -6,6 +6,9 @@ Created on Jan 11, 2017
 
 from ScopeFoundry.base_app import BaseMicroscopeApp
 #from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 class RandomGenTestMicroscopeApp(BaseMicroscopeApp):
     
