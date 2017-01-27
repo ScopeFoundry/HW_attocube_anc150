@@ -7,7 +7,7 @@ import serial
 import time
 
 PORT = 'COM7'   #our COM port
-GUN_ADDRESS = 03    #defined by PHI??
+GUN_ADDRESS = 03    #defined by PHI?? Sure beats me!
 #PHI gun commands
 GET_VERSION = 0x02  #firmware version
 SET_BEAM_V =  0x0A  #set beam voltage
@@ -152,12 +152,20 @@ class PhiIonGun(object):
         self.ask_cmd(0x39)
         self.State_Data_Packet()
         
+    def timer(self, period):
+        t0 = time.time()
+        while period > (time.time() - t0):
+            time.sleep(1)
+            #print(time.time()-t0)
+            pass
+        else:
+            return(0)
 
-    def read_condenser_v(self):
+    def read_condenser_v(self): #Not being updated gui side.
         """Inquires after the condenser lens voltage. A response is given in volts."""
         resp = self.ask_cmd(GET_COND_V)
         value = self.parse_data(resp)
-        if self.debug:  print "read_condenser_v: ",value 
+        if self.debug:  print "read_condenser_v: ", resp, value 
         return float(value)
     
     def read_emission_current(self):
@@ -167,11 +175,12 @@ class PhiIonGun(object):
         if self.debug: print "current (mA):", resp
         return float(value)
     
-    def read_beam_v(self):
+    def read_beam_v(self): #Not being updated gui side.
         """Inquires after the ion beam voltage. A response is given in volts."""
-        resp = self.ask_cmd(GET_BEAM_V) 
-        value = self.parse_data(resp)
-        if self.debug: print "read_beam_v:", resp
+        resp = self.ask_cmd(GET_BEAM_V)
+        #value = self.parse_data(resp) ##Device NOT returning any values. "read_beam_v: 03 OK 00 BD 00"
+        value = resp.split()[2]  ##Device NOT returning any values. "read_beam_v: 03 OK 00 BD 00"
+        if self.debug: print "read_beam_v:", resp, value
         return float(value)
     
     def read_extractor_p(self):
@@ -185,14 +194,14 @@ class PhiIonGun(object):
         """Inquires after the value of the ion gun's float voltage. A response is given in volts."""
         resp = self.ask_cmd(GET_FLOAT_V)
         value = self.parse_data(resp)
-        if self.debug: print "float_v:", resp
+        if self.debug: print "float_v:", resp, value
         return float(value)
     
-    def read_objective_v(self):
+    def read_objective_v(self): #Not being updated gui side.
         """Inquires after the value of the ion gun's objective lens voltage. A response is given in volts."""
         resp = self.ask_cmd(GET_OBJ_V)
         value = self.parse_data(resp)
-        if self.debug: print "objective_v:", resp
+        if self.debug: print "objective_v:", resp, value
         return float(value)
 
     def write_beam_v(self, data): 

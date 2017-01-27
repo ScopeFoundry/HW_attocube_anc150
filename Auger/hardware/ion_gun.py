@@ -154,10 +154,12 @@ class PhiIonGunHardwareComponent(HardwareComponent):
         self.beam_voltage_target.updated_value.connect(self.on_beam_voltage_target_updated)
 
 
-        self.add_operation('timer start', self.timed_state)
+#         self.add_operation('timer start', self.timed_state)
         # operations
         self.add_operation('zero state command', self.zero_state_command)
         #self.add_operation('zero state gun on', self.zero_state_command_gunon)
+
+
 
     def on_beam_voltage_target_updated(self):
         """Once the beam voltage is altered by the user, this signal triggers objective and 
@@ -332,24 +334,27 @@ class PhiIonGunHardwareComponent(HardwareComponent):
                 self.phiiongun.yoff
         
     
-    def timed_state(self):
-        self.old_state = self.gun_state.val
-        self.new_state = self.gun_state2.val
-        self.time = self.timer.val
-        t0 = time.time()
-        while time.time() < t0 + self.time:
-            self.gun_state.update_value(self.new_state)
-            #I'm very much hesitant to implement this update command:
-            '''choices = [("Off", 'OFF')]''' 
-            #(Given that this is a tuple, and not the usual integer or float datatype)
+#     def timed_state(self):
+#         self.old_state = self.gun_state.val
+#         self.new_state = self.gun_state2.val
+#         self.time = self.timer.val
+#         t0 = time.time()
+#         while time.time() < t0 + self.time:
+#             self.gun_state.update_value(self.new_state)
+#             #I'm very much hesitant to implement this update command:
+#             '''choices = [("Off", 'OFF')]''' 
+#             #(Given that this is a tuple, and not the usual integer or float datatype)
+#         else:
+#             self.gun_state.update_value(self.old_state)
+#             #See above comments. 
+
+    def timed_sputter(self):
+        self.gun_state.update_value("Active")
+        while self.phiiongun.timer(self.timer.val) != 0:
+            time.sleep(1)
+            self.timer.update_value(self.timer.val-1)
         else:
-            self.gun_state.update_value(self.old_state)
-            #See above comments. 
-
-
-
-
-
+            self.gun_state.update_value("Standby")
 
 
 

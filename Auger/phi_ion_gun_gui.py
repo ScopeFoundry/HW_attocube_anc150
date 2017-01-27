@@ -2,8 +2,7 @@ import sys
 from PySide import QtGui
 
 #There is an issue with import on certain systems. Works fine on PXI in 1211.
-from ScopeFoundry.base_gui import BaseMicroscopeGUI  
-
+from ScopeFoundry.base_gui import BaseMicroscopeApp
 
 
 # Import Hardware Components
@@ -12,7 +11,7 @@ from Auger.hardware.ion_gun import PhiIonGunHardwareComponent
 # Import Measurement Components
 from measurement.ion_gun import IonGunStatus
 
-class PhiIonGunGUI(BaseMicroscopeGUI):
+class PhiIonGunGUI(BaseMicroscopeApp):
     """Class specifies which ui file to use and which hardware and measurement components 
     to load in :func:`setup()`
     """
