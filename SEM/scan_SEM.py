@@ -18,7 +18,7 @@ class ScanDAC(object):
         self.clock_rate = 5e5       
         
         self.channel = channel
-        self.dac = NI_Daq.Dac(self.channel, "SEM ext scan")
+        self.dac = NI_Daq.NI_DacTask(self.channel, "SEM ext scan")
             
     def out_array(self):
         '''

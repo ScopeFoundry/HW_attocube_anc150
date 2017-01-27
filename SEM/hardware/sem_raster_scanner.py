@@ -6,7 +6,7 @@ Created on Feb 4, 2015
 from hardware_components import HardwareComponent
 try:
     from SEM.sem_equipment.raster_generator import RasterGenerator
-    from equipment.NI_Daq import Sync
+    from equipment.NI_Daq import NI_SyncTaskSet
     from equipment.NI_CallBack import SyncCallBack
 except Exception as err:
     print "could not load modules needed for AttoCubeECC100:", err
@@ -285,7 +285,7 @@ class SemRasterScanner(HardwareComponent):
         #setup tasks
         #while self.continuous_scan.val==1:
         if self.sync_mode.val=='regular':
-            self.sync_analog_io = Sync(self.output_channel_addresses.val,self.input_channel_addresses.val,self.counter_channel_addresses.val.split(','),self.counter_channel_terminals.val.split(','))
+            self.sync_analog_io = NI_SyncTaskSet(self.output_channel_addresses.val,self.input_channel_addresses.val,self.counter_channel_addresses.val.split(','),self.counter_channel_terminals.val.split(','))
         elif self.sync_mode.val=='callback':
             self.sync_analog_io= SyncCallBack(self.output_channel_addresses.val,self.input_channel_addresses.val,self.counter_channel_addresses.val.split(','),self.counter_channel_terminals.val.split(','))
       

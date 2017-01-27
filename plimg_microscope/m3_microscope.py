@@ -1,103 +1,102 @@
-import sys
-from PySide import QtGui
+from __future__ import print_function, absolute_import, division
 
 from ScopeFoundry import BaseMicroscopeApp
 
+import logging
 
-# Import Hardware Components
-#from hardware_components.apd_counter_usb import APDCounterUSBHardwareComponent
-#from hardware_components.dummy_xy_stage import DummyXYStage
-from hardware_components.picam import PicamHardware
-from hardware_components.mcl_xyz_stage import MclXYZStage
-from hardware_components.apd_counter import APDCounterHardwareComponent
-from hardware_components.attocube_xy_stage import AttoCubeXYStage
+logging.basicConfig(level='DEBUG')#, filename='m3_log.txt')
+logging.getLogger("ipykernel").setLevel(logging.WARNING)
+logging.getLogger('PyQt4').setLevel(logging.WARNING)
+logging.getLogger('ScopeFoundry.logged_quantity.LoggedQuantity').setLevel(logging.WARNING)
 
-from measurement_components.apd_confocal import APD_MCL_2DSlowScan
-
-
-# Import Measurement Components
-from measurement_components.apd_optimizer_simple import APDOptimizerMeasurement
-from measurement_components.simple_xy_scan import SimpleXYScan
-from measurement_components.picam_readout import PicamReadout
-from hardware_components.acton_spec import ActonSpectrometerHardwareComponent
-from hardware_components.sem_slowscan_vout import SEMSlowscanVoutStage
-from Auger.sem_slowscan2d import SEMVoutDelaySlowScan
-
-from attocube_interface_measure import AttocubeInterface
-
-from pl_img_linescan import PLImgLineScan
-from hardware_components.picoharp import PicoHarpHardwareComponent
-
-from hardware_components.ascom_camera_hc import ASCOMCameraHC
-from measurement_components.ascom_camera_capture import ASCOMCameraCapture
-from hardware_components.winspec_remote_client import WinSpecRemoteClientHC
-from df_microscope.winspec_remote_readout import WinSpecRemoteReadout
-
-from hardware_components.power_wheel_arduino import PowerWheelArduinoComponent
-from df_microscope.power_scan_df import PowerScanDF
-from hardware_components.thorlabs_powermeter import ThorlabsPowerMeter
-from measurement_components.powermeter_optimizer_new import PowerMeterOptimizerMeasurement
-
+"""logging.basicConfig(filename='m3_log.txt')
+stderrLogger=logging.StreamHandler()
+stderrLogger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+logging.getLogger().addHandler(stderrLogger)
+"""
 class M3MicroscopeApp(BaseMicroscopeApp):
 
-    name = "M3_Microscope"
-
-    #ui_filename = "base_gui.ui"
+    name = "m3_microscope"
 
     def setup(self):
         
         #Add hardware components
-        print "Adding Hardware Components"
-        self.add_hardware_component(APDCounterHardwareComponent(self))
-        #self.add_hardware_component(DummyXYStage(self))
-        self.add_hardware_component(MclXYZStage(self))
-        self.add_hardware_component(SEMSlowscanVoutStage(self)) 
-        self.add_hardware_component(PicoHarpHardwareComponent(self))
-        self.add_hardware_component(WinSpecRemoteClientHC(self))
-        self.add_hardware_component(ASCOMCameraHC(self))
+        print("Adding Hardware Components")
         
-        self.add_hardware_component(PowerWheelArduinoComponent(self))
-        self.add_hardware_component(ThorlabsPowerMeter(self))
+        from ScopeFoundryHW.apd_counter.apd_counter import APDCounterHW
+        self.add_hardware_component(APDCounterHW(self))
+        
+        from ScopeFoundryHW.mcl_stage.mcl_xyz_stage import MclXYZStageHW
+        self.add_hardware_component(MclXYZStageHW(self))
+        
+        #self.add_hardware_component(SEMSlowscanVoutStage(self)) 
+        
+        from ScopeFoundryHW.picoharp import PicoHarpHW
+        self.add_hardware_component(PicoHarpHW(self))
+        
+        from ScopeFoundryHW.winspec_remote import WinSpecRemoteClientHW
+        self.add_hardware_component(WinSpecRemoteClientHW(self))
+        
+        from ScopeFoundryHW.ascom_camera import ASCOMCameraHW
+        self.add_hardware_component(ASCOMCameraHW(self))
+        
+        from ScopeFoundryHW.powerwheel_arduino import PowerWheelArduinoHW
+        self.add_hardware_component(PowerWheelArduinoHW(self))
+        
+        from ScopeFoundryHW.thorlabs_powermeter import ThorlabsPowerMeterHW
+        self.add_hardware_component(ThorlabsPowerMeterHW(self))
 
-        #self.add_hardware_component(PicamHardware(self))
-        #self.add_hardware_component(ActonSpectrometerHardwareComponent(self))
+        from ScopeFoundryHW.attocube_ecc100 import AttoCubeXYStageHW
+        self.add_hardware_component(AttoCubeXYStageHW(self))
 
-        self.add_hardware_component(AttoCubeXYStage(self))
+        
         #Add measurement components
-        print "Create Measurement objects"
-        self.add_measurement_component(APDOptimizerMeasurement(self))
-        self.add_measurement_component(APD_MCL_2DSlowScan(self))
-        
-        self.add_measurement_component(SEMVoutDelaySlowScan(self))
-        
-        self.add_measurement_component(AttocubeInterface(self))
-        self.add_measurement_component(PLImgLineScan(self))
-        #self.add_measurement_component(SimpleXYScan(self))
-        #self.add_measurement_component(PicamReadout(self))
-                
-        self.add_measurement_component(ASCOMCameraCapture(self))
-        self.add_measurement_component(WinSpecRemoteReadout(self))
+        print("Create Measurement objects")
 
-        self.add_measurement_component(PowerScanDF(self))
-        self.add_measurement_component(PowerMeterOptimizerMeasurement(self))
+        # hardware specific measurements
+        from ScopeFoundryHW.apd_counter import APDOptimizerMeasure
+        self.add_measurement_component(APDOptimizerMeasure(self))
+        
+        from ScopeFoundryHW.ascom_camera import ASCOMCameraCaptureMeasure
+        self.add_measurement_component(ASCOMCameraCaptureMeasure(self))
+
+        from ScopeFoundryHW.winspec_remote import WinSpecRemoteReadoutMeasure
+        self.add_measurement_component(WinSpecRemoteReadoutMeasure(self))
+
+        from ScopeFoundryHW.thorlabs_powermeter import PowerMeterOptimizerMeasure
+        self.add_measurement_component(PowerMeterOptimizerMeasure(self))
+        
+        # combined measurements
+        from confocal_measure.power_scan import PowerScanMeasure
+        self.add_measurement_component(PowerScanMeasure(self))
+        
+        # Mapping measurements
+        from confocal_measure import APD_MCL_2DSlowScan
+        self.add_measurement_component(APD_MCL_2DSlowScan(self))        
+        
+        from confocal_measure import Picoharp_MCL_2DSlowScan
+        self.add_measurement_component(Picoharp_MCL_2DSlowScan(self))
+        
+        from confocal_measure import WinSpecMCL2DSlowScan
+        self.add_measurement_component(WinSpecMCL2DSlowScan(self))
+        
         #set some default logged quantities
-        #self.hardware_components['apd_counter'].debug_mode.update_value(True)
-        #self.hardware_components['apd_counter'].dummy_mode.update_value(True)
-        #self.hardware_components['apd_counter'].connected.update_value(True)
-
-
-        #Add additional logged quantities
-
+        #
+        
+        #Add additional app-wide logged quantities
+        # 
+        
         # Connect to custom gui
         
+        # show gui
         self.ui.show()
         self.ui.activateWindow()
         
+        # load default settings from file
         self.settings_load_ini("m3_settings.ini")
 
 
 if __name__ == '__main__':
-
+    import sys
     app = M3MicroscopeApp(sys.argv)
-    
     sys.exit(app.exec_())

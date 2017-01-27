@@ -1,6 +1,8 @@
-from PySide import QtCore, QtGui, QtUiTools
+from __future__ import absolute_import, print_function
+from qtpy import QtCore, QtWidgets, uic
 from collections import OrderedDict
 import os
+import logging
 
 class OrderedAttrDict(object):
 
@@ -25,24 +27,30 @@ class OrderedAttrDict(object):
     
     def __getitem__(self, key):
         return self._odict[key]
+    
+    def __contains__(self, k):
+        return self._odict.__contains__(k)
 
 def sibling_path(a, b):
     return os.path.join(os.path.dirname(a), b)
 
 
 def load_qt_ui_file(ui_filename):
-    ui_loader = QtUiTools.QUiLoader()
-    ui_file = QtCore.QFile(ui_filename)
-    ui_file.open(QtCore.QFile.ReadOnly)
-    ui = ui_loader.load(ui_file)
-    ui_file.close()
+    ### PySide version
+    #ui_loader = QtUiTools.QUiLoader()
+    #ui_file = QtCore.QFile(ui_filename)
+    #ui_file.open(QtCore.QFile.ReadOnly)
+    #ui = ui_loader.load(ui_file)
+    #ui_file.close()
+    ### qtpy / PyQt version
+    ui = uic.loadUi(ui_filename)
     return ui
 
 def confirm_on_close(widget, title="Close ScopeFoundry?", message="Do you wish to shut down ScopeFoundry?", func_on_close=None):
-    widget.closeEventEater = CloseEventEater(title, message, func_on_close)
+    widget.closeEventEater = ConfirmCloseEventEater(title, message, func_on_close)
     widget.installEventFilter(widget.closeEventEater)
     
-class CloseEventEater(QtCore.QObject):
+class ConfirmCloseEventEater(QtCore.QObject):
     
     def __init__(self, title="Close ScopeFoundry?", message="Do you wish to shut down ScopeFoundry?", func_on_close=None):
         QtCore.QObject.__init__(self)
@@ -53,16 +61,16 @@ class CloseEventEater(QtCore.QObject):
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.Close:
             # eat close event
-            print "close"
-            reply = QtGui.QMessageBox.question(None, 
+            logging.debug("close")
+            reply = QtWidgets.QMessageBox.question(None, 
                                                self.title, 
                                                self.message,
-                                               QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.Yes:
-                print "closing"
+                                               QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                logging.debug("closing")
                 if self.func_on_close:
                     self.func_on_close()
-                QtGui.QApplication.quit()
+                QtWidgets.QApplication.quit()
                 event.accept()
             else:
                 event.ignore()
@@ -70,6 +78,20 @@ class CloseEventEater(QtCore.QObject):
         else:
             # standard event processing            
             return QtCore.QObject.eventFilter(self,obj, event)
+    
+def ignore_on_close(widget):
+    widget.ignoreCloseEventEater = IgnoreCloseEventEater()
+    widget.installEventFilter(widget.ignoreCloseEventEater)
+    
+class IgnoreCloseEventEater(QtCore.QObject):
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Close:
+            # eat close event
+            event.ignore()
+            return True
+        else:
+            # standard event processing            
+            return QtCore.QObject.eventFilter(self,obj, event)            
         
 def replace_widget_in_layout(old_widget, new_widget, retain_font=True, retain_sizePolicy=True, retain_size=True):
     """
@@ -113,3 +135,27 @@ def replace_widget_in_layout(old_widget, new_widget, retain_font=True, retain_si
     
     
     return new_widget
+
+def print_all_connected(qobject, signal=None):
+    if signal is None:
+        signals = qobject.signals()
+    else:
+        signals = [signal]
+    for signal in qobject.signals():
+        for slot in qobject.connectedSlots():
+            print(slot)
+
+def print_signals_and_slots(obj):
+    # http://visitusers.org/index.php?title=PySide_Recipes
+    for i in range(obj.metaObject().methodCount()):
+        m = obj.metaObject().method(i)
+        if m.methodType() == QtCore.QMetaMethod.MethodType.Signal:
+            print("SIGNAL: sig=", m.signature(), "hooked to nslots=",obj.receivers(QtCore.SIGNAL(m.signature())))
+        elif m.methodType() == QtCore.QMetaMethod.MethodType.Slot:
+            print("SLOT: sig=", m.signature())
+            
+def get_logger_from_class(obj):
+    """ returns a named Logger from the logging package using the
+    full name of the class of the object (obj) as the log name
+    """ 
+    return logging.getLogger(obj.__module__ + "." + obj.__class__.__name__)

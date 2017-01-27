@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import PyDAQmx as mx
 
 from equipment.SEM.raster_generator import RasterGenerator
-from equipment.NI_Daq import Dac, Sync, Adc, Counter
+from equipment.NI_Daq import NI_DacTask, NI_SyncTaskSet, NI_AdcTask, NI_CounterTask
 
 
 #  various test code 
@@ -17,8 +17,8 @@ if __name__ == '__main__':
     if test == 'block counter':
         rate = 1e5
         block = 1000
-        dac = Dac('X-6368/ao0')
-        ctr = Counter('X-6368/ctr0','PFI0')        
+        dac = NI_DacTask('X-6368/ao0')
+        ctr = NI_CounterTask('X-6368/ctr0','PFI0')        
         ctr.set_rate( rate, block )   #finite read     
         dac.set_rate(rate, block, finite=True)
         dac.load_buffer(np.zeros(block))
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         plt.show()
         
     if test == 'counter':  
-        ctr = Counter('X-6368/ctr2','PFI12')
+        ctr = NI_CounterTask('X-6368/ctr2','PFI12')
         ctr.start()
         elapsed = time.clock()
         for i in range(10):
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         block = sem.count()
 
         #setup tasks
-        scan = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
+        scan = NI_SyncTaskSet('X-6368/ao0:1', 'X-6368/ai1:3')
         scan.setup(rate, block, rate, block)
         scan.write_output_data_to_buffer(buff_out)
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
         buff_out[1::2] = out2   
 
         #setup tasks
-        scan = Sync('X-6368/ao0:1', 'X-6368/ai2:3', 1.0)
+        scan = NI_SyncTaskSet('X-6368/ao0:1', 'X-6368/ai2:3', 1.0)
         scan.setup(rate, block, 10*rate, 10*block)
         scan.write_output_data_to_buffer(buff_out)
 
@@ -125,10 +125,10 @@ if __name__ == '__main__':
         plt.plot(out2)
         plt.show()
     else:         
-        dac = Dac('X-6368/ao0:1', 'SEM ext scan')
+        dac = NI_DacTask('X-6368/ao0:1', 'SEM ext scan')
         data = np.arange(0, 10, 0.001, dtype = np.float64)
     
-        adc = Adc('X-6368/ai2:3', 5, name = 'chan 2-3')
+        adc = NI_AdcTask('X-6368/ai2:3', 5, name = 'chan 2-3')
     
     if test == 'dual':
         # make output waveform

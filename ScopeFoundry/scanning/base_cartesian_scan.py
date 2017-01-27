@@ -10,10 +10,8 @@ import numpy as np
 import pyqtgraph as pg
 import time
 from ScopeFoundry import h5_io
-from hardware_components import apd_counter
-from PySide import QtCore
+from qtpy import QtCore
 from ScopeFoundry import LQRange
-import warnings
 
 def ijk_zigzag_generator(dims, axis_order=(0,1,2)):
     """3D zig-zag scan pattern generator with arbitrary fast axis order"""
@@ -118,6 +116,7 @@ class BaseCartesian2DScan(Measurement):
         self.add_operation('clear_previous_scans', self.clear_previous_scans)
 
     def compute_scan_params(self):
+        self.log.debug('compute_scan_params')
         # Don't recompute if a scan is running!
         if self.is_measuring():
             return # maybe raise error
@@ -241,6 +240,7 @@ class BaseCartesian2DScan(Measurement):
         self.update_scan_roi()
         
     def update_scan_roi(self):
+        self.log.debug("update_scan_roi")
         x0, x1, y0, y1 = self.imshow_extent
         self.scan_roi.blockSignals(True)
         self.scan_roi.setPos( (x0, y0, 0))
@@ -253,6 +253,7 @@ class BaseCartesian2DScan(Measurement):
         self.current_stage_pos_arrow.setPos(x,y)
     
     def update_display(self):
+        self.log.debug('update_display')
         if self.initial_scan_setup_plotting:
             if self.settings['show_previous_scans']:
                 self.img_item = pg.ImageItem()
@@ -260,16 +261,19 @@ class BaseCartesian2DScan(Measurement):
                 self.img_plot.addItem(self.img_item)
                 self.hist_lut.setImageItem(self.img_item)
     
-            self.img_item.setImage(self.display_image_map[0,:,:].T)
+            self.img_item.setImage(self.display_image_map[0,:,:])
             x0, x1, y0, y1 = self.imshow_extent
-            print x0, x1, y0, y1
-            self.img_item.setRect(QtCore.QRectF(x0, y0, x1-x0, y1-y0))
+            self.log.debug('update_display set bounds {} {} {} {}'.format(x0, x1, y0, y1))
+            self.img_item_rect = QtCore.QRectF(x0, y0, x1-x0, y1-y0)
+            self.img_item.setRect(self.img_item_rect)
+            self.log.debug('update_display set bounds {}'.format(self.img_item_rect))
             
             self.initial_scan_setup_plotting = False
         else:
             #if self.settings.scan_type.val in ['raster']
             kk, jj, ii = self.current_scan_index
             self.img_item.setImage(self.display_image_map[kk,:,:].T, autoRange=False, autoLevels=False)
+            self.img_item.setRect(self.img_item_rect) # Important to set rectangle after setImage for non-square pixels
             self.hist_lut.imageChanged(autoLevel=True)
             
     def clear_previous_scans(self):
@@ -312,13 +316,13 @@ class BaseCartesian2DScan(Measurement):
         
     
     def pre_scan_setup(self):
-        print self.name, "pre_scan_setup not implemented"
+        print(self.name, "pre_scan_setup not implemented")
         # hardware
         # create data arrays
         # update figure
     
     def post_scan_cleanup(self):
-        print self.name, "post_scan_setup not implemented"
+        print(self.name, "post_scan_setup not implemented")
     
     @property
     def h_array(self):
@@ -360,7 +364,7 @@ class BaseCartesian2DScan(Measurement):
             self.scan_index_array[:,1] = JJ.flat
             self.scan_index_array[:,2] = II.flat
             #self.scan_v_positions
-            print "array flatten raster gen", time.time() - t0
+            print("array flatten raster gen", time.time() - t0)
             
         
     def gen_serpentine_scan(self, gen_arrays=True):
@@ -531,6 +535,7 @@ class BaseCartesian2DSlowScan(BaseCartesian2DScan):
                     else:
                         self.move_position_fast(h,v, dh, dv)
                     
+                    self.pos = (h,v)
                     # each pixel:
                     # acquire signal and save to data array
                     pixel_t0 = time.time()
@@ -557,11 +562,17 @@ class BaseCartesian2DSlowScan(BaseCartesian2DScan):
     def move_position_fast(self, x,y, dx, dy):
         self.stage.x_position.update_value(x)
         self.stage.y_position.update_value(y)
+        #x = self.stage.settings['x_position']
+        #y = self.stage.settings['y_position']        
+        #x = self.stage.settings.x_position.read_from_hardware()
+        #y = self.stage.settings.y_position.read_from_hardware()
+        #print(x,y)
+        
 
     def collect_pixel(self, pixel_num, k, j, i):
         # collect data
         # store in arrays        
-        print self.name, "collect_pixel", pixel_num, k,j,i, "not implemented"
+        print(self.name, "collect_pixel", pixel_num, k,j,i, "not implemented")
     
 
 
@@ -569,9 +580,12 @@ class BaseCartesian2DSlowScan(BaseCartesian2DScan):
 class TestCartesian2DSlowScan(BaseCartesian2DSlowScan):
     name='test_cart_2d_slow_scan'
     
+    def __init__(self, app):
+        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(0,100), v_limits=(0,100), h_unit="um", v_unit="um")        
+    
     def setup(self):
         BaseCartesian2DSlowScan.setup(self)
-        self.settings.New('pixel_time', initial=0.01, unit='s')
+        self.settings.New('pixel_time', initial=0.001, unit='s', si=False, spinbox_decimals=5)
         
     
     def pre_scan_setup(self):
@@ -584,15 +598,36 @@ class TestCartesian2DSlowScan(BaseCartesian2DSlowScan):
         self.prev_px = time.time()
          
     def post_scan_cleanup(self):
-        print "post_scan_cleanup"
+        print("post_scan_cleanup")
         
     def collect_pixel(self, pixel_i, k,j,i):
         #print pixel_i, k,j,i
         t0 = time.time()
         #px_data = np.random.rand()
-        px_data = t0 - self.prev_px
+        #px_data = t0 - self.prev_px
+        x0,y0 = self.pos
+        x_set = self.stage.settings['x_position']
+        y_set = self.stage.settings['y_position']
+        x_hw = self.stage.settings.x_position.read_from_hardware(send_signal=False)
+        y_hw = self.stage.settings.y_position.read_from_hardware(send_signal=False)
+        if np.abs(x_hw - x0) > 1:
+            self.log.debug('='*60)
+            self.log.debug('pos      {} {}'.format(x0, y0))
+            self.log.debug('settings {} {}'.format(x_set, y_set))
+            self.log.debug('hw       {} {}'.format(x_hw, y_hw))            
+            self.log.debug('settings value delta {} {}'.format(x_set-x0, y_set-y0))
+            self.log.debug('read_hw  value delta {} {}'.format(x_hw-x0, y_hw-y0))
+            self.log.debug('='*60)
+        
+        x = x_hw
+        y = y_hw
+        
+        px_data = np.sinc((x-50)*0.05)**2 * np.sinc(0.05*(y-50))**2 #+ 0.05*np.random.random()
+        #px_data = (x-xhw)**2 + ( y-yhw)**2
+        #if px_data > 1:
+        #    print('hw', x, xhw, y, yhw)
         self.display_image_map[k,j,i] = px_data
         if self.settings['save_h5']:
             self.test_data[k,j,i] = px_data 
         time.sleep(self.settings['pixel_time'])
-        self.prev_px = t0
+        #self.prev_px = t0

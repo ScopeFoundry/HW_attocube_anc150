@@ -112,10 +112,10 @@ def test1():
 
 def test2():
     import time
-    from equipment.NI_Daq import Sync
+    from equipment.NI_Daq import NI_SyncTaskSet
     
     # set up sync io on X-board with a pixel trigger on PXI_Trig0
-    sync_analog_io = Sync(out_chan  = "X-6368/ao0:1",
+    sync_analog_io = NI_SyncTaskSet(out_chan  = "X-6368/ao0:1",
                                        in_chan   = "X-6368/ai0:1",
                                        ctr_chans = [],  #self.counter_channel_addresses.val.split(','),
                                        ctr_terms = [], #self.counter_channel_terminals.val.split(','),

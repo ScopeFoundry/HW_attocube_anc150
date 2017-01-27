@@ -4,15 +4,16 @@ Created on Tue Apr  1 09:25:48 2014
 
 @author: esbarnard
 """
+from __future__ import absolute_import, print_function
 
-from PySide import QtCore, QtGui
+from qtpy import QtCore, QtWidgets
 import threading
 import time
-from ScopeFoundry.logged_quantity import LQCollection
-from ScopeFoundry.helper_funcs import load_qt_ui_file
+from .logged_quantity import LQCollection
+from .helper_funcs import load_qt_ui_file
 from collections import OrderedDict
 import pyqtgraph as pg
-import warnings
+from ScopeFoundry.helper_funcs import get_logger_from_class
 
 class MeasurementQThread(QtCore.QThread):
     def __init__(self, measurement, parent=None):
@@ -45,6 +46,7 @@ class Measurement(QtCore.QObject):
         """
         
         QtCore.QObject.__init__(self)
+        self.log = get_logger_from_class(self)
 
         self.app = app
         
@@ -64,7 +66,7 @@ class Measurement(QtCore.QObject):
         self.running    = self.settings.New('running', dtype=bool, ro=True) # is the thread actually running?
         self.progress   = self.settings.New('progress', dtype=float, unit="%", si=False, ro=True)
 
-        self.activation.updated_value.connect(self.start_stop)
+        self.activation.updated_value[bool].connect(self.start_stop)
 
         self.add_operation("start", self.start)
         self.add_operation("interrupt", self.interrupt)
@@ -79,14 +81,16 @@ class Measurement(QtCore.QObject):
         
         self.setup()
         
+        
+        
         try:
             self._add_control_widgets_to_measurements_tab()
         except Exception as err:
-            print "MeasurementComponent: could not add to measurement tab", self.name,  err
+            self.log.info("MeasurementComponent: could not add to measurement tab: {}, {}".format(self.name,  err))
         try:
             self._add_control_widgets_to_measurements_tree()
         except Exception as err:
-            print "MeasurementComponent: could not add to measurement tree", self.name,  err
+            self.log.info("MeasurementComponent: could not add to measurement tree: {}, {}".format(self.name,  err))
 
 
     def setup(self):
@@ -101,7 +105,7 @@ class Measurement(QtCore.QObject):
         Overide setup_figure to build graphical interfaces. 
         This function is run on ScopeFoundry startup.
         """
-        print "Empty setup_figure called"
+        self.log.info("Empty setup_figure called")
         pass
     
     @QtCore.Slot()
@@ -113,7 +117,7 @@ class Measurement(QtCore.QObject):
         creates acquisition thread 
         runs thread
         """ 
-        print "measurement", self.name, "start"
+        self.log.info("measurement {} start".format(self.name))
         self.interrupt_measurement_called = False
         if (self.acq_thread is not None) and self.is_measuring():
             raise RuntimeError("Cannot start a new measurement while still measuring")
@@ -141,7 +145,7 @@ class Measurement(QtCore.QObject):
         """
         
         if hasattr(self, '_run'):
-            print "warning _run is deprecated, use run"
+            self.log.warning("warning _run is deprecated, use run")
             self._run()
         else:
             raise NotImplementedError("Measurement {}.run() not defined".format(self.name))
@@ -165,13 +169,14 @@ class Measurement(QtCore.QObject):
             #self.measurement_state_changed.emit(False)
             if self.interrupt_measurement_called:
                 self.measurement_interrupted.emit()
+                self.interrupt_measurement_called = False
             else:
                 self.measurement_sucessfully_completed.emit()
 
 
     @property
     def gui(self):
-        warnings.warn("Measurement.gui is deprecated, use Measurement.app", DeprecationWarning)
+        self.log.warning("Measurement.gui is deprecated, use Measurement.app " + repr(DeprecationWarning))
         return self.app
     
     def set_progress(self, pct):
@@ -186,7 +191,7 @@ class Measurement(QtCore.QObject):
         To actually stop, the threaded :meth:`run` method must check
         for this flag and exit
         """
-        print "measurement", self.name, "interrupt"
+        self.log.info("measurement {} interrupt".format(self.name))
         self.interrupt_measurement_called = True
         self.activation.update_value(False)
         #Make sure display is up to date        
@@ -200,7 +205,7 @@ class Measurement(QtCore.QObject):
         Use boolean *start* to either start (True) or
         interrupt (False) measurement
         """
-        print self.name, "start_stop", start
+        self.log.info("{} start_stop {}".format(self.name, start))
         if start:
             self.start()
         else:
@@ -234,7 +239,7 @@ class Measurement(QtCore.QObject):
             self.update_display()
         except Exception as err:
             pass
-            print self.name, "Failed to update figure:", err            
+            self.log.error("{} Failed to update figure: {}".format(self.name, err))          
         finally:
             if not self.is_measuring():
                 self.display_update_timer.stop()
@@ -277,8 +282,8 @@ class Measurement(QtCore.QObject):
     def _add_control_widgets_to_measurements_tab(self):
         cwidget = self.app.ui.measurements_tab_scrollArea_content_widget
         
-        self.controls_groupBox = QtGui.QGroupBox(self.name)
-        self.controls_formLayout = QtGui.QFormLayout()
+        self.controls_groupBox = QtWidgets.QGroupBox(self.name)
+        self.controls_formLayout = QtWidgets.QFormLayout()
         self.controls_groupBox.setLayout(self.controls_formLayout)
         
         cwidget.layout().addWidget(self.controls_groupBox)
@@ -287,16 +292,16 @@ class Measurement(QtCore.QObject):
         for lqname, lq in self.settings.as_dict().items():
             #: :type lq: LoggedQuantity
             if lq.choices is not None:
-                widget = QtGui.QComboBox()
+                widget = QtWidgets.QComboBox()
             elif lq.dtype in [int, float]:
                 if lq.si:
                     widget = pg.SpinBox()
                 else:
-                    widget = QtGui.QDoubleSpinBox()
+                    widget = QtWidgets.QDoubleSpinBox()
             elif lq.dtype in [bool]:
-                widget = QtGui.QCheckBox()  
+                widget = QtWidgets.QCheckBox()  
             elif lq.dtype in [str]:
-                widget = QtGui.QLineEdit()
+                widget = QtWidgets.QLineEdit()
             lq.connect_bidir_to_widget(widget)
 
             # Add to formlayout
@@ -306,7 +311,7 @@ class Measurement(QtCore.QObject):
             
         self.op_buttons = OrderedDict()
         for op_name, op_func in self.operations.items(): 
-            op_button = QtGui.QPushButton(op_name)
+            op_button = QtWidgets.QPushButton(op_name)
             op_button.clicked.connect(op_func)
             self.controls_formLayout.addRow(op_name, op_button)
             
@@ -318,10 +323,10 @@ class Measurement(QtCore.QObject):
         tree.setColumnCount(2)
         tree.setHeaderLabels(["Measurements", "Value"])
 
-        self.tree_item = QtGui.QTreeWidgetItem(tree, [self.name, ""])
+        self.tree_item = QtWidgets.QTreeWidgetItem(tree, [self.name, ""])
         tree.insertTopLevelItem(0, self.tree_item)
         #self.tree_item.setFirstColumnSpanned(True)
-        self.tree_progressBar = QtGui.QProgressBar()
+        self.tree_progressBar = QtWidgets.QProgressBar()
         tree.setItemWidget(self.tree_item, 1, self.tree_progressBar)
         self.progress.updated_value.connect(self.tree_progressBar.setValue)
 
@@ -329,19 +334,19 @@ class Measurement(QtCore.QObject):
         for lqname, lq in self.settings.as_dict().items():
             #: :type lq: LoggedQuantity
             if lq.choices is not None:
-                widget = QtGui.QComboBox()
+                widget = QtWidgets.QComboBox()
             elif lq.dtype in [int, float]:
                 if lq.si:
                     widget = pg.SpinBox()
                 else:
-                    widget = QtGui.QDoubleSpinBox()
+                    widget = QtWidgets.QDoubleSpinBox()
             elif lq.dtype in [bool]:
-                widget = QtGui.QCheckBox()  
+                widget = QtWidgets.QCheckBox()  
             elif lq.dtype in [str]:
-                widget = QtGui.QLineEdit()
+                widget = QtWidgets.QLineEdit()
             lq.connect_bidir_to_widget(widget)
 
-            lq_tree_item = QtGui.QTreeWidgetItem(self.tree_item, [lqname, ""])
+            lq_tree_item = QtWidgets.QTreeWidgetItem(self.tree_item, [lqname, ""])
             self.tree_item.addChild(lq_tree_item)
             lq.hardware_tree_widget = widget
             tree.setItemWidget(lq_tree_item, 1, lq.hardware_tree_widget)
@@ -350,9 +355,9 @@ class Measurement(QtCore.QObject):
         # Add operation buttons to tree
         self.op_buttons = OrderedDict()
         for op_name, op_func in self.operations.items(): 
-            op_button = QtGui.QPushButton(op_name)
+            op_button = QtWidgets.QPushButton(op_name)
             op_button.clicked.connect(op_func)
             self.op_buttons[op_name] = op_button
             #self.controls_formLayout.addRow(op_name, op_button)
-            op_tree_item = QtGui.QTreeWidgetItem(self.tree_item, [op_name, ""])
+            op_tree_item = QtWidgets.QTreeWidgetItem(self.tree_item, [op_name, ""])
             tree.setItemWidget(op_tree_item, 1, op_button)

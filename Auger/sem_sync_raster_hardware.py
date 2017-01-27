@@ -11,7 +11,7 @@ try:
     from SEM.sem_equipment.raster_generator import RasterGenerator
     from SEM.sem_equipment.rate_converter import RateConverter
 
-    from equipment.NI_Daq import Sync
+    from equipment.NI_Daq import NI_SyncTaskSet
     from equipment.NI_CallBack import SyncCallBack
 except Exception as err:
     print "could not load modules needed for SemSyncRasterDAQ:", err
@@ -138,7 +138,7 @@ class SemSyncRasterDAQ(HardwareComponent):
                 clock_source = self.settings['ext_clock_source']
             else:
                 clock_source = "" 
-            self.sync_analog_io = Sync(out_chan  = self.output_channel_addresses.val,
+            self.sync_analog_io = NI_SyncTaskSet(out_chan  = self.output_channel_addresses.val,
                                        in_chan   = self.input_channel_addresses.val,
                                        ctr_chans = self.counter_channel_addresses.val.split(','),
                                        ctr_terms = self.counter_channel_terminals.val.split(','),

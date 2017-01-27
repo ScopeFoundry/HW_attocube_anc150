@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import PyDAQmx as mx
 
 from equipment.SEM.raster_generator import RasterGenerator
-from equipment.NI_CallBack import Dac, Sync, Adc, Counter
+from equipment.NI_CallBack import NI_DacTask, NI_SyncTaskSet, NI_AdcTask, NI_CounterTask
 
 
 #  various test code 
@@ -20,8 +20,8 @@ if __name__ == '__main__':
         data=np.zeros(block)
         a=list()
         b=list()
-        adc = Dac('X-6368/ao0')
-        ctr = Counter('X-6368/ctr0','PFI0')        
+        adc = NI_DacTask('X-6368/ao0')
+        ctr = NI_CounterTask('X-6368/ctr0','PFI0')        
         ctr.set_rate( rate, block, clock_source='ao/SampleClock' )
         ctr.set_callback(a)   #finite read     
         adc.set_rate(rate, block)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
         print(len(a))
         
     if test == 'counter':  
-        ctr = Counter('X-6368/ctr2','PFI12')
+        ctr = NI_CounterTask('X-6368/ctr2','PFI12')
         ctr.start()
         elapsed = time.clock()
         for i in range(10):
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     if test == 'callback':
         rate = 1e5
         block = 1000
-        adc=Adc('X-6368/ai3')
+        adc=NI_AdcTask('X-6368/ai3')
         adc.set_rate(rate,block,finite=False)
         a=list()
         adc.set_callback(a)
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         block = sem.count()
 
         #setup tasks
-        scan = Sync('X-6368/ao0:1', 'X-6368/ai1:3')
+        scan = NI_SyncTaskSet('X-6368/ao0:1', 'X-6368/ai1:3')
         scan.setup(rate, block, rate, block)
         scan.write_output_data_to_buffer(buff_out)
 
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         buff_out[1::2] = out2   
 
         #setup tasks
-        scan = Sync('X-6368/ao0:1', 'X-6368/ai2:3', 1.0)
+        scan = NI_SyncTaskSet('X-6368/ao0:1', 'X-6368/ai2:3', 1.0)
         scan.setup(rate, block, 10*rate, 10*block)
         scan.write_output_data_to_buffer(buff_out)
 
@@ -146,10 +146,10 @@ if __name__ == '__main__':
         plt.plot(out2)
         plt.show()
     else:         
-        dac = Dac('X-6368/ao0:1', 'SEM ext scan')
+        dac = NI_DacTask('X-6368/ao0:1', 'SEM ext scan')
         data = np.arange(0, 10, 0.001, dtype = np.float64)
     
-        adc = Adc('X-6368/ai2:3', 5, name = 'chan 2-3')
+        adc = NI_AdcTask('X-6368/ai2:3', 5, name = 'chan 2-3')
     
     if test == 'dual':
         # make output waveform

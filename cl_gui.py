@@ -20,13 +20,13 @@ from matplotlib.figure import Figure
 
 from logged_quantity import LoggedQuantity
 
-from hardware_components.andor_ccd import AndorCCDHardwareComponent
-from hardware_components.attocube_xy_stage import AttoCubeXYStage
+from hardware_components.andor_ccd import AndorCCDHW
+from hardware_components.attocube_xy_stage import AttoCubeXYStageHW
 from hardware_components.sem_detector_analog_input import SEMDetectorHardwareComponent
 
 
 from measurement_components.andor_ccd_readout import \
-                AndorCCDReadout, AndorCCDReadBackground
+                AndorCCDReadoutMeasure, AndorCCDReadBackground
 
 from measurement_components.atto_sample_scan import AttoSampleScan
 
@@ -53,13 +53,13 @@ class CLMicroscopeGUI(object):
 
         # Add hardware components
         print "Adding Hardware Components"
-        self.andor_ccd_hc = self.add_hardware_component(AndorCCDHardwareComponent(self))
-        self.attocube_xy_stage = self.add_hardware_component(AttoCubeXYStage(self))
+        self.andor_ccd_hc = self.add_hardware_component(AndorCCDHW(self))
+        self.attocube_xy_stage = self.add_hardware_component(AttoCubeXYStageHW(self))
         self.sem_detector = self.add_hardware_component(SEMDetectorHardwareComponent(self))
 
         # Create the measurement objects
         print "Create Measurement objects"
-        self.andor_ro_measure = self.add_measurement_component(AndorCCDReadout(self))
+        self.andor_ro_measure = self.add_measurement_component(AndorCCDReadoutMeasure(self))
         self.andor_bg_measure = self.add_measurement_component(AndorCCDReadBackground(self))
         self.atto_sample_scan = self.add_measurement_component(AttoSampleScan(self))
         # Setup the figures         
