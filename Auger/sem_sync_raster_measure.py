@@ -45,9 +45,9 @@ class SemSyncRasterScan(BaseCartesian2DScan):
     def run(self):
         self.current_scan_index = 0,0,0
         # Compute data arrays
-        print "computing scan arrays"
+        self.log.debug( "computing scan arrays")
         self.compute_scan_arrays()
-        print "computing scan arrays... done"
+        self.log.debug( "computing scan arrays... done")
         
         self.initial_scan_setup_plotting = True
         

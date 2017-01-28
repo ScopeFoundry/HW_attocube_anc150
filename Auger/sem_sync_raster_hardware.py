@@ -3,18 +3,18 @@ Created on Feb 4, 2015
 
 @author: Hao Wu
 Rewritten 2016-07-11 ESB
+Rewritten 2017-01-27 ESB
 
 '''
-from hardware_components import HardwareComponent
-from ScopeFoundry.logged_quantity import LoggedQuantity
+from ScopeFoundry import HardwareComponent
 try:
     from SEM.sem_equipment.raster_generator import RasterGenerator
     from SEM.sem_equipment.rate_converter import RateConverter
 
-    from equipment.NI_Daq import NI_SyncTaskSet
-    from equipment.NI_CallBack import SyncCallBack
+    from ScopeFoundryHW.ni_daq import NI_SyncTaskSet
+    from ScopeFoundryHW.ni_daq.NI_CallBack import SyncCallBack
 except Exception as err:
-    print "could not load modules needed for SemSyncRasterDAQ:", err
+    print("could not load modules needed for SemSyncRasterDAQ:", err)
 
 import numpy as np
 
@@ -121,7 +121,7 @@ class SemSyncRasterDAQ(HardwareComponent):
         self.lq_lock_on_connect = ['output_channel_addresses', 'input_channel_addresses', 'counter_channel_addresses', 'counter_channel_terminals']
         
     def connect(self):        
-        if self.debug_mode.val: print "connecting to {}".format(self.name)
+        if self.debug_mode.val: self.log.debug( "connecting to {}".format(self.name))
 
         #self.remcon=self.app.hardware['sem_remcon']        
         
@@ -211,18 +211,12 @@ class SemSyncRasterDAQ(HardwareComponent):
             lq.hardware_set_func = None
 
         #disconnect hardware
-        try:
+        if hasattr(self, "sync_analog_io"):
             self.sync_analog_io.stop()
-        finally:
-            pass
-        
-        try:
             self.sync_analog_io.close()
-        finally:
-            pass
         
-        # clean up hardware object
-        del self.sync_analog_io
+            # clean up hardware object
+            del self.sync_analog_io
 
 
     def interleave_xy_arrays(self, X, Y):
