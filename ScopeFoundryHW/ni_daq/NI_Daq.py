@@ -566,7 +566,7 @@ class NI_SyncTaskSet(object):
 #         for n in range(self.ctr_num):
 #             print(ctr_chans)
 #             print(ctr_terms)
-        for i in xrange(0,self.ctr_num):
+        for i in range(0,self.ctr_num):
             self.ctr.append(NI_CounterTask(ctr_chans[i],ctr_terms[i],''))
         #sync dac start to adc start
         buffSize = 512
@@ -576,7 +576,7 @@ class NI_SyncTaskSet(object):
             self.adc.task.CfgDigEdgeStartTrig(clock_source, mx.DAQmx_Val_Rising)
         
         self.adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
-        trig_name = '/' + buff.value + '/ai/StartTrigger'
+        trig_name = b'/' + buff.value + b'/ai/StartTrigger'
         #print trig_name
         self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
         
