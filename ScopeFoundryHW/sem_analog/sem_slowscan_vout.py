@@ -6,7 +6,7 @@ Created on Oct 29, 2015
 import ScopeFoundry
 from ScopeFoundry import HardwareComponent
 try:
-    from equipment.NI_Daq import NI_DacTask
+    from ScopeFoundryHW.ni_daq import NI_DacTask
 except Exception as err:
     print("could not load equipment.NI_Daq")
 
@@ -46,7 +46,8 @@ class SEMSlowscanVoutStage(HardwareComponent):
         self.x_position.change_min_max(self.v_min.val, self.v_max.val)
     
     def connect(self):
-        if self.debug_mode.val: print "connecting to NI NI_DacTask output task"
+        if self.debug_mode.val:
+            self.log.debug("connecting to NI NI_DacTask output task")
 
         self.chan_addr.change_readonly(True)
 
@@ -59,19 +60,18 @@ class SEMSlowscanVoutStage(HardwareComponent):
         self.y_position.hardware_set_func  = self.write_y
 
     def disconnect(self):
-        if self.debug_mode.val: print "disconnecting from NI NI_DacTask output"
+        if self.debug_mode.val: self.log.debug( "disconnecting from NI NI_DacTask output")
         
         self.chan_addr.change_readonly(False)
 
         #disconnect logged quantities from hardware
-        for lq in self.settings.as_list():
-            lq.hardware_read_func = None
-            lq.hardware_set_func = None
+        self.settings.disconnect_all_from_hardware()
         
-        #disconnect hardware
-        self.dac.close()
-        # clean up hardware object
-        del self.dac
+        if hasattr(self, 'dac'):
+            #disconnect hardware
+            self.dac.close()
+            # clean up hardware object
+            del self.dac
 
     def write_x(self,x):
         self.write_xy(x, self.y_position.val)
@@ -83,21 +83,3 @@ class SEMSlowscanVoutStage(HardwareComponent):
         self.dac.set((self.x_dir.val*x,self.y_dir.val*y))
         #self.x_position.update_value(x, update_hardware=False)
         #self.y_position.update_value(y, update_hardware=False)
-        
-if __name__ == '__main__':
-    from PySide import QtGui
-    import sys
-    
-    
-    app = QtGui.QApplication(sys.argv)
-    app.setApplicationName("sem_slowscan_vout")
-    
-    gui = ScopeFoundry.BaseMicroscopeGUI(app)
-    gui.show()
-    
-    sem_slowscan_vout = SEMSlowscanVout(gui)
-    
-    
-    
-    sys.exit(app.exec_())    
-    
