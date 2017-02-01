@@ -1,5 +1,5 @@
 from ScopeFoundry import HardwareComponent
-from .NI_Daq import NI_AdcTask
+from ScopeFoundryHW.ni_daq.devices.NI_Daq import NI_AdcTask
 
 class NI_ADC_HW(HardwareComponent):
     

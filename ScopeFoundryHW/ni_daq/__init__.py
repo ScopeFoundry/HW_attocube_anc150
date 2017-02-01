@@ -1,4 +1,11 @@
 from __future__ import absolute_import
-from .ni_adc_hw import NI_ADC_HW
-from .ni_dac_hw import NI_DAC_HW
-from .NI_Daq import NI_AdcTask, NI_SyncTaskSet,  NI_CounterTask, NI_DacTask
+
+# Hardware Components
+from ScopeFoundryHW.ni_daq.hw.ni_adc_hw import NI_ADC_HW
+from ScopeFoundryHW.ni_daq.hw.ni_dac_hw import NI_DAC_HW
+
+# Devices: NI tasks
+from ScopeFoundryHW.ni_daq.devices.NI_Daq import NI_AdcTask, NI_SyncTaskSet,  NI_CounterTask, NI_DacTask
+
+# Measurements
+from ScopeFoundryHW.ni_daq.measure.adc_optimizer import AdcOptimizerMeasure
