@@ -1,14 +1,16 @@
 from ScopeFoundry import HardwareComponent
-from ScopeFoundryHW.ni_daq import NI_AdcTask
+from .NI_Daq import NI_AdcTask
 
 class NI_ADC_HW(HardwareComponent):
     
     def __init__(self, app, name='ni_adc', debug=False):
         self.name = name
         HardwareComponent.__init__(self, app, debug=debug)
-        
-        self.settings.New('adc_val', dtype=float, ro=True)
-        self.settings.New('channel', dtype=str, inital='/Dev1/ai0')
+    
+    def setup(self):
+        self.settings.New('adc_val', dtype=float, ro=True,  unit='V')
+        self.settings.New('channel', dtype=str, initial='/Dev1/ai0')
+        self.settings.New('range', dtype=float, initial=10, unit='V')
         self.settings.New('terminal_config', dtype=str, initial='default',
                           choices=['default', 'rse', 'nrse', 'diff', 'pdiff'])
         
@@ -22,7 +24,7 @@ class NI_ADC_HW(HardwareComponent):
         self.adc_task.set_single()
         self.adc_task.start()
         
-        #TODO disable channel and terminal_config 
+        #TODO disable channel and terminal_config on connection
         
         #connect settings to hardware
         self.settings.adc_val.connect_to_hardware(
@@ -40,9 +42,7 @@ class NI_ADC_HW(HardwareComponent):
 
             
     def read_adc_single(self):
-        resp = self.adc.get()
+        resp = self.adc_task.get()
         if self.debug_mode.val:
             self.log.debug( "read_adc_single resp: {}".format( resp))
         return float(resp[0])
-    
-    
