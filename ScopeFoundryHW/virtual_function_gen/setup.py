@@ -14,9 +14,9 @@ setup(
     # Choose your license
     license='BSD',
 
-    package_dir={'ScopeFoundryHW.random_gen': '.'},
+    package_dir={'ScopeFoundryHW.virtual_function_gen': '.'},
     
-    packages=['ScopeFoundryHW.random_gen',],
+    packages=['ScopeFoundryHW.virtual_function_gen',],
         
     package_data={
         '':["*.ui"], # include QT ui files 
