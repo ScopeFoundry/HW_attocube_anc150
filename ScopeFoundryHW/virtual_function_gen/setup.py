@@ -19,7 +19,8 @@ setup(
     packages=['ScopeFoundryHW.virtual_function_gen',],
         
     package_data={
-        '':["*.ui"], # include QT ui files 
-        '':["README*", 'LICENSE'], # include License and readme 
+        '':["README*", 'LICENSE', # include License and readme 
+            "*.ui", # include QT ui files 
+            ], 
         },
     )
