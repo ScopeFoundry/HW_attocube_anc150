@@ -31,6 +31,7 @@ class SineWavePlotMeasure(Measurement):
         # This setting allows the option to save data to an h5 data file during a run
         # All settings are automatically added to the Microscope user interface
         self.settings.New('save_h5', dtype=bool, initial=True)
+        self.settings.New('sampling_period', dtype=float, unit='s', initial=0.1)
         
         # Create empty numpy array to serve as a buffer for the acquired data
         self.buffer = np.zeros(120, dtype=float)
@@ -116,8 +117,9 @@ class SineWavePlotMeasure(Measurement):
                     # flush H5
                     self.h5file.flush()
                 
-                # wait between readings (100ms)
-                time.sleep(0.1)
+                # wait between readings.
+                # We will use our sampling_period settings to define time
+                time.sleep(self.settings['sampling_period'])
                 
                 i += 1
 
