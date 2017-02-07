@@ -6,11 +6,11 @@ ESB 2016-07-19
 
 '''
 
-from ScopeFoundry.scanning.base_cartesian_scan import BaseCartesian2DScan
+from ScopeFoundry.scanning.base_cartesian_scan import BaseRaster2DScan
 from SEM.sem_equipment.rate_converter import RateConverter
 import numpy as np
 
-class SemSyncRasterScan(BaseCartesian2DScan):
+class SemSyncRasterScan(BaseRaster2DScan):
 
     name = "sem_sync_raster_scan"
     
@@ -18,7 +18,7 @@ class SemSyncRasterScan(BaseCartesian2DScan):
         self.h_unit = self.v_unit = "V"
         self.h_limits = self.v_limits = (-10,10)
         
-        BaseCartesian2DScan.setup(self)
+        BaseRaster2DScan.setup(self)
                 
         self.display_update_period = 0.050 #seconds
 
@@ -165,6 +165,6 @@ class SemSyncRasterScan(BaseCartesian2DScan):
         #self.scanDAQ.sync_analog_io.close()
         
     def update_display(self):
-        BaseCartesian2DScan.update_display(self)
+        BaseRaster2DScan.update_display(self)
         
     

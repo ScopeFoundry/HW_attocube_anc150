@@ -1,13 +1,13 @@
-from ScopeFoundry.scanning.base_cartesian_scan import BaseCartesian2DSlowScan
+from ScopeFoundry.scanning.base_cartesian_scan import BaseRaster2DSlowScan
 import numpy as np
 import time
 
-class SEMVoutSlowScan(BaseCartesian2DSlowScan):
+class SEMVoutSlowScan(BaseRaster2DSlowScan):
     
     name = "SEMVoutSlowScan"
     
     def __init__(self, app):
-        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")        
+        BaseRaster2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")        
         self.stage = self.app.hardware['sem_slowscan_vout_stage']
 
 
@@ -75,7 +75,7 @@ class SEMSlowScan(SEMVoutSlowScan):
         pass
     
     def update_display(self):
-        BaseCartesian2DSlowScan.update_display(self)
+        BaseRaster2DSlowScan.update_display(self)
         
         #self.app.measurements.picam_readout.roi_data = self.roi_data
         #self.app.measurements.picam_readout.update_display()
