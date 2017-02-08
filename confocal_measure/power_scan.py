@@ -55,8 +55,8 @@ class PowerScanMeasure(Measurement):
             self.collect_apd.update_value(False)
             self.collect_apd.change_readonly(True)
         
-        if 'WinSpecRemoteClient' in self.app.hardware.keys():
-            self.app.hardware.WinSpecRemoteClient.settings.acq_time.connect_bidir_to_widget(
+        if 'winspec_remote_client' in self.app.hardware.keys():
+            self.app.hardware['winspec_remote_client'].settings.acq_time.connect_bidir_to_widget(
                                                                     self.ui.spectrum_int_time_doubleSpinBox)
         else:
             self.collect_spectrum.update_value(False)
@@ -99,16 +99,16 @@ class PowerScanMeasure(Measurement):
 
     def run(self):
         # hardware and delegate measurements
-        self.power_wheel_hc = self.app.hardware.power_wheel_arduino
-        self.power_wheel = self.power_wheel_hc.power_wheel
+        self.power_wheel_hw = self.app.hardware.power_wheel_arduino
+        self.power_wheel_dev = self.power_wheel_hw.power_wheel_dev
         
         if self.settings['collect_apd']:
             self.apd_counter_hc = self.app.hardware.apd_counter
             self.apd_count_rate_lq = self.apd_counter_hc.settings.apd_count_rate     
 
         if self.settings['collect_spectrum']:
-            self.winspec_readout = self.app.measurements.WinSpecRemoteReadout
-        
+            self.winspec_readout = self.app.measurements['winspec_readout']
+                   
         if self.settings['collect_ascom_img']:
             self.ascom_camera_capture = self.app.measurements.ascom_camera_capture
             self.ascom_camera_capture.settings['continuous'] = False
@@ -158,7 +158,7 @@ class PowerScanMeasure(Measurement):
                 break
             
             # record power wheel position
-            self.power_wheel_position[ii] = self.power_wheel_hc.encoder_pos.read_from_hardware()
+            self.power_wheel_position[ii] = self.power_wheel_hw.encoder_pos.read_from_hardware()
             
             # collect power meter value
             self.pm_powers[ii]=self.collect_pm_power_data()
@@ -183,9 +183,9 @@ class PowerScanMeasure(Measurement):
             self.pm_powers_after[ii]=self.collect_pm_power_data()
 
             # move to new power wheel position
-            self.power_wheel.write_steps_and_wait(self.step_size*self.direction[ii])
+            self.power_wheel_dev.write_steps_and_wait(self.step_size*self.direction[ii])
             time.sleep(0.5)
-            self.power_wheel_hc.encoder_pos.read_from_hardware()
+            self.power_wheel_hw.encoder_pos.read_from_hardware()
 
         # write data to h5 file on disk
         
@@ -217,12 +217,12 @@ class PowerScanMeasure(Measurement):
 
 
     def move_to_min_pos(self):
-        self.power_wheel.read_status()
+        self.power_wheel_dev.read_status()
         
-        delta_steps = self.power_wheel_min.val - self.power_wheel_hc.encoder_pos.read_from_hardware()
+        delta_steps = self.power_wheel_min.val - self.power_wheel_hw.encoder_pos.read_from_hardware()
         if delta_steps != 0:
             #print 'moving to min pos'
-            self.power_wheel.write_steps_and_wait(delta_steps)
+            self.power_wheel_dev.write_steps_and_wait(delta_steps)
             #print 'done moving to min pos'
 
     

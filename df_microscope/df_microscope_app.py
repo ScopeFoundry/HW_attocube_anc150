@@ -9,8 +9,8 @@ class DFMicroscopeApp(BaseMicroscopeApp):
         
         print("Adding Hardware Components")
         
-        from ScopeFoundryHW.apd_counter import APDCounterUSBHW
-        self.add_hardware_component(APDCounterUSBHW(self))
+        from ScopeFoundryHW.apd_counter import APDCounterHW
+        self.add_hardware_component(APDCounterHW(self))
 
         from ScopeFoundryHW.mcl_stage.mcl_xyz_stage import MclXYZStageHW
         self.add_hardware_component(MclXYZStageHW(self))
@@ -54,11 +54,6 @@ class DFMicroscopeApp(BaseMicroscopeApp):
         from confocal_measure import WinSpecMCL2DSlowScan
         self.add_measurement_component(WinSpecMCL2DSlowScan(self))
                 
-
-        self.ui.show()
-        #self.ui._raise()
-        self.ui.activateWindow()
-        
         # load default settings 
         self.hardware['thorlabs_powermeter'].settings['port'] = 'USB0::0x1313::0x8078::P0013111::INSTR'
         self.hardware['power_wheel_arduino'].settings['ser_port'] = 'COM5'

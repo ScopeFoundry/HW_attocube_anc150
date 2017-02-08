@@ -1,6 +1,6 @@
 from ScopeFoundry import HardwareComponent
 try:
-    from ScopeFoundryHW.ni_daq.ni_freq_counter import NI_FreqCounter
+    from ScopeFoundryHW.ni_daq import NI_FreqCounter
 except Exception as err:
     print("Cannot load required modules for APDCounter:", err)
     
@@ -47,11 +47,6 @@ class APDCounterHW(HardwareComponent):
         
         self.dummy_mode = self.add_logged_quantity(name='dummy_mode', dtype=bool, initial=False, ro=False)
         
-        # connect to gui
-        try:
-            self.int_time.connect_bidir_to_widget(self.gui.ui.apd_counter_int_doubleSpinBox)
-        except Exception as err:
-            print("APDCounterHardwareComponent: could not connect to custom GUI", err)
 
     def connect(self):
         if self.debug_mode.val: print("Connecting to APD Counter", self.input_terminal.val)

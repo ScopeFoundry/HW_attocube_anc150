@@ -44,12 +44,12 @@ class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
         if self.debug: print("connecting to arduino power wheel")
         
         # Open connection to hardware
-        self.power_wheel = PowerWheelArduino(port=self.ser_port.val, debug=self.debug_mode.val)
-        self.power_wheel.write_speed(50)
+        self.power_wheel_dev = PowerWheelArduino(port=self.ser_port.val, debug=self.debug_mode.val)
+        self.power_wheel_dev.write_speed(50)
         
         # connect logged quantities
-        self.encoder_pos.hardware_set_func = self.power_wheel.write_steps
-        self.encoder_pos.hardware_read_func= self.power_wheel.read_encoder
+        self.encoder_pos.hardware_set_func = self.power_wheel_dev.write_steps
+        self.encoder_pos.hardware_read_func= self.power_wheel_dev.read_encoder
 
         print('connected to ',self.name)
     
@@ -61,27 +61,27 @@ class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
             lq.hardware_read_func = None
             lq.hardware_set_func = None
     
-        if hasattr(self, 'power_wheel'):
+        if hasattr(self, 'power_wheel_dev'):
             #disconnect hardware
-            self.power_wheel.close()
+            self.power_wheel_dev.close()
             
             # clean up hardware object
-            del self.power_wheel
+            del self.power_wheel_dev
         
         print('disconnected ',self.name)
         
     #@QtCore.Slot()
     def move_fwd(self):
-        #self.power_wheel.write_steps(self.move_steps.val)
-        self.power_wheel.write_steps_and_wait(self.move_steps.val)
+        #self.power_wheel_dev.write_steps(self.move_steps.val)
+        self.power_wheel_dev.write_steps_and_wait(self.move_steps.val)
         time.sleep(0.2)
         #TODO really should wait until done
-        self.power_wheel.read_status()
+        self.power_wheel_dev.read_status()
         self.encoder_pos.read_from_hardware()
         
     #@QtCore.Slot()
     def move_bkwd(self):
-        self.power_wheel.write_steps_and_wait(-1 * self.move_steps.val)
+        self.power_wheel_dev.write_steps_and_wait(-1 * self.move_steps.val)
         time.sleep(0.2)
         #TODO really should wait until done
 
@@ -89,11 +89,11 @@ class PowerWheelArduinoHW(HardwareComponent): #object-->HardwareComponent
         
 
     def zero_encoder(self):
-        self.power_wheel.write_zero_encoder()
+        self.power_wheel_dev.write_zero_encoder()
         self.encoder_pos.read_from_hardware()
 
     def move_relative(self, d_steps):
-        self.power_wheel.write_steps_and_wait(d_steps)
+        self.power_wheel_dev.write_steps_and_wait(d_steps)
         time.sleep(0.2)
         #TODO really should wait until done
 
