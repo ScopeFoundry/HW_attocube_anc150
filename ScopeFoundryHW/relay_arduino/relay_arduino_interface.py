@@ -22,8 +22,7 @@ class RelayArduinoInterface(object):
             logger.debug("RelayArduino.__init__, port={}".format(self.port))
             
         self.ser = serial.Serial(port=self.port, baudrate=9600, timeout = 0.1)
-        ## Store relay values
-        self.relays = []
+        # Store relay values
         self.ser.flush()
         time.sleep(0.1)
         
@@ -57,11 +56,6 @@ class RelayArduinoInterface(object):
         if self.debug:
             logger.debug("state_cmd: {}".format(cmd))
     
-    
-    def poll(self):
-        self.relays = list(str(self.ask_cmd("?")[0:4]))[2:6]
-        if self.debug:
-            logger.debug("stored val: {}".format(self.relays))
-            
+           
     def close(self):
         self.ser.close()

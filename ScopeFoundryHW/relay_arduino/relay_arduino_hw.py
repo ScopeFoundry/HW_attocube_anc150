@@ -31,29 +31,14 @@ class RelayArduinoHW(HardwareComponent):
         self.relay_interface = RelayArduinoInterface()
          
         self.relay1.connect_to_hardware(
-            write_func = self.write_relay1,
-            read_func = self.read_last_relay1)
+            write_func = self.write_relay1)
         self.relay2.connect_to_hardware(
-            write_func = self.write_relay2,
-            read_func = self.read_last_relay2)
+            write_func = self.write_relay2)
         self.relay3.connect_to_hardware(
-            write_func = self.write_relay3,
-            read_func = self.read_last_relay3)
+            write_func = self.write_relay3)
         self.relay4.connect_to_hardware(
-            write_func = self.write_relay4,
-            read_func = self.read_last_relay4)
-         
-    def read_last_relay1(self):
-        return int(self.relay_interface.relays[0])
-    
-    def read_last_relay2(self):
-        return int(self.relay_interface.relays[1])
-    
-    def read_last_relay3(self):
-        return int(self.relay_interface.relays[2])
-    
-    def read_last_relay4(self):
-        return int(self.relay_interface.relays[3])
+            write_func = self.write_relay4)
+
     
     def write_relay1(self, value):
         self.relay_interface.write_state(1, value)
