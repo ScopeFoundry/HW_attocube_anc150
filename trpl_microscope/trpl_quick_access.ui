@@ -714,7 +714,7 @@ Continuously</string>
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_11">
+    <widget class="QGroupBox" name="power_wheel_groupBox">
      <property name="title">
       <string>Power Wheel</string>
      </property>
