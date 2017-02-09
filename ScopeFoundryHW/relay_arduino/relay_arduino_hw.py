@@ -28,7 +28,7 @@ class RelayArduinoHW(HardwareComponent):
         self.relay4 = self.settings.New(name="relay4", initial=0, dtype=bool, ro=False)
     
     def connect(self):
-        self.relay_interface = RelayArduinoInterface()
+        self.relay_interface = RelayArduinoInterface(port=self.port.val)
          
         self.relay1.connect_to_hardware(
             write_func = self.write_relay1)
