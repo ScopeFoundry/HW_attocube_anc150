@@ -28,8 +28,14 @@ class RelayArduinoHW(HardwareComponent):
         self.relay4 = self.settings.New(name="relay4", initial=0, dtype=bool, ro=False)
     
     def connect(self):
-        self.relay_interface = RelayArduinoInterface(port=self.port.val)
-         
+        self.relay_interface = RelayArduinoInterface(port=self.port.val, 
+                                                     debug=self.settings['debug_mode'])
+        
+        self.settings['relay1'] = self.relay_interface.relays[0]
+        self.settings['relay2'] = self.relay_interface.relays[1]
+        self.settings['relay3'] = self.relay_interface.relays[2]
+        self.settings['relay4'] = self.relay_interface.relays[3]
+          
         self.relay1.connect_to_hardware(
             write_func = self.write_relay1)
         self.relay2.connect_to_hardware(
@@ -39,7 +45,8 @@ class RelayArduinoHW(HardwareComponent):
         self.relay4.connect_to_hardware(
             write_func = self.write_relay4)
 
-    
+
+        
     def write_relay1(self, value):
         self.relay_interface.write_state(1, value)
     
@@ -55,6 +62,7 @@ class RelayArduinoHW(HardwareComponent):
     def disconnect(self):
         self.settings.disconnect_all_from_hardware()
         if hasattr(self, 'relay_interface'):
+            self.relay_interface.close()
             del self.relay_interface
         
 

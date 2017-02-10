@@ -31,6 +31,7 @@ boolean stringComplete = false; //string termination flag
 
 
 void setup() {
+  Serial.setTimeout(50);
   Serial.begin(9600);
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
