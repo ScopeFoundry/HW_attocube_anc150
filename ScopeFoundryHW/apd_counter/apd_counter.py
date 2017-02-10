@@ -98,8 +98,9 @@ class APDCounterHW(HardwareComponent):
                 time.sleep(self.int_time.val)
                 self.c0_rate = self.ni_counter.read_average_freq_in_buffer()
             except Exception as E:
+                raise(E)
                 self.c0_rate = -1
-                print( E )
+                self.log.warm( E )
                 #self.ni_counter.reset()
             finally:
                 pass # self.ni_counter.stop()
