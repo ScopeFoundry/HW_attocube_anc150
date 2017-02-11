@@ -248,13 +248,13 @@ class NI_AdcTask(NI_TaskWrap):
             in finite mode, waits for samples to be available, up to smaller of block_size or
                 _chan_cout * _count
                 
-            for now return interspersed array, latter may reshape into 
+            for now return interspersed array, latter may  into 
         '''
         if count == 0:
             count = self._count
         block_size = count * self._chan_count
         data = np.zeros(block_size, dtype = np.float64)
-        read_size = mx.uInt32(block_size)
+        read_size = mx.uInt32(count)
         read_count = mx.int32(0)    #returns samples per chan read
         adc_timeout = mx.float64( timeout )
         try:
@@ -519,7 +519,7 @@ class NI_CounterTask( NI_TaskWrap ):
             in finite mode, waits for samples to be available, up to smaller of block_size or
                 _chan_cout * _count
                 
-            for now return interspersed array, latter may reshape into 
+            for now return interspersed array, latter may  into 
         '''
         if count == 0:
             count = self._count
@@ -615,12 +615,15 @@ class NI_SyncTaskSet(object):
         self.adc.start()
         
        
-    def read_adc_buffer(self, timeout = 1.0):
-        x = self.adc.read_buffer(timeout=timeout)
+    def read_adc_buffer(self, count=0, timeout = 1.0):
+        x = self.adc.read_buffer(count=0, timeout=timeout)
         return x[self.delta*self.adc.get_chan_count()::]
     
+    def get_adc_chan_count(self):
+        return self.adc.get_chan_count()
+    
     def read_adc_buffer_reshaped(self, timeout = 1.0):
-        return self.read_adc_buffer(timeout).reshape(-1, self.adc.get_chan_count()) # Check order
+        return self.read_adc_buffer(timeout).reshape(-1, self.get_adc_chan_count()) 
     
     def read_ctr_buffer(self,i, timeout = 1.0):
         x = self.ctr[i].read_buffer(timeout=timeout)

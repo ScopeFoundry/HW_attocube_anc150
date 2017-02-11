@@ -9,6 +9,7 @@ ESB 2016-07-19
 from ScopeFoundry.scanning.base_cartesian_scan import BaseCartesian2DScan
 from SEM.sem_equipment.rate_converter import RateConverter
 import numpy as np
+import time
 
 class SemSyncRasterScan(BaseCartesian2DScan):
 
@@ -19,26 +20,20 @@ class SemSyncRasterScan(BaseCartesian2DScan):
         self.h_limits = self.v_limits = (-10,10)
         
         BaseCartesian2DScan.setup(self)
-                
+            
         self.display_update_period = 0.050 #seconds
 
         # Created logged quantities
-        self.scan_mode = self.add_logged_quantity("scan_mode", dtype=str, 
-                                                        ro=False,
-                                                        initial='image',
-                                                        choices=[('image','image'),('movie','movie')])
-
-    
+            #FIX what does this do dfo 2/10/17
         self.recovery_time = self.add_logged_quantity("recovery_time", dtype=float, 
                                                     ro=True,
                                                     initial=0.07)
         
         
-        self.scanDAQ = self.app.hardware['SemSyncRasterDAQ']
-        
+        self.scanDAQ = self.app.hardware['SemSyncRasterDAQ']        
         self.scan_on=False
         
-        if hasattr(self.gui,'sem_remcon'):
+        if hasattr(self.gui,'sem_remcon'):#FIX re-implement later
             self.sem_remcon=self.app.sem_remcon
         
 
@@ -70,34 +65,67 @@ class SemSyncRasterScan(BaseCartesian2DScan):
                         
         # previously set samples_per_point in scanDAQ hardware
                
-        ms_per_frame = self.Npixels*0.01 # FIXME 
-
-        self.scanDAQ.connect()         
-
+        # if hardware is not connected, connect it
+        # we need to wait while the task is created before 
+        # measurement thread continues
+        if not self.scanDAQ.settings.connected:
+            self.scanDAQ.settings.connected.update_value(True)         
+            time.sleep(0.2)
         
+ 
         try:
-            print("scan started")
-            if self.scan_mode.val=="image":
-                print("Acquiring Image")
-                #self.scanner.callback_mode.update_value('line')
-                #if ms_per_frame>2e6:
-                #    self.single_scan_callback()
-                #else:
-                self.current_scan_index = 0,0,0
-                while not self.interrupt_measurement_called:
-                    self.single_scan_regular()
+            while not self.interrupt_measurement_called:
+                self.pixel_index = 0
                 
-            elif self.scan_mode.val=="movie":
-                print("Acquring Movie")
-                self.continous_scan()
-            print("scan done")
+                #### old get full image while blocking measurement thread
+                #self.ai_data = self.scanDAQ.single_scan_regular(self.scan_h_positions, -1*self.scan_v_positions)
+                #self.display_image_map[0,:,:] = self.ai_data[:,1].reshape(self.settings['Nv'], self.settings['Nh'])       
+                ####
+                
+                self.scanDAQ.setup_io_with_data(self.scan_h_positions, -1*self.scan_v_positions)
+                #compute pixel display increment
+                # need at least one
+                num_pixels_per_block = max(1, int(np.round(0.010 / self.scanDAQ.pixel_time)))
+                
+                # Data array
+                self.adc_pixels = np.zeros((self.Npixels, self.scanDAQ.adc_chan_count), dtype=float)
+                
+                self.scanDAQ.start()
+                
+                while self.pixel_index < self.Npixels:
+                    print('block', self.pixel_index, num_pixels_per_block,  self.Npixels)
+                    if self.interrupt_measurement_called:
+                        break
+                    remaining_pixels = self.Npixels - self.pixel_index
+                    dii = acq_n_pixel = min(remaining_pixels, num_pixels_per_block)
+                    
+                    print('block', self.pixel_index, num_pixels_per_block,  self.Npixels, remaining_pixels)
+
+                    
+                    # read num_pixels_per_block
+                    buf = self.scanDAQ.read_ai_chan_pixels(acq_n_pixel) # shape (n_pixels, n_chan, n_samp)
+                    print(buf.shape)
+                    # average over samples
+                    buf = buf.mean(axis=2)
+                    
+                    
+                    
+                    #stuff into pixel data array
+                    ii = self.pixel_index
+                    self.adc_pixels[ii: ii + dii] = buf
+                    
+                    DISPLAY_CHAN = 1
+                    self.display_image_map[ self.scan_index_array[ii:ii+dii] ] = self.adc_pixels[ii:ii+dii, DISPLAY_CHAN]
+                    
+                    self.pixel_index += acq_n_pixel 
+
+                # TODO read Counters
+                # FIX handle serpentine scans
+                #self.display_image_map[self.scan_index_array] = self.ai_data[0,:]
+                # TODO save data
+                self.scanDAQ.stop()
         finally:
-            """        if self.scanner.auto_blanking.val:
-                        if hasattr(self,"sem_remcon"):
-                            if self.sem_remcon.connected.val:
-                                self.sem_remcon.beam_blanking.update_value(1)
-            """        
-            self.scanDAQ.disconnect()         
+            pass
         
 #     def fast_movie_scan(self,collection):
 #         self.scanner.sync_mode.update_value('callback')
@@ -141,29 +169,6 @@ class SemSyncRasterScan(BaseCartesian2DScan):
         self.scanner.sync_analog_io.close()
         self.scan_on=False       
     
-    def single_scan_regular(self):
-        #connect to SEM scanner module, which calculates the voltage output,
-        #create detector channels and creates the scanning task
-        self.scanDAQ.sync_mode.update_value('regular')
-        self.scanDAQ.connect()
-        #self.setup_imagedata("regular")
-        # fix 
-        self.scanDAQ.setup_io_with_data(self.scan_h_positions, -1*self.scan_v_positions)
-        self.scanDAQ.sync_analog_io.start()            
-        
-        #self.images.read_all() -- old way everything hiding in image_display object
-
-        self.ai_data = self.scanDAQ.read_ai_chans()
-        
-        # TODO read Counters
-        #self.display_image_map[self.scan_index_array] = self.ai_data[0,:]
-        self.display_image_map[0,:,:] = self.ai_data[:,1].reshape(self.settings['Nv'], self.settings['Nh'])
-        
-        # TODO save data
-        
-        self.scanDAQ.sync_analog_io.stop()
-        #self.scanDAQ.sync_analog_io.close()
-        
     def update_display(self):
         BaseCartesian2DScan.update_display(self)
         
