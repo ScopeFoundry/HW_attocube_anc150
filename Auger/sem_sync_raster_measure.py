@@ -1,16 +1,16 @@
 '''
-Created on Feb 4, 2015
 
-@author: Hao Wu
+Hao Wu  Feb 4, 2015
 ESB 2016-07-19
+ESB 2017-02-17
 
 '''
 
-from ScopeFoundry.scanning.base_cartesian_scan import BaseCartesian2DScan
+from ScopeFoundry.scanning import BaseRaster2DScan
 import numpy as np
 import time
 
-class SemSyncRasterScan(BaseCartesian2DScan):
+class SemSyncRasterScan(BaseRaster2DScan):
 
     name = "sem_sync_raster_scan"
     
@@ -18,8 +18,9 @@ class SemSyncRasterScan(BaseCartesian2DScan):
         self.h_unit = self.v_unit = "V"
         self.h_limits = self.v_limits = (-10,10)
         
-        BaseCartesian2DScan.setup(self)
-            
+
+        BaseRaster2DScan.setup(self)
+                
         self.display_update_period = 0.050 #seconds
 
         # Created logged quantities
@@ -221,6 +222,6 @@ class SemSyncRasterScan(BaseCartesian2DScan):
     def update_display(self):
         kk,jj, ii = self.scan_index_array[self.pixel_index]
         self.current_stage_pos_arrow.setPos(self.h_array[ii], self.v_array[jj])
-        BaseCartesian2DScan.update_display(self)
+        BaseRaster2DScan.update_display(self)
         
     

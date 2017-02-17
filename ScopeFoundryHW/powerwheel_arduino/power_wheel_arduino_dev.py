@@ -33,7 +33,7 @@ class PowerWheelArduino(object):
 
     def send_cmd(self, cmd):
         if self.debug: print("send_cmd:", repr(cmd))
-        self.ser.write(cmd + "\n")
+        self.ser.write(cmd + b"\n")
     
     def ask_cmd(self, cmd):
         if self.debug: print("ask:", repr(cmd))
@@ -46,7 +46,7 @@ class PowerWheelArduino(object):
     def write_steps(self,steps):
         """ Non-blocking movement of :steps:
         """
-        self.send_cmd('am%i' % steps)
+        self.send_cmd(b'am%i' % steps)
         #print "steps ", steps
     
     def write_steps_and_wait(self,steps):
@@ -64,15 +64,15 @@ class PowerWheelArduino(object):
         
     
     def write_speed(self, speed):
-        self.send_cmd('as%i'% speed)
+        self.send_cmd(b'as%i'% speed)
     
     def read_speed(self):
         self.read_status()
         return self.stored_speed
         
     def read_status(self):
-        status = self.ask_cmd("a?")
-        status = status.strip().split(',')
+        status = self.ask_cmd(b"a?")
+        status = status.strip().split(b',')
         self.is_moving_to = bool(int(status[0]))
         self.stored_speed = int(status[1])
         self.encoder_pos  = int(status[2])
@@ -84,7 +84,7 @@ class PowerWheelArduino(object):
         return status    
     
     def read_encoder(self):
-        self.ser.write('ae\n')
+        self.ser.write(b'ae\n')
         resp=self.ser.readline() 
         self.encoder_pos = int(resp)       
         if self.debug:
@@ -93,11 +93,11 @@ class PowerWheelArduino(object):
         return self.encoder_pos
         
     def write_zero_encoder(self):
-        self.send_cmd("az")
+        self.send_cmd(b"az")
 
 
     def write_brake(self):
-        self.send_cmd("ab")
+        self.send_cmd(b"ab")
         
     def close(self):
         self.ser.close()      
@@ -107,9 +107,9 @@ class PowerWheelArduino(object):
 if __name__ == '__main__':
     W1 = PowerWheelArduino(debug=True);
     time.sleep(4)
-    W1.write_steps('-400')
+    W1.write_steps(-400)
     time.sleep(4)
-    W1.write_steps('400')    
+    W1.write_steps(400)    
     
     W1.read_status()
     

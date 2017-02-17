@@ -3,7 +3,7 @@ Created on Jul 12, 2016
 
 @author: Daniel B. Durham
 '''
-from ScopeFoundry.scanning.base_cartesian_scan import BaseCartesian2DSlowScan
+from ScopeFoundry.scanning import BaseRaster2DSlowScan
 import numpy as np
 import time
 #Sofia imports
@@ -13,11 +13,11 @@ from pyqtgraph.Qt import QtCore, QtGui
 
 #Single Auger Map for now, will extend to range of energies later
 
-class AugerSlowMap(BaseCartesian2DSlowScan):
+class AugerSlowMap(BaseRaster2DSlowScan):
     
     name = "AugerSlowMap"
     def __init__(self,app):
-        BaseCartesian2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")        
+        BaseRaster2DSlowScan.__init__(self, app, h_limits=(-10,10), v_limits=(-10,10), h_unit="V", v_unit="V")        
     
     def scan_specific_setup(self):
         #Hardware
@@ -96,7 +96,7 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
         #scipy.io.savemat(file_name="%i_%s.mat" % (self.t0, self.name), mdict=dict(spec_map=self.spec_map))
     
 #     def update_display(self):
-#         BaseCartesian2DSlowScan.update_display(self)
+#         BaseRaster2DSlowScan.update_display(self)
         
         #self.app.measurements.picam_readout.roi_data = self.roi_data
         #self.app.measurements.picam_readout.update_display()
@@ -104,7 +104,7 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
         
     #Begin Sofia's Edits
     def setup_figure(self):
-        BaseCartesian2DSlowScan.setup_figure(self)
+        BaseRaster2DSlowScan.setup_figure(self)
         
         self.graph_layout2=pg.GraphicsLayoutWidget(border=(100,100,100))
         self.graph_layout2.show()
@@ -130,7 +130,7 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
         self.hist_lut2.sigLookupTableChanged.connect(self.on_Lookup_Table_Changed)
         self.hist_lut2.sigLevelsChanged.connect(self.on_Lookup_Table_Changed)
         
-        """        ##########Taken from setup_figure in BaseCartesian2DSlowScan class###########
+        """        ##########Taken from setup_figure in BaseRaster2DSlowScan class###########
         
         #self.clear_qt_attr('current_stage_pos_arrow')
         self.current_stage_pos_arrow = pg.ArrowItem()
@@ -177,7 +177,7 @@ class AugerSlowMap(BaseCartesian2DSlowScan):
     
         
         #self.display_image_map = self.in_lens_data_h5[kk,:,:]
-        BaseCartesian2DSlowScan.update_display(self)
+        BaseRaster2DSlowScan.update_display(self)
 
         
          

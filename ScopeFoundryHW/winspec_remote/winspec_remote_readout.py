@@ -80,7 +80,7 @@ class WinSpecRemoteReadoutMeasure(Measurement):
 
         if self.settings['save_h5']:
             self.t0 = time.time()
-            self.h5_file = h5_io.h5_base_file(self.app, "%i_%s.h5" % (self.t0, self.name) )
+            self.h5_file = h5_io.h5_base_file(self.app, measurement=self )
             self.h5_file.attrs['time_id'] = self.t0
             H = self.h5_meas_group  =  h5_io.h5_create_measurement_group(self, self.h5_file)
         
@@ -96,4 +96,6 @@ class WinSpecRemoteReadoutMeasure(Measurement):
             self.img_item.setImage(self.data[0], autoLevels=False)
             self.hist_lut.imageChanged(autoLevel=True, autoRange=True)
 
+        if not hasattr(self, 'data'):
+            return
         self.spec_plot_line.setData(self.wls, np.average(self.data[0,:,:], axis=0))

@@ -145,6 +145,9 @@ class NI_FreqCounter(object):
     def read_average_freq_in_buffer(self):
         num_samples, _buffer = self.read_freq_buffer()
         if self.debug: logger.debug("read_average_freq_in_buffer {} {}".format( num_samples, _buffer))
+        #logger.warning("read_average_freq_in_buffer {} {} {}".format( num_samples, _buffer, np.nonzero(_buffer)))
+        if num_samples == 0:
+            return 0
         result =  np.average(_buffer[:num_samples])
         if np.isnan(result):
             return -1
