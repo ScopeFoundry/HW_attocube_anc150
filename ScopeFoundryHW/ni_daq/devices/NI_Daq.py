@@ -586,7 +586,7 @@ class NI_CounterTask( NI_TaskWrap ):
             in finite mode, waits for samples to be available, up to smaller of block_size or
                 _chan_cout * _count
                 
-            for now return interspersed array, latter may reshape into 
+            Return interleaved array, i.e. [chan1_t1, chan2_t1, chan1_t2, chan2_t2, ...]
         '''
         if count == 0:
             count = self._count
@@ -613,11 +613,10 @@ class NI_CounterTask( NI_TaskWrap ):
 
 class NI_SyncTaskSet(object):
     '''
-    creates simultaneous input and output tasks with synchronized start triggers
+    creates simultaneous input (ADC, counter) and output (DAC) tasks with 
+    synchronized start triggers
     input and output task elapsed time need not be equal, but typically will be, 
     can oversample input with for example 10x rate, 10x sample count
-    for now scan through output block once, wait for all input data, later
-    use callbacks, implement multiple scans
     '''
     def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, vin_range = 10.0, 
                  out_name = '', in_name = '', terminalConfig='default', clock_source = "", trigger_output_term=None ):
@@ -635,43 +634,52 @@ class NI_SyncTaskSet(object):
 #             print(ctr_terms)
         for i in range(0,self.ctr_num):
             self.ctr.append(NI_CounterTask(ctr_chans[i],ctr_terms[i],''))
-        #sync dac start to adc start
+        
+        # if a clock_source is defined, use it to clock the adc, otherwise internally clock adc
+        if clock_source:
+            logger.debug( "setup clock_source" + repr( self.clock_source) )
+            self.adc.task.CfgDigEdgeStartTrig(clock_source, mx.DAQmx_Val_Rising)
+
+        # Sync dac StartTrigger on adc StartTigger
         buffSize = 512
         buff = mx.create_string_buffer( buffSize )
         
-        if clock_source:
-            self.adc.task.CfgDigEdgeStartTrig(clock_source, mx.DAQmx_Val_Rising)
         
         self.adc.task.GetNthTaskDevice(1, buff, buffSize)    #DAQmx name for input device
         trig_name = b'/' + buff.value + b'/ai/StartTrigger'
         #print trig_name
         self.dac.task.CfgDigEdgeStartTrig(trig_name, mx.DAQmx_Val_Rising)
-        
-        
-        # Route trigger output signal to trigger_output_term
+
+
+        # Route dac sampleclock signal to trigger_output_term
+        # This allows you to trigger other devices simultaneously with DAC output
         if trigger_output_term:
             self.dac.task.ExportSignal(mx.DAQmx_Val_SampleClock, trigger_output_term)
             #self.adc.task.SetDOTristate(trigger_output_term, False)
-            #self.dac.task.ExportSignal(mx.DAQmx_Val_SampleClock, b"/X-6368/PFI12")
             
+            ## For debugging, send trigger to another pin
             mx.DAQmxConnectTerms(trigger_output_term, b"/X-6368/PFI12", mx.DAQmx_Val_DoNotInvertPolarity )
             
     def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
-        # Pad = true, acquire one extra input value per channel, strip off
-        # first read, so writes/reads align 
+        """
+        Set the i/o rates and size of buffers
+        
+        rate_out: DAC rate (Hz)
+        rate_in: ADC rate (Hz)
+        
+        *is_finite* defines if single shot or continuous
+        *Pad* if true, acquire one extra input value per channel, 
+                strip off the first read, so writes/reads align
+        """
         if pad:
             self.delta = int(np.rint(rate_in / rate_out))
         else:
             self.delta = 0
         self.dac.set_rate(rate_out, count_out, finite=is_finite, clk_source=self.clock_source)
-        logger.debug( "setup clock_source" + repr( self.clock_source) )
         self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite, clk_source=self.clock_source)
         for i in range(self.ctr_num):
             self.ctr[i].set_rate(rate_in,count_in+self.delta,clock_source='ai/SampleClock',finite=is_finite)
             
-        if self.clock_source:
-            self.adc.task.CfgDigEdgeStartTrig(self.clock_source, mx.DAQmx_Val_Rising)
-
         
     def write_output_data_to_buffer(self, data):
         self.dac.load_buffer(data)
