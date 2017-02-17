@@ -8,6 +8,7 @@ import numpy as np
 import PyDAQmx as mx
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 class NamedTask(mx.Task):
@@ -145,6 +146,8 @@ class NI_AdcTask(NI_TaskWrap):
         if self.task:
             self.set_channel(channel, range)
             
+        self.done_callback_is_set = False
+            
     def set_channel(self, channel, adc_range = 10.0):
         ''' adds input channel[s] to existing task, tries voltage range +/- 1, 2, 5, 10'''
         #  could use GetTaskDevices followed by GetDevAIVoltageRngs to validate max volts
@@ -198,12 +201,51 @@ class NI_AdcTask(NI_TaskWrap):
             #exact rate depends on hardware timer properties, may be slightly different from requested rate
             self.task.GetSampClkRate(mx.byref(adc_rate));
             self._rate = adc_rate.value
-            self._count = count
+            self._count = int(count)
             self._mode = 'buffered'
         except mx.DAQError as err:
             self.error(err)
             self._rate = 0
-            
+    
+    def set_n_sample_callback(self, n_samples, cb_func):
+        """
+        Setup callback functions for EveryNSamplesEvent
+        *cb_func* will be called with when new data is available
+        after every *n_samples* are acquired.
+        """
+        self.cb_nSamples = n_samples
+        self.cb_func = cb_func
+        self.task.EveryNCallback = cb_func
+        self.task.AutoRegisterEveryNSamplesEvent(
+            everyNsamplesEventType=mx.DAQmx_Val_Acquired_Into_Buffer, 
+            nSamples=self.cb_nSamples,
+            options=0)
+
+
+        
+        
+    def set_done_callback(self, done_func):
+        'done_func takes one argument (status)'
+        self.cb_done_func =  done_func
+        self.task.DoneCallback= self.cb_done_func
+        if not self.done_callback_is_set:
+            self.task.AutoRegisterDoneEvent(options=0)
+            self.done_callback_is_set = True
+
+    """def EveryNCallback(self):
+        self.data_buffer=self.read_buffer(self.cb_nSamples, timeout=1.0)
+        self.cb_func(self.data_buffer)
+        return 0 # The function should return an integer
+    
+    def DoneCallback(self, status):
+        self.data_buffer=self.read_buffer(0, timeout=1.0)
+        print('done_callback finaldata', self.data_buffer.shape)
+        self.cb_func(self.data_buffer)
+        self.cb_done_func()
+        #print "Status",status.value
+        return 0 # The function should return an integer
+    """
+  
     def set_single(self):
         ''' single-value [multi channel] input, no clock or buffer
                    
@@ -248,13 +290,14 @@ class NI_AdcTask(NI_TaskWrap):
             in finite mode, waits for samples to be available, up to smaller of block_size or
                 _chan_cout * _count
                 
-            for now return interspersed array, latter may  into 
+            for now return interspersed array, latter may reshape into 
         '''
+        count = int(count)
         if count == 0:
             count = self._count
         block_size = count * self._chan_count
         data = np.zeros(block_size, dtype = np.float64)
-        read_size = mx.uInt32(count)
+        read_size = mx.uInt32(block_size)
         read_count = mx.int32(0)    #returns samples per chan read
         adc_timeout = mx.float64( timeout )
         try:
@@ -271,7 +314,6 @@ class NI_AdcTask(NI_TaskWrap):
 #        assert read_count.value == 1, \
 #           "sample count {} transfer count {}".format( 1, read_count.value )
         return data
-    
             
 class NI_DacTask(NI_TaskWrap):
     '''
@@ -339,7 +381,15 @@ class NI_DacTask(NI_TaskWrap):
         except mx.DAQError as err:
             self.error(err)
             self._rate = 0
-            
+    
+    def set_callback(self,source):
+        self.data_buffer=np.zeros(self._count)
+        self.task.EveryNCallback=self.EveryNCallback
+        self.task.DoneCallback=self.DoneCallback
+        self.task.AutoRegisterEveryNSamplesEvent(mx.DAQmx_Val_Transferred_From_Buffer,self._count,0)
+        self.task.AutoRegisterDoneEvent(0)
+        self._source=source
+    
     def set_single(self):
         ''' single-value [multi channel] output, no clock or buffer
         
@@ -404,6 +454,15 @@ class NI_DacTask(NI_TaskWrap):
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
         assert writeCount.value == 1, \
             "sample count {} transfer count {}".format( 1, writeCount.value )
+
+    def EveryNCallback(self):
+        #np.copyto(self.data_buffer,self._source,None)
+        self.load_buffer(self.data_buffer)
+        return 0 # The function should return an integer
+    
+    def DoneCallback(self, status):
+        #print "Status",status.value
+        return 0 # The function should return an integer
 
 class NI_CounterTask( NI_TaskWrap ):
     '''
@@ -476,6 +535,14 @@ class NI_CounterTask( NI_TaskWrap ):
             self.error(err)
             self._rate = 0
             
+    def set_callback(self,destination):
+        self.data_buffer=np.zeros(self._count)
+        self.task.EveryNCallback=self.EveryNCallback
+        self.task.DoneCallback=self.DoneCallback
+        self.task.AutoRegisterEveryNSamplesEvent(mx.DAQmx_Val_Acquired_Into_Buffer,self._count,0)
+        self.task.AutoRegisterDoneEvent(0)
+        self._destination=destination
+              
     def set_single(self):
         ''' single-value [multi channel] input, no clock or buffer
                    
@@ -519,7 +586,7 @@ class NI_CounterTask( NI_TaskWrap ):
             in finite mode, waits for samples to be available, up to smaller of block_size or
                 _chan_cout * _count
                 
-            for now return interspersed array, latter may  into 
+            for now return interspersed array, latter may reshape into 
         '''
         if count == 0:
             count = self._count
@@ -583,16 +650,17 @@ class NI_SyncTaskSet(object):
         
         # Route trigger output signal to trigger_output_term
         if trigger_output_term:
-            self.adc.task.ExportSignal(mx.DAQmx_Val_SampleClock, trigger_output_term)
+            self.dac.task.ExportSignal(mx.DAQmx_Val_SampleClock, trigger_output_term)
             #self.adc.task.SetDOTristate(trigger_output_term, False)
-            self.adc.task.ExportSignal(mx.DAQmx_Val_SampleClock, "/X-6368/PFI12")
-            #mx.DAQmxConnectTerms(trigger_output_term, "/X-6368/PFI12", mx.DAQmx_Val_DoNotInvertPolarity )
+            #self.dac.task.ExportSignal(mx.DAQmx_Val_SampleClock, b"/X-6368/PFI12")
+            
+            mx.DAQmxConnectTerms(trigger_output_term, b"/X-6368/PFI12", mx.DAQmx_Val_DoNotInvertPolarity )
             
     def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
         # Pad = true, acquire one extra input value per channel, strip off
         # first read, so writes/reads align 
         if pad:
-            self.delta = np.int(np.rint(rate_in / rate_out))
+            self.delta = int(np.rint(rate_in / rate_out))
         else:
             self.delta = 0
         self.dac.set_rate(rate_out, count_out, finite=is_finite, clk_source=self.clock_source)
@@ -616,14 +684,16 @@ class NI_SyncTaskSet(object):
         
        
     def read_adc_buffer(self, count=0, timeout = 1.0):
-        x = self.adc.read_buffer(count=0, timeout=timeout)
-        return x[self.delta*self.adc.get_chan_count()::]
+        x = self.adc.read_buffer(count=count, timeout=timeout)
+        #return x[self.delta*self.adc.get_chan_count()::]
+        # Changed 2/10/17: don't remove delta -- works for sync scan,this may break other things!
+        return x
     
     def get_adc_chan_count(self):
         return self.adc.get_chan_count()
     
-    def read_adc_buffer_reshaped(self, timeout = 1.0):
-        return self.read_adc_buffer(timeout).reshape(-1, self.get_adc_chan_count()) 
+    def read_adc_buffer_reshaped(self, count=0, timeout = 1.0):
+        return self.read_adc_buffer(count=count, timeout=timeout).reshape(-1, self.get_adc_chan_count()) 
     
     def read_ctr_buffer(self,i, timeout = 1.0):
         x = self.ctr[i].read_buffer(timeout=timeout)
