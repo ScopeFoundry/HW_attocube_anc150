@@ -1,7 +1,6 @@
 from ScopeFoundry import BaseMicroscopeApp
 #from auger_electron_analyzer import AugerElectronAnalyzerHC
 #from NIFPGA.Counter_DAC_VI_hc import Counter_DAC_FPGA_VI_HC
-#from auger_analyzer_channel_history import AugerAnalyzerChannelHistory
 #from auger_point_spectrum import AugerPointSpectrum
 #from analyzer_quad_optimizer import AugerQuadOptimizer
 
@@ -22,6 +21,12 @@ from ScopeFoundry import BaseMicroscopeApp
 # SEM Measurement Components
 #from SEM.sem_slowscan_single_chan import SEMSlowscanSingleChan
 
+import logging
+logging.basicConfig(level='DEBUG')
+logging.getLogger('').setLevel(logging.DEBUG)
+logging.getLogger("ipykernel").setLevel(logging.WARNING)
+logging.getLogger('PyQt4').setLevel(logging.WARNING)
+logging.getLogger('ScopeFoundry.logged_quantity.LoggedQuantity').setLevel(logging.WARNING)
 
 class AugerMicroscopeApp(BaseMicroscopeApp):
     
@@ -33,6 +38,10 @@ class AugerMicroscopeApp(BaseMicroscopeApp):
 #        self.add_hardware_component(Counter_DAC_FPGA_VI_HC(self))
          
         # SEM Hardware Components
+        from Auger.NIFPGA.ext_trig_auger_fpga_hw import AugerFPGA_HW
+        self.add_hardware(AugerFPGA_HW(self))
+
+        
         #from ScopeFoundryHW.sem_analog.sem_singlechan_signal import SEMSingleChanSignal
         #self.add_hardware_component(SEMSingleChanSignal(self))
         from ScopeFoundryHW.sem_analog.sem_dualchan_signal import SEMDualChanSignal
@@ -48,7 +57,8 @@ class AugerMicroscopeApp(BaseMicroscopeApp):
 
         
         #self.add_measurement_component(SemRasterScan(self))
-#        self.add_measurement_component(AugerAnalyzerChannelHistory(self))
+        from Auger.auger_analyzer_channel_history import AugerAnalyzerChannelHistory
+        self.add_measurement_component(AugerAnalyzerChannelHistory(self))
 #        self.add_measurement_component(AugerPointSpectrum(self))
 #        self.add_measurement_component(AugerQuadOptimizer(self))
  
@@ -63,6 +73,7 @@ class AugerMicroscopeApp(BaseMicroscopeApp):
 
 #        self.phi_ion_gun = self.add_hardware_component(PhiIonGunHardwareComponent(self))
 #        self.ion_gun_status = self.add_measurement_component(IonGunStatus(self))
+
 
 
         self.settings_load_ini('auger_fast_scan_settings.ini')
