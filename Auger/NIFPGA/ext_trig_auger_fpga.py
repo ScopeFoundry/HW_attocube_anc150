@@ -17,46 +17,51 @@ import os
 from cffi import FFI
 
 
-# manually copied from NiFpga_ExtTrigAuger.h
+# manually copied from NiFpga_CtrExtTrigAuger.h
 fpga_vi_header = """
-static const char* const NiFpga_ExtTrigAuger_Signature = "518155E01E5A1DFFECA5C4ACE62664CA";
+static const char* const NiFpga_CtrExtTrigAuger_Signature = "C785982188720152F75C0DE37DB6F8C8";
 
 typedef enum
 {
-   NiFpga_ExtTrigAuger_IndicatorBool_Overflow = 0x8112,
-} NiFpga_ExtTrigAuger_IndicatorBool;
+   NiFpga_CtrExtTrigAuger_IndicatorBool_Overflow = 0x811A,
+} NiFpga_CtrExtTrigAuger_IndicatorBool;
 
 typedef enum
 {
-   NiFpga_ExtTrigAuger_ControlU8_TriggerMode = 0x810E,
-} NiFpga_ExtTrigAuger_ControlU8;
+   NiFpga_CtrExtTrigAuger_ControlU8_TriggerMode = 0x810E,
+} NiFpga_CtrExtTrigAuger_ControlU8;
 
 typedef enum
 {
-   NiFpga_ExtTrigAuger_TargetToHostFifoU64_CounterFIFO = 0,
-} NiFpga_ExtTrigAuger_TargetToHostFifoU64;
+   NiFpga_CtrExtTrigAuger_ControlU32_SampleCount = 0x8110,
+   NiFpga_CtrExtTrigAuger_ControlU32_SamplePeriod = 0x8114,
+} NiFpga_CtrExtTrigAuger_ControlU32;
+
+typedef enum
+{
+   NiFpga_CtrExtTrigAuger_TargetToHostFifoU64_CounterFIFO = 0,
+} NiFpga_CtrExtTrigAuger_TargetToHostFifoU64;
 """
 
 
 class ExtTrigAugerFPGA(object):        
     
-    #bitfilename = r"C:\Users\NIuser\Documents\Programs LV\R Series\builds\Omicron_R_1\Omicron Auger\data\NiFpga_CountertoDAC.lvbitx"
-    #bitfilename = os.path.join(os.path.dirname(__file__),"Auger FPGA R2/FPGA Bitfiles/NiFpga_CountertoDAC.lvbitx")
-    #bitfilename = b"C:\\AugerSoft\\foundryscope\\Auger\\FPGA interface\\NiFpga_ExtTrigAuger.lvbitx"
-    bitfilename = os.path.join(os.path.dirname(__file__), 
-                               "FPGA Daqmx Sync", "FPGA Bitfiles", 
-                               "NiFpga_ExtTrigAuger.lvbitx").encode()
-    signature = b"518155E01E5A1DFFECA5C4ACE62664CA" # manually copied from NiFpga_ExtTrigAuger.h
-    resource = b"RIO0"
-    session = ctypes.c_uint32(0)
-    
-
-    
-    
+      
     def __init__(self, debug=False):
         self.debug = debug
+        
+        self.bitfilename = os.path.join(os.path.dirname(__file__), 
+                               "FPGA Daqmx Sync", "FPGA Bitfiles", 
+                               "NiFpga_CtrExtTrigAuger.lvbitx").encode()
+        self.signature = b"C785982188720152F75C0DE37DB6F8C8" # manually copied from NiFpga_CtrExtTrigAuger.h
+        self.resource = b"RIO0"
+        self.session = ctypes.c_uint32(0)
+
+        
         if self.debug:
             print(repr(self.bitfilename))
+
+        
         self.FPGA = NI_FPGA(self.bitfilename, self.signature, self.resource, debug=debug) 
         
         #self.ffi = FFI()
@@ -65,9 +70,8 @@ class ExtTrigAugerFPGA(object):
         #self.C = self.ffi.dlopen(ctypes.util.find_library('c'))
 
     def read_overflow(self):
-        #indicator = self.C.NiFpga_ExtTrigAuger_IndicatorBool_Overflow
-        # manually copied from NiFpga_ExtTrigAuger.h
-        indicator = 0x8112 # NiFpga_ExtTrigAuger_IndicatorBool_Overflow
+        # manually copied from header text above
+        indicator = 0x811A # NiFpga_CtrExtTrigAuger_IndicatorBool_Overflow
         err, data = self.FPGA.Read_Bool(indicator)
         if self.debug: print(  "Status:" + str(err))
         print( 'ctr overflow', err, data )
@@ -75,24 +79,48 @@ class ExtTrigAugerFPGA(object):
             if self.debug: print(  "FIFO Overflow Read", data )
             return data
         else:
-            raise IOError("FIFO Overflow err {}".format(err))
+            raise IOError("FIFO Overflow read err {}".format(err))
     
 
 
     def write_triggerMode(self, mode='pxi'):
-        mode_map = dict(off=0, pxi=1, dio=2)
+        mode_map = dict(off=0, pxi=1, dio=2, int=3)
         assert mode in mode_map.keys()
         value = mode_map[mode]
         
-        #indicator = self.C.NiFpga_ExtTrigAuger_ControlU8_TriggerMode
-        # manually copied from NiFpga_ExtTrigAuger.h
-        indicator = 0x810E #NiFpga_ExtTrigAuger_ControlU8_TriggerMode
+        # manually copied from header text above
+        indicator = 0x810E #NiFpga_CtrExtTrigAuger_ControlU8_TriggerMode
         err = self.FPGA.Write_U8(indicator, value)
         if self.debug: print(  "write_triggerMode Status:" + str(err))
         if err == 0:
             if self.debug: print(  "Trigger mode", mode, value )
 
         
+    def read_triggerMode(self):
+        # manually copied from header text above
+        indicator = 0x810E #NiFpga_CtrExtTrigAuger_ControlU8_TriggerMode
+        err, value = self.FPGA.Read_U8(indicator)
+        rev_mode_map = ('off', 'pxi', 'dio', 'int')
+        mode = rev_mode_map[value]
+        if self.debug: print(  "read_triggerMode Status:" + str(err))
+        if err == 0:
+            if self.debug: print(  "Trigger mode", mode, value )
+        return mode
+
+        
+    def write_sampleCount(self, sampleCount=0):
+        indicator = 0x8110    #NiFpga_CtrExtTrigAuger_ControlU32_SampleCount = 0x8110,
+        err = self.FPGA.Write_U32( indicator, sampleCount )
+        if self.debug: print(  "write_sampleCount Status:" + str(err))
+        if err == 0:
+            if self.debug: print(  "Sample count", sampleCount )
+    
+    def write_samplePeriod(self, samplePeriod=2500):
+        indicator = 0x8114    #NiFpga_CtrExtTrigAuger_ControlU32_SamplePeriod = 0x8114,
+        err = self.FPGA.Write_U32( indicator, samplePeriod )
+        if self.debug: print(  "samplePeriod Status:" + str(err))
+        if err == 0:
+            if self.debug: print(  "Sample period", samplePeriod )
     
     def read_num_transfers_in_fifo(self):
         elements_remain, buf = self.read_fifo_raw(numberOfElements=0, timeout=0)
@@ -107,21 +135,19 @@ class ExtTrigAugerFPGA(object):
     def read_fifo_parse(self, n_transfers=1, timeout=0):
         """
         for each transfer we expect 5 U64 words
-
         Each trigger transfers 5 x U64 in FIFO in 200 ns
-
-        Each U64 has two U32s
-        
-        U32 has 28 data bits  with an ID field in the 4 msb
-        
-        IDs: elapsed time 08, trigger count 09
-        
+        Each U64 has two U32s        
+        U32 has 28 data bits  with an ID field in the 4 msb        
+        IDs: elapsed time 08, trigger count 09        
         data channels 00 to 07
         """
         
         numberofElements=5*n_transfers
         remaining_words, buffer = self.read_fifo_raw(numberofElements, timeout)
         if self.debug: print('read_fifo_parse remaining_words', remaining_words)
+        
+        if len(buffer) == 0:
+            return np.zeros((0,10),dtype=np.uint32)
         
         # reshape to N x 5 uint64 
         buf = buffer.reshape(-1, 5)
@@ -227,11 +253,32 @@ def test2():
 
     sync_analog_io.stop()
     
+    
+    ### test internal triggering
     vi.write_triggerMode('off')
+    vi.flush_fifo()
+    print( 'remaining elements', vi.read_fifo_raw(0, 0))
+    
+    print( "internal counter test")
+    vi.write_sampleCount(Nsamples)
+    vi.write_samplePeriod(2500)
+    vi.write_triggerMode('int')
+    
+    time.sleep(1.0)
+    
+    vi.read_overflow()
+    #print( fpga.Read_Fifo(fifo=0, numberOfElements=505, timeout=0, dtype='U64'))
+    print( 'elements after test', vi.read_fifo_raw(0, 0))
+    buf = vi.read_fifo_parse(n_transfers=Nsamples)
+    print('parsed fifo output', buf.shape)
+    print(buf[:10,:])
+    
+    print( 'trigger mode', vi.read_triggerMode())
+    
     
     fpga.close()
     
-    np.save('buffer.npy', buf)
+    #np.save('buffer.npy', buf)
     
 if __name__ == '__main__':
     test2()

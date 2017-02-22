@@ -236,9 +236,14 @@ class NI_FPGA(object):
         data = ctypes.c_int16(0)
         err = fpga_dll.NiFpgaDll_ReadI16(self.session, indicator, ctypes.byref(data))
         return err, data.value
+  
+    def Read_U8(self, indicator):
+        data = ctypes.c_uint8(0)
+        err = fpga_dll.NiFpgaDll_ReadU8(self.session, indicator, ctypes.byref(data))
+        return err, data.value
 
     def Read_U16(self, indicator):
-        data = ctypes.c_uint32(0)
+        data = ctypes.c_uint16(0)
         err = fpga_dll.NiFpgaDll_ReadU16(self.session, indicator, ctypes.byref(data))
         return err, data.value
 
