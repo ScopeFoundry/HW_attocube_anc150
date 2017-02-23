@@ -36,7 +36,7 @@ class SemSyncRasterDAQ(HardwareComponent):
                                                     initial=5e5, 
                                                     vmin=1, 
                                                     vmax=2e6,
-                                                    unit='Hz')
+                                                    unit='Hz', si=True)
         
         self.samples_per_pixel = self.add_logged_quantity("samples_per_pixel", dtype=int, 
                                                     ro=False, 
@@ -97,6 +97,8 @@ class SemSyncRasterDAQ(HardwareComponent):
                                     'counter_channel_addresses', 'counter_channel_terminals',
                                     'ext_clock_source', 'trigger_output_term']
        
+        self.sample_rate.add_listener(self.compute_output_rate)
+        self.samples_per_pixel.add_listener(self.compute_output_rate)
         
     def connect(self):        
         if self.debug_mode.val: self.log.debug( "connecting to {}".format(self.name))
@@ -145,7 +147,10 @@ class SemSyncRasterDAQ(HardwareComponent):
             # clean up hardware object
             del self.sync_analog_io
 
-       
+    
+    def compute_output_rate(self):
+        self.output_rate.update_value(self.sample_rate.val/self.samples_per_pixel.val)
+    
     def setup_io_with_data(self, X, Y):
         """
         Set up sync task with X and Y arrays sent to the analog output channels
@@ -156,7 +161,7 @@ class SemSyncRasterDAQ(HardwareComponent):
         self.num_samples = int(self.num_pixels *self.samples_per_pixel.val)
         self.pixel_time = self.samples_per_pixel.val / self.sample_rate.val        
         self.timeout = 1.5 * self.pixel_time * self.num_pixels             
-        self.output_rate.update_value(self.sample_rate.val/self.samples_per_pixel.val)
+        self.compute_output_rate()
         
         
         self.sync_analog_io.setup(rate_out = self.output_rate.val,
