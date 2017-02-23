@@ -26,6 +26,8 @@ logging.basicConfig(level='DEBUG')
 logging.getLogger('').setLevel(logging.DEBUG)
 logging.getLogger("ipykernel").setLevel(logging.WARNING)
 logging.getLogger('PyQt4').setLevel(logging.WARNING)
+logging.getLogger('PyQt5').setLevel(logging.WARNING)
+
 logging.getLogger('ScopeFoundry.logged_quantity.LoggedQuantity').setLevel(logging.WARNING)
 
 class AugerMicroscopeApp(BaseMicroscopeApp):
