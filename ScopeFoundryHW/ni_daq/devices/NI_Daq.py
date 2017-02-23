@@ -658,7 +658,7 @@ class NI_SyncTaskSet(object):
             #self.adc.task.SetDOTristate(trigger_output_term, False)
             
             ## For debugging, send trigger to another pin
-            mx.DAQmxConnectTerms(trigger_output_term, b"/X-6368/PFI12", mx.DAQmx_Val_DoNotInvertPolarity )
+            #mx.DAQmxConnectTerms(trigger_output_term, b"/X-6368/PFI12", mx.DAQmx_Val_DoNotInvertPolarity )
             
     def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
         """
