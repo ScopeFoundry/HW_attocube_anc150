@@ -115,14 +115,14 @@ class SemSyncRasterDAQ(HardwareComponent):
             clock_source = self.settings['ext_clock_source']
         else:
             clock_source = "" 
+        ctr_chans = self.counter_channel_addresses.val.split(',')
         self.sync_analog_io = NI_SyncTaskSet(out_chan  = self.output_channel_addresses.val,
                                    in_chan   = self.input_channel_addresses.val,
-                                   ctr_chans = self.counter_channel_addresses.val.split(','),
+                                   ctr_chans = ctr_chans,
                                    ctr_terms = self.counter_channel_terminals.val.split(','),
                                    clock_source = clock_source,
                                    trigger_output_term = self.trigger_output_term.val,
                                    )
-        self.ctr_num=2
         
         #from sample per point and sample rate, calculate the output(scan rate)
         #self.output_rate.update_value(self.sample_rate.val/self.samples_per_pixel.val)
@@ -147,6 +147,10 @@ class SemSyncRasterDAQ(HardwareComponent):
             # clean up hardware object
             del self.sync_analog_io
 
+
+    @property
+    def ctr_num(self):
+        return self.sync_analog_io.ctr_num
     
     def compute_output_rate(self):
         self.output_rate.update_value(self.sample_rate.val/self.samples_per_pixel.val)
@@ -199,8 +203,9 @@ class SemSyncRasterDAQ(HardwareComponent):
         return buf.reshape(n_pixels, self.samples_per_pixel.val, self.adc_chan_count).swapaxes(1,2)
         
     
-    def read_counter_buffer(self, i):
-        return self.sync_analog_io.read_ctr_buffer_diff(i, timeout=self.timeout)
+    def read_counter_buffer(self, ctr_i, count=0):
+        return self.sync_analog_io.read_ctr_buffer_diff(
+            ctr_i, count, self.timeout)
 
     def start(self):
         # TODO disable LQ's that can't be changed during task run
@@ -219,6 +224,16 @@ class SemSyncRasterDAQ(HardwareComponent):
         """
         n_samples = n_pixels*self.samples_per_pixel.val
         self.sync_analog_io.adc.set_n_sample_callback(n_samples, cb_func)
+    
+    def set_ctr_n_pixel_callback(self, ctr_i, n_pixels, cb_func):
+        """
+        Setup callback functions for EveryNSamplesEvent
+        *cb_func* will be called 
+        after every *n_pixels* are acquired. 
+        """
+        n_samples = n_pixels#*self.samples_per_pixel.val
+        self.sync_analog_io.ctr[ctr_i].set_n_sample_callback(n_samples, cb_func)
+        
         
 
     #def read_counters(self):
