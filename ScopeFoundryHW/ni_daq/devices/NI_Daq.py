@@ -283,7 +283,7 @@ class NI_AdcTask(NI_TaskWrap):
             "sample count {} transfer count {}".format( 1, read_count.value )
         return data
               
-    def read_buffer(self, count = 0, timeout = 1.0):
+    def read_buffer(self, count = 0, timeout = 0):
         ''' reads block of input data, defaults to block size from set_rate()
             for now allocates data buffer, possible performance hit
             in continuous mode, reads all samples available up to block_size
@@ -476,25 +476,24 @@ class NI_CounterTask( NI_TaskWrap ):
 
         if self.task:
             self.set_channel(channel, input_terminal)
+        else:
+            raise IOError("NI_CounterTask failed to create counter task")
             
     def set_channel(self, channel, input_terminal = 'PFI0' ):
         ''' adds input channel[s] to existing task'''
         #  could use GetTaskDevices followed by GetDevAIVoltageRngs to validate max volts
         #  also can check for simultaneous, max single, max multi rates            
         self._channel = channel
-        self._sample_count = 0
+        #self._sample_count = 0
         self._input_terminal = input_terminal
 
         try:                
             #int32 DAQmxCreateCICountEdgesChan (TaskHandle taskHandle, const char counter[], 
             #    const char nameToAssignToChannel[], int32 edge, uInt32 initialCount, int32 countDirection);
             self.task.CreateCICountEdgesChan(self._channel, '', mx.DAQmx_Val_Rising, 0, mx.DAQmx_Val_CountUp )
-            self.task.SetCICountEdgesTerm( self._channel, self._input_terminal);
-
-            self._chan_count = 1    #counter tasks always one channel only
-            self._mode = 'single'   #until buffer created
+            self.task.SetCICountEdgesTerm( self._channel, self._input_terminal)
         except mx.DAQError as err:
-            self._chan_count = 0
+            #self._chan_count = 0
             self.error(err)
             
     def set_rate(self,rate = 1e4, count = 1000,  clock_source = 'ao/SampleClock', finite = True):
@@ -504,7 +503,7 @@ class NI_CounterTask( NI_TaskWrap ):
         analog task completes before the counter task, the sample trigger will no longer arrive
         
         Input buffer
-            Uses analog output clock for now, may confict wtih DAC tasks
+            Uses analog output clock for now, may conflict with DAC tasks
             In continuous mode, count determines per-channel buffer size only if
                 count EXCEEDS default buffer (1 MS over 1 MHz, 100 kS over 10 kHz, 10 kS over 100 Hz, 1 kS <= 100 Hz
                 unless buffer explicitly set by DAQmxCfgInputBuffer()
@@ -530,86 +529,101 @@ class NI_CounterTask( NI_TaskWrap ):
             self.task.GetSampClkRate(mx.byref(ctr_rate));
             self._rate = ctr_rate.value
             self._count = count
-            self._mode = 'buffered'
+            #self._mode = 'buffered'
         except mx.DAQError as err:
             self.error(err)
             self._rate = 0
-            
-    def set_callback(self,destination):
-        self.data_buffer=np.zeros(self._count)
-        self.task.EveryNCallback=self.EveryNCallback
-        self.task.DoneCallback=self.DoneCallback
-        self.task.AutoRegisterEveryNSamplesEvent(mx.DAQmx_Val_Acquired_Into_Buffer,self._count,0)
-        self.task.AutoRegisterDoneEvent(0)
-        self._destination=destination
-              
-    def set_single(self):
-        ''' single-value [multi channel] input, no clock or buffer
-                   
-            For unbuffered input (one sample per channel no timing or clock),
-            if task STARTed BEFORE reading, in tight loop overhead between consecutive reads ~ 36 us with some jitter
-                task remains in RUN, must be STOPed or cleared to modify
-            if task is COMMITted  before reading, overhead ~ 116 us 
-                (implicit transition back to COMMIT instead of staying in RUNNING)
-            if task is STOPed before reading, requiring START read STOP overhead 4 ms
-         '''
-        if self._mode != 'single':
-            self.clear()    #delete old task
-            self.make_task(self._task_name)
-            self.set_channel(self._channel, self._input_terminal)
-            self._mode = 'single'
-            
-    def get(self):
-        ''' reads one sample per channel in immediate (non buffered) mode, fastest if task pre-started
-            works rather well for count rates when combined with python time.clock()
-        '''
-        data = np.zeros(self._chan_count, dtype = np.float64 )
-        data = mx.float64(0)
-        if self._mode != 'single':
-            self.set_single()
-            self.start()
-        read_size = mx.uInt32(self._chan_count)
-        timeout = mx.float64( 1.0 )
-        try:
-            # int32 DAQmxReadCounterScalarF64 (TaskHandle taskHandle, float64 timeout, 
-            #    float64 *value, bool32 *reserved);
-            self.task.ReadCounterScalarF64(timeout, mx.byref(data), None )
-
-        except mx.DAQError as err:
-            self.error(err)
-        return data.value
     
-    def read_buffer(self, count = 0, timeout = 1.0):
+    def start(self):
+        self.prev_count = 0
+        NI_TaskWrap.start(self)
+        
+    def set_n_sample_callback(self, n_samples, cb_func):
+        """
+        Setup callback functions for EveryNSamplesEvent
+        *cb_func* will be called with when new data is available
+        after every *n_samples* are acquired.
+        """
+        self.cb_nSamples = n_samples
+        self.cb_func = cb_func
+        self.task.EveryNCallback = cb_func
+        self.task.AutoRegisterEveryNSamplesEvent(
+            everyNsamplesEventType=mx.DAQmx_Val_Acquired_Into_Buffer, 
+            nSamples=self.cb_nSamples,
+            options=0)
+
+
+### copied for ADC, probably irrelevant for counter              
+#     def set_single(self):
+#         ''' single-value [multi channel] input, no clock or buffer
+#                    
+#             For unbuffered input (one sample per channel no timing or clock),
+#             if task STARTed BEFORE reading, in tight loop overhead between consecutive reads ~ 36 us with some jitter
+#                 task remains in RUN, must be STOPed or cleared to modify
+#             if task is COMMITted  before reading, overhead ~ 116 us 
+#                 (implicit transition back to COMMIT instead of staying in RUNNING)
+#             if task is STOPed before reading, requiring START read STOP overhead 4 ms
+#          '''
+#         if self._mode != 'single':
+#             self.clear()    #delete old task
+#             self.make_task(self._task_name)
+#             self.set_channel(self._channel, self._input_terminal)
+#             self._mode = 'single'
+
+### copied for ADC, probably irrelevant for counter            
+#     def get(self):
+#         ''' reads one sample per channel in immediate (non buffered) mode, fastest if task pre-started
+#             works rather well for count rates when combined with python time.clock()
+#         '''
+#         data = np.zeros(1, dtype = np.float64 )
+#         data = mx.float64(0)
+#         if self._mode != 'single':
+#             self.set_single()
+#             self.start()
+#         read_size = mx.uInt32(self._chan_count)
+#         timeout = mx.float64( 1.0 )
+#         try:
+#             # int32 DAQmxReadCounterScalarF64 (TaskHandle taskHandle, float64 timeout, 
+#             #    float64 *value, bool32 *reserved);
+#             self.task.ReadCounterScalarF64(timeout, mx.byref(data), None )
+# 
+#         except mx.DAQError as err:
+#             self.error(err)
+#         return data.value
+    
+    def read_buffer(self, count = 0, timeout = 0):
         ''' reads block of input data, defaults to block size from set_rate()
             for now allocates data buffer, possible performance hit
             in continuous mode, reads all samples available up to block_size
             in finite mode, waits for samples to be available, up to smaller of block_size or
                 _chan_cout * _count
-                
-            Return interleaved array, i.e. [chan1_t1, chan2_t1, chan1_t2, chan2_t2, ...]
+            
+            returns data
         '''
         if count == 0:
             count = self._count
-        block_size = count * self._chan_count
-        data = np.zeros(block_size, dtype = np.float64)
-        read_size = mx.uInt32(block_size)
+        data = np.zeros(count, dtype = np.float64)
         read_count = mx.int32(0)    #returns samples per chan read
-        adc_timeout = mx.float64( timeout )
         try:
             # int32 DAQmxReadCounterF64 (TaskHandle taskHandle, int32 numSampsPerChan, float64 timeout, 
             #    float64 readArray[], uInt32 arraySizeInSamps, int32 *sampsPerChanRead, bool32 *reserved);
-
-            self.task.ReadCounterF64(-1, adc_timeout, data, read_size, mx.byref(read_count), None)
+            self.task.ReadCounterF64(-1, timeout, data, count, mx.byref(read_count), None)
         except mx.DAQError as err:
             self.error(err)
             #not sure how to handle actual samples read, resize array??
         if read_count.value < count:
-            logger.warn('requested {} values for {} channels, only {} read'.format( count, self._chan_count, read_count.value))
+            logger.warn('NI_CounterTask: requested {} values for {} channels, only {} read'.format( count, self._chan_count, read_count.value))
 #        print "samples {} written {}".format( self._sample_count, writeCount.value)
 #        assert read_count.value == 1, \
 #           "sample count {} transfer count {}".format( 1, read_count.value )
-        return data  
-            
+        return data[0:read_count.value]
+    
+    def read_diff_buffer(self, count = 0, timeout = 0):
+        data_block = self.read_buffer(count, timeout)
+        x=np.insert(data_block,0,self.prev_count)
+        x=np.diff(x)
+        self.prev_count = data_block[-1]
+        return x
 
 class NI_SyncTaskSet(object):
     '''
@@ -660,7 +674,7 @@ class NI_SyncTaskSet(object):
             ## For debugging, send trigger to another pin
             #mx.DAQmxConnectTerms(trigger_output_term, b"/X-6368/PFI12", mx.DAQmx_Val_DoNotInvertPolarity )
             
-    def setup(self, rate_out, count_out, rate_in, count_in, pad = True,is_finite=True):
+    def setup(self, rate_out, count_out, rate_in, count_in, is_finite=True):
         """
         Set the i/o rates and size of buffers
         
@@ -668,17 +682,27 @@ class NI_SyncTaskSet(object):
         rate_in: ADC rate (Hz)
         
         *is_finite* defines if single shot or continuous
-        *Pad* if true, acquire one extra input value per channel, 
-                strip off the first read, so writes/reads align
+        
+        ADC, Counters lag DAC, 
+        ADC reads voltage while DAC is starting to move to voltage
+        # Removing extra values, from ADC, counters may be necessary to align writes/reads
         """
-        if pad:
-            self.delta = int(np.rint(rate_in / rate_out))
-        else:
-            self.delta = 0
+        # Pad removed 2017-02-23 ESB + DFO
+        #        *Pad* if true, acquire one extra input value per channel, 
+        #        strip off the first read, so writes/reads align
+#         if pad:
+#             self.delta = int(np.rint(rate_in / rate_out))
+#         else:
+#             self.delta = 0
+        
+        if rate_in % rate_out > 0:
+            logger.warn("NI_SyncTaskSet: rate_in/rate_out is not an integer, funny oversampling will occur")
+        
+
         self.dac.set_rate(rate_out, count_out, finite=is_finite, clk_source=self.clock_source)
-        self.adc.set_rate(rate_in, count_in+self.delta,finite=is_finite, clk_source=self.clock_source)
+        self.adc.set_rate(rate_in, count_in,finite=is_finite, clk_source=self.clock_source)
         for i in range(self.ctr_num):
-            self.ctr[i].set_rate(rate_in,count_in+self.delta,clock_source='ai/SampleClock',finite=is_finite)
+            self.ctr[i].set_rate(rate_in,count_in,clock_source='ai/SampleClock',finite=is_finite)
             
         
     def write_output_data_to_buffer(self, data):
@@ -703,15 +727,15 @@ class NI_SyncTaskSet(object):
     def read_adc_buffer_reshaped(self, count=0, timeout = 1.0):
         return self.read_adc_buffer(count=count, timeout=timeout).reshape(-1, self.get_adc_chan_count()) 
     
-    def read_ctr_buffer(self,i, timeout = 1.0):
-        x = self.ctr[i].read_buffer(timeout=timeout)
-        return x[self.delta*self.ctr[i].get_chan_count()::]
+    def read_ctr_buffer(self, ctr_i, count=0, timeout=0):
+        """Reads the counter ctr_i buffer up to count,
+        if count=0 (default) block_size"""
+        x = self.ctr[ctr_i].read_buffer(count, timeout)
+        #return x[self.delta: ]
+        return x
     
-    def read_ctr_buffer_diff(self,i, timeout = 1.0):
-        x = self.ctr[i].read_buffer(timeout=timeout)
-        x=np.insert(x,0,0)
-        x=np.diff(x)
-        return x[self.delta*self.ctr[i].get_chan_count()::]
+    def read_ctr_buffer_diff(self, ctr_i, count=0, timeout = 0):
+        return self.ctr[ctr_i].read_diff_buffer(count, timeout)
     
     def stop(self):
         logger.debug('dac.task {}'.format( self.dac.task ))
