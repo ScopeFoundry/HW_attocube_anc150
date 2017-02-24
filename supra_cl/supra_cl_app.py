@@ -18,11 +18,19 @@ class SupraCLApp(BaseMicroscopeApp):
     
     def setup(self):
         
+        # import pyqtgraph as pg
+        #pg.setConfigOption('background', 'w')
+        #pg.setConfigOption('foreground', 'k')
+
+        
         from Auger.sem_sync_raster_hardware import SemSyncRasterDAQ
-        self.add_hardware_component(SemSyncRasterDAQ(self))
+        self.add_hardware(SemSyncRasterDAQ(self))
 
         from Auger.sem_sync_raster_measure import SemSyncRasterScan
-        self.add_measurement_component(SemSyncRasterScan(self))
+        self.add_measurement(SemSyncRasterScan(self))
+        
+        from supra_cl.sem_sync_raster_quad_measure import SemSyncRasterScanQuadView
+        self.add_measurement(SemSyncRasterScanQuadView(self))
 
         self.settings_load_ini('supra_cl_defaults.ini')
 
