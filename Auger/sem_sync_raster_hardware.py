@@ -78,10 +78,10 @@ class SemSyncRasterDAQ(HardwareComponent):
                                                         initial='PFI0,PFI12')
         
         
-        self.counter_unit=self.add_logged_quantity("counter_unit",dtype=str,
-                                                        ro=False,
-                                                        initial='count',
-                                                        choices=[('count','count'),('Hz','Hz')])
+        #self.counter_unit=self.add_logged_quantity("counter_unit",dtype=str,
+        #                                                ro=False,
+        #                                                initial='count',
+        #                                                choices=[('count','count'),('Hz','Hz')])
         
 #             #FIX implement in SemSyncRasterScan
 #         self.auto_blanking=self.add_logged_quantity('auto_blanking', initial=True,
