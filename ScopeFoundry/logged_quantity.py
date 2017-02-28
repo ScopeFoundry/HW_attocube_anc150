@@ -144,6 +144,13 @@ class LoggedQuantity(QtCore.QObject):
                 expanded_choices.append( ( str(c), self.dtype(c) ) )
         return expanded_choices
     
+    def __str__(self):
+        return "{} = {}".format(self.name, self.val)
+    
+    def __repr__(self):
+        return "LQ: {} = {}".format(self.name, self.val)
+
+    
     def read_from_hardware(self, send_signal=True):
         self.log.debug("{}: read_from_hardware send_signal={}".format(self.name, send_signal))
         if self.hardware_read_func:        
@@ -154,6 +161,16 @@ class LoggedQuantity(QtCore.QObject):
         else:
             self.log.warn("{} read_from_hardware called when not connected to hardware".format(self.name))
         return self.val
+    
+    def write_to_hardware(self, reread_hardware=None):
+        if reread_hardware is None:
+            # if undefined, default to stored reread_from_hardware_after_write bool
+            reread_hardware = self.reread_from_hardware_after_write
+        # Read from Hardware
+        if self.has_hardware_write():
+            self.hardware_set_func(self.val)
+            if reread_hardware:
+                self.read_from_hardware(send_signal=False)
 
     def value(self):
         "return stored value"
@@ -445,9 +462,9 @@ class LoggedQuantity(QtCore.QObject):
                 widget.setEnabled(False)
                 widget.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
                 widget.setReadOnly(True)
-            widget.setDecimals(self.spinbox_decimals)
+            #widget.setDecimals(self.spinbox_decimals)
             widget.setSingleStep(self.spinbox_step)
-            self.updated_value[float].connect(widget.setValue)
+            #self.updated_value[float].connect(widget.setValue)
             #if not self.ro:
                 #widget.valueChanged[float].connect(self.update_value)
             def update_widget_value(x):
@@ -461,7 +478,10 @@ class LoggedQuantity(QtCore.QObject):
                 finally:
                     widget.blockSignals(False)                    
             self.updated_value[float].connect(update_widget_value)
-            
+            def on_widget_update(_widget):
+                self.update_value(_widget.value())
+            widget.sigValueChanged.connect(on_widget_update)
+
         elif type(widget) == QtWidgets.QLabel:
             self.updated_text_value.connect(widget.setText)
         elif type(widget) == QtWidgets.QProgressBar:

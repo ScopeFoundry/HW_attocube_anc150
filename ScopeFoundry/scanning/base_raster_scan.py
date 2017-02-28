@@ -55,11 +55,11 @@ class BaseRaster2DScan(Measurement):
 
         # local logged quantities
         lq_params = dict(dtype=float, vmin=self.h_limits[0],vmax=self.h_limits[1], ro=False, unit=self.h_unit )
-        self.h0 = self.settings.New('h0',  initial=0, **lq_params  )
-        self.h1 = self.settings.New('h1',  initial=1, **lq_params  )
+        self.h0 = self.settings.New('h0',  initial=self.h_limits[0], **lq_params  )
+        self.h1 = self.settings.New('h1',  initial=self.h_limits[1], **lq_params  )
         lq_params = dict(dtype=float, vmin=self.v_limits[0],vmax=self.v_limits[1], ro=False, unit=self.h_unit )
-        self.v0 = self.settings.New('v0',  initial=0, **lq_params  )
-        self.v1 = self.settings.New('v1',  initial=1, **lq_params  )
+        self.v0 = self.settings.New('v0',  initial=self.v_limits[0], **lq_params  )
+        self.v1 = self.settings.New('v1',  initial=self.v_limits[1], **lq_params  )
 
         lq_params = dict(dtype=float, vmin=1e-9, vmax=abs(self.h_limits[1]-self.h_limits[0]), ro=False, unit=self.h_unit )
         self.dh = self.settings.New('dh', initial=0.1, **lq_params)
@@ -254,7 +254,7 @@ class BaseRaster2DScan(Measurement):
         self.current_stage_pos_arrow.setPos(x,y)
     
     def update_display(self):
-        self.log.debug('update_display')
+        #self.log.debug('update_display')
         if self.initial_scan_setup_plotting:
             if self.settings['show_previous_scans']:
                 self.img_item = pg.ImageItem()
