@@ -1,5 +1,6 @@
 from ScopeFoundry import Measurement
-from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
+from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file,\
+    replace_spinbox_in_layout
 from ScopeFoundry import h5_io
 import pyqtgraph as pg
 import numpy as np
@@ -11,6 +12,10 @@ class SemSyncRasterScanQuadView(Measurement):
     
     def setup(self):
         
+        self.scanDAQ   = self.app.hardware['SemSyncRasterDAQ']
+        self.sync_scan = self.app.measurements['sem_sync_raster_scan'] 
+
+        
         self.names = ['ai0', 'ctr0', 'ai1', 'ctr1']
 
 
@@ -20,14 +25,65 @@ class SemSyncRasterScanQuadView(Measurement):
         self.graph_layout=pg.GraphicsLayoutWidget()
         self.ui.plot_widget.layout().addWidget(self.graph_layout)
         
-        self.settings.activation.connect_to_widget(self.ui.activation_checkBox)
-
+        
+        #### Control Widgets
+        #self.settings.activation.connect_to_widget(self.ui.activation_checkBox)
+        self.ui.start_pushButton.clicked.connect(
+            self.start)
+        self.ui.interrupt_pushButton.clicked.connect(
+            self.interrupt)
+        
+        # Auto level
         for name in self.names:
             lq_name = name+'_autolevel'
             self.settings.New(lq_name, dtype=bool, initial=True)
             self.settings.get_lq(lq_name).connect_to_widget(
                 getattr(self.ui, lq_name + "_checkBox"))
 
+        # Collect
+        # TODO
+        
+        
+        # Scan settings
+        self.settings.New('n_pixels', dtype=int, vmin=1, initial=512)
+        self.settings.n_pixels.connect_to_widget(self.ui.n_pixels_doubleSpinBox)
+        def on_new_n_pixels():
+            self.sync_scan.settings['Nh'] = self.settings['n_pixels']
+            self.sync_scan.settings['Nv'] = self.settings['n_pixels']
+        self.settings.n_pixels.add_listener(on_new_n_pixels)
+        
+        self.scanDAQ.samples_per_pixel.connect_to_widget(
+            self.ui.adc_oversample_doubleSpinBox)
+        
+        self.ui.pixel_time_pgSpinBox = \
+            replace_spinbox_in_layout(self.ui.pixel_time_doubleSpinBox)
+        self.sync_scan.settings.pixel_time.connect_to_widget(
+            self.ui.pixel_time_pgSpinBox)
+        
+        self.ui.line_time_pgSpinBox = \
+            replace_spinbox_in_layout(self.ui.line_time_doubleSpinBox)
+        self.sync_scan.settings.line_time.connect_to_widget(
+            self.ui.line_time_pgSpinBox)
+        
+        self.ui.frame_time_pgSpinBox = \
+            replace_spinbox_in_layout(self.ui.frame_time_doubleSpinBox)
+        self.sync_scan.settings.frame_time.connect_to_widget(
+            self.ui.frame_time_pgSpinBox)
+        
+
+        # Data
+        self.sync_scan.settings.continuous_scan.connect_to_widget(
+            self.ui.continuous_scan_checkBox)
+        self.sync_scan.settings.save_h5.connect_to_widget(
+            self.ui.save_h5_checkBox)
+        self.sync_scan.settings.n_frames.connect_to_widget(
+            self.ui.n_frames_doubleSpinBox)
+        
+        # Description
+        self.sync_scan.settings.New('description', dtype=str, initial="")
+        self.sync_scan.settings.description.connect_to_widget(
+            self.ui.description_plaintTextEdit)
+        
     def setup_figure(self):
         
         
@@ -81,7 +137,6 @@ class SemSyncRasterScanQuadView(Measurement):
 
     def run(self):
         self.display_update_period = 0.050
-        self.sync_scan = self.app.measurements['sem_sync_raster_scan'] 
         #self.sync_scan.start()
         if not self.sync_scan.settings['activation']:
             self.sync_scan.settings['activation'] =True
@@ -110,6 +165,8 @@ class SemSyncRasterScanQuadView(Measurement):
             self.display_maps['ai1']=np.zeros((1,10,10))
         
         while not self.interrupt_measurement_called:
+            if not self.sync_scan.is_measuring():
+                self.interrupt_measurement_called = True
             time.sleep(self.display_update_period)
         
         #self.sync_scan.interrupt()
