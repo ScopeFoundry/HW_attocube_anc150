@@ -7,8 +7,10 @@ ESB 2017-02-17
 '''
 
 from ScopeFoundry.scanning import BaseRaster2DScan
+from ScopeFoundry import h5_io
 import numpy as np
 import time
+from ScopeFoundry.helper_funcs import load_qt_ui_file, sibling_path
 
 class SemSyncRasterScan(BaseRaster2DScan):
 
@@ -32,20 +34,28 @@ class SemSyncRasterScan(BaseRaster2DScan):
                                                     initial=0.07)
         
         
+        self.settings.New('n_frames', dtype=int, initial=1, vmin=1)
+        
+        
         self.scanDAQ = self.app.hardware['SemSyncRasterDAQ']        
         self.scan_on=False
+        
+        self.details_ui = load_qt_ui_file(sibling_path(__file__, 'sem_sync_raster_details.ui'))
+        self.ui.details_groupBox.layout().addWidget(self.details_ui)
+        
+        self.settings.n_frames.connect_to_widget(self.details_ui.n_frames_doubleSpinBox)
         
         if hasattr(self.app,'sem_remcon'):#FIX re-implement later
             self.sem_remcon=self.app.sem_remcon
         
     def run(self):
         # if hardware is not connected, connect it
-        # we need to wait while the task is created before 
-        # measurement thread continues
         if not self.scanDAQ.settings['connected']:
             #self.scanDAQ.connect()
             self.scanDAQ.settings['connected'] = True
-            #self.app.qtapp.processEvents()         
+            #self.app.qtapp.processEvents()
+            # we need to wait while the task is created before 
+            # measurement thread continues
             time.sleep(0.2)
 
         # Compute data arrays        
@@ -78,9 +88,17 @@ class SemSyncRasterScan(BaseRaster2DScan):
         
  
         try:
-            self.pixel_index = 0# contains index of next adc pixel to be moved from queue into adc_pixels
+            ##### HDF5 Data file
+            if self.settings['save_h5']:
+                self.h5_file = h5_io.h5_base_file(self.app, measurement=self)
+                self.h5_m = h5_io.h5_create_measurement_group(measurement=self, h5group=self.h5_file)
 
+            ##### Start indexing            
+            #self.frame_num = 0
+            self.total_pixel_index = 0 # contains index of next adc pixel to be moved from queue into h5 file
+            self.pixel_index = 0 # contains index of next adc pixel to be moved from queue into adc_pixels (within frame)
             self.current_scan_index = self.scan_index_array[0]
+            self.task_done = False
             
             #### old get full image while blocking measurement thread
             #self.ai_data = self.scanDAQ.single_scan_regular(self.scan_h_positions, -1*self.scan_v_positions)
@@ -107,22 +125,25 @@ class SemSyncRasterScan(BaseRaster2DScan):
             print("num_pixels_per_block", num_pixels_per_block)
             
             ##### Data array
+            # ADC
             self.adc_pixels = np.zeros((self.Npixels, self.scanDAQ.adc_chan_count), dtype=float)
-            self.pixels_remaining = self.Npixels # in frame
+            #self.pixels_remaining = self.Npixels # in frame
             self.new_adc_data_queue = [] # will contain numpy arrays (data blocks) from adc to be processed
             self.adc_map = np.zeros(self.scan_shape + (self.scanDAQ.adc_chan_count,), dtype=float)
-            
-            # contains index of next pixel to be processed, need one per ctr
+            self.adc_map_h5 = self.create_h5_framed_dataset('adc_map', self.adc_map, chunks=(1,1, 64, 64,self.scanDAQ.adc_chan_count ))
+                    
+            # Ctr
+            # ctr_pixel_index contains index of next pixel to be processed, need one per ctr
             # since ctrs are independent tasks
-            self.ctr_pixel_index = np.zeros(self.scanDAQ.ctr_num, dtype=int) 
+            self.ctr_pixel_index = np.zeros(self.scanDAQ.ctr_num, dtype=int)
+            self.ctr_total_pixel_index = np.zeros(self.scanDAQ.ctr_num, dtype=int)
             self.ctr_pixels = np.zeros((self.Npixels, self.scanDAQ.ctr_num), dtype=int)
             self.new_ctr_data_queue = [] # list will contain tuples (ctr_number, data_block) to be processed
             self.ctr_map = np.zeros(self.scan_shape + (self.scanDAQ.ctr_num,), dtype=int)
             self.ctr_map_Hz = np.zeros(self.ctr_map.shape, dtype=float)
-            
-            self.task_done = False
-            
-            # register callbacks
+            self.ctr_map_h5 = self.create_h5_framed_dataset('ctr_map', self.ctr_map, chunks=(1,1, 64, 64,self.scanDAQ.ctr_num ))
+                        
+            ##### register callbacks
             self.scanDAQ.set_adc_n_pixel_callback(
                 num_pixels_per_block, self.every_n_callback_func_adc)
             self.scanDAQ.sync_analog_io.adc.set_done_callback(
@@ -149,9 +170,12 @@ class SemSyncRasterScan(BaseRaster2DScan):
 
         finally:
             # When done, stop tasks
+            if self.settings['save_h5']:
+                print('data saved to', self.h5_file.filename)
+                self.h5_file.close()            
             self.scanDAQ.stop()
             print("Npixels", self.Npixels, 'block size', self.num_pixels_per_block, 'num_blocks', num_blocks)
-            print("pixels remaining:", self.pixels_remaining)
+            #print("pixels remaining:", self.pixels_remaining)
             print("blocks_per_sec",1.0/ (self.scanDAQ.pixel_time*num_pixels_per_block))
             print("frames_per_sec",1.0/ (self.scanDAQ.pixel_time*self.Npixels))
 
@@ -229,15 +253,31 @@ class SemSyncRasterScan(BaseRaster2DScan):
         self.current_scan_index = self.scan_index_array[self.pixel_index]
 
         self.pixel_index += num_new_pixels
+        self.total_pixel_index += num_new_pixels
         
         self.pixel_index %= self.Npixels
         
-        self.pixels_remaining = self.Npixels - self.pixel_index
         
         # copy data to image shaped map
         x = self.scan_index_array[ii:ii+dii,:].T
         self.adc_map[x[0], x[1], x[2],:] = new_data
 
+        # Frame complete
+        #pixels_remaining = self.Npixels - self.pixel_index
+        #print("adc pixels_remaining", self.pixel_index, pixels_remaining, self.Npixels, frame_num)
+        if self.pixel_index == 0:
+            frame_num = (self.total_pixel_index // self.Npixels) - 1
+            # Copy data to H5 file, if a frame is complete
+            if self.settings['save_h5']:
+                print("saving h5 adc", frame_num)
+                self.extend_h5_framed_dataset(self.adc_map_h5, frame_num)
+                self.adc_map_h5[frame_num, :,:,:,:] = self.adc_map
+                self.h5_file.flush()
+            
+            # Stop scan if n_frames reached:
+            if (not self.settings['continuous_scan']) \
+                    and (frame_num >= self.settings['n_frames'] - 1) :
+                self.task_done = True
 
     def on_new_ctr_data(self, ctr_i, new_data):
         #print("on_new_ctr_data {} {}".format(ctr_i, new_data))
@@ -247,12 +287,24 @@ class SemSyncRasterScan(BaseRaster2DScan):
         self.ctr_pixels[ii: ii+dii, ctr_i] = new_data
         
         self.ctr_pixel_index[ctr_i] += dii
+        self.ctr_total_pixel_index[ctr_i] += dii
         self.ctr_pixel_index[ctr_i] %= self.Npixels
-
+        
         # copy data to image shaped map
         x = self.scan_index_array[ii:ii+dii,:].T
         self.ctr_map[x[0], x[1], x[2], ctr_i] = new_data
         self.ctr_map_Hz[x[0], x[1], x[2], ctr_i] = new_data *1.0/ self.scanDAQ.pixel_time
+
+        # Frame complete
+        if self.ctr_pixel_index[ctr_i] == 0:
+            frame_num = (self.ctr_total_pixel_index[ctr_i] // self.Npixels) - 1
+            print('ctr frame complete', frame_num)
+            # Copy data to H5 file, if a frame is complete
+            if self.settings['save_h5']:
+                print('save data ctr')
+                self.extend_h5_framed_dataset(self.ctr_map_h5, frame_num)
+                self.ctr_map_h5[frame_num,:,:,:,ctr_i] = self.ctr_map[:,:,:,ctr_i]
+                self.h5_file.flush()
         
 
     def pre_scan_setup(self):
@@ -265,3 +317,54 @@ class SemSyncRasterScan(BaseRaster2DScan):
         DISPLAY_CHAN = 0
         self.display_pixels = self.adc_pixels[:,DISPLAY_CHAN]
         #self.display_pixels = self.ctr_pixels[:,DISPLAY_CHAN]
+        
+    def create_h5_framed_dataset(self, name, single_frame_map, **kwargs):
+        """
+        Create and return an empty HDF5 dataset in self.h5_m that can store
+        multiple frames of single_frame_map.
+        
+        Must fill the dataset as frames roll in.
+        
+        creates reasonable defaults for compression and dtype, can be overriden 
+        with**kwargs are sent directly to create_dataset
+        """
+        if self.settings['save_h5']:
+            shape=(self.settings['n_frames'],) + single_frame_map.shape
+            if self.settings['continuous_scan']:
+                # allow for array to grow to store additional frames
+                maxshape = (None,)+single_frame_map.shape 
+            else:
+                maxshape = shape
+            print('maxshape', maxshape)
+            default_kwargs = dict(
+                name=name,
+                shape=shape,
+                dtype=single_frame_map.dtype,
+                #chunks=(1,),
+                maxshape=maxshape,
+                compression='gzip',
+                #shuffle=True,
+                )
+            default_kwargs.update(kwargs)
+            map_h5 =  self.h5_m.create_dataset(
+                **default_kwargs
+                )
+            return map_h5
+    
+    def extend_h5_framed_dataset(self, map_h5, frame_num):
+        """
+        Adds additional frames to dataset map_h5, if frame_num 
+        is too large. Adds n_frames worth of extra frames
+        """
+        if self.settings['continuous_scan']:
+            current_num_frames, *frame_shape = map_h5.shape
+            if frame_num >= current_num_frames:
+                print ("extend_h5_framed_dataset", map_h5.name, map_h5.shape, frame_num)
+                n_frames_extend = self.settings['n_frames']
+                new_num_frames = n_frames_extend*(1 + frame_num//n_frames_extend)
+                map_h5.resize((new_num_frames,) + tuple(frame_shape))
+                return True
+            else:
+                return False
+        else:
+            return False
