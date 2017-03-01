@@ -28,13 +28,12 @@ class SemSyncRasterScan(BaseRaster2DScan):
 
         # Created logged quantities
         
-        #FIX what does this do dfo 2/10/17
-        self.recovery_time = self.add_logged_quantity("recovery_time", dtype=float, 
-                                                    ro=True,
-                                                    initial=0.07)
-        
-        
         self.settings.New('n_frames', dtype=int, initial=1, vmin=1)
+        
+        self.settings.New('pixel_time', dtype=float, ro=True, si=True, unit='s')
+        self.settings.New('line_time' , dtype=float, ro=True, si=True, unit='s')
+        self.settings.New('frame_time' , dtype=float, ro=True, si=True, unit='s')        
+        
         
         
         self.scanDAQ = self.app.hardware['SemSyncRasterDAQ']        
@@ -44,6 +43,11 @@ class SemSyncRasterScan(BaseRaster2DScan):
         self.ui.details_groupBox.layout().addWidget(self.details_ui)
         
         self.settings.n_frames.connect_to_widget(self.details_ui.n_frames_doubleSpinBox)
+        
+        
+        self.scanDAQ.settings.output_rate.add_listener(self.compute_times)
+        self.settings.Nh.add_listener(self.compute_times)
+        self.settings.Nv.add_listener(self.compute_times)
         
         if hasattr(self.app,'sem_remcon'):#FIX re-implement later
             self.sem_remcon=self.app.sem_remcon
@@ -119,10 +123,10 @@ class SemSyncRasterScan(BaseRaster2DScan):
             
             while self.Npixels % num_blocks != 0:
                 num_blocks -= 1
-                print("num_blocks", num_blocks)
+                #print("num_blocks", num_blocks)
         
             self.num_pixels_per_block = num_pixels_per_block = int(self.Npixels / num_blocks)
-            print("num_pixels_per_block", num_pixels_per_block)
+            self.log.info("num_pixels_per_block", num_pixels_per_block)
             
             ##### Data array
             # ADC
@@ -171,13 +175,13 @@ class SemSyncRasterScan(BaseRaster2DScan):
         finally:
             # When done, stop tasks
             if self.settings['save_h5']:
-                print('data saved to', self.h5_file.filename)
+                self.log.info('data saved to {}'.format(self.h5_file.filename))
                 self.h5_file.close()            
             self.scanDAQ.stop()
-            print("Npixels", self.Npixels, 'block size', self.num_pixels_per_block, 'num_blocks', num_blocks)
+            #print("Npixels", self.Npixels, 'block size', self.num_pixels_per_block, 'num_blocks', num_blocks)
             #print("pixels remaining:", self.pixels_remaining)
-            print("blocks_per_sec",1.0/ (self.scanDAQ.pixel_time*num_pixels_per_block))
-            print("frames_per_sec",1.0/ (self.scanDAQ.pixel_time*self.Npixels))
+            #print("blocks_per_sec",1.0/ (self.scanDAQ.pixel_time*num_pixels_per_block))
+            #print("frames_per_sec",1.0/ (self.scanDAQ.pixel_time*self.Npixels))
 
             self.post_scan_cleanup()
 
@@ -269,7 +273,7 @@ class SemSyncRasterScan(BaseRaster2DScan):
             frame_num = (self.total_pixel_index // self.Npixels) - 1
             # Copy data to H5 file, if a frame is complete
             if self.settings['save_h5']:
-                print("saving h5 adc", frame_num)
+                #print("saving h5 adc", frame_num)
                 self.extend_h5_framed_dataset(self.adc_map_h5, frame_num)
                 self.adc_map_h5[frame_num, :,:,:,:] = self.adc_map
                 self.h5_file.flush()
@@ -298,7 +302,7 @@ class SemSyncRasterScan(BaseRaster2DScan):
         # Frame complete
         if self.ctr_pixel_index[ctr_i] == 0:
             frame_num = (self.ctr_total_pixel_index[ctr_i] // self.Npixels) - 1
-            print('ctr frame complete', frame_num)
+            #print('ctr frame complete', frame_num)
             # Copy data to H5 file, if a frame is complete
             if self.settings['save_h5']:
                 print('save data ctr')
@@ -368,3 +372,8 @@ class SemSyncRasterScan(BaseRaster2DScan):
                 return False
         else:
             return False
+                
+    def compute_times(self):
+        self.settings['pixel_time'] = 1.0/self.scanDAQ.settings['output_rate']
+        self.settings['line_time'] = self.settings['pixel_time'] * self.settings['Nh']
+        self.settings['frame_time'] = self.settings['pixel_time'] * self.Npixels
