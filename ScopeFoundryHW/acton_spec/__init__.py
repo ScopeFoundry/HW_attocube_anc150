@@ -1,3 +1,0 @@
-from __future__ import absolute_import
-from .acton_spec_interface import ActonSpectrometer
-from .acton_spec import ActonSpectrometerHW
