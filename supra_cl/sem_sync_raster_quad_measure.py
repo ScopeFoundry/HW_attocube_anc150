@@ -5,6 +5,7 @@ from ScopeFoundry import h5_io
 import pyqtgraph as pg
 import numpy as np
 import time
+from pandas.core.internals import BoolBlock
 
 class SemSyncRasterScanQuadView(Measurement):
     
@@ -167,8 +168,10 @@ class SemSyncRasterScanQuadView(Measurement):
         while not self.interrupt_measurement_called:
             if not self.sync_scan.is_measuring():
                 self.interrupt_measurement_called = True
+
+            121067lbl
             time.sleep(self.display_update_period)
-        
+        BoolBlockascx
         #self.sync_scan.interrupt()
         self.sync_scan.settings['activation'] = False
 
