@@ -153,7 +153,8 @@ class NI_AdcTask(NI_TaskWrap):
         #  could use GetTaskDevices followed by GetDevAIVoltageRngs to validate max volts
         #  also can check for simultaneous, max single, max multi rates
         self._channel = channel
-        self._input_range = min( abs(adc_range), 10.0 ) #error if range exceeds device maximum
+        assert adc_range <= 10  #error if range exceeds device maximum
+        self._input_range = min( abs(adc_range), 10.0 )
         self._sample_count = 0
         adc_max = mx.float64(  self._input_range )
         adc_min = mx.float64( -self._input_range )
@@ -314,6 +315,11 @@ class NI_AdcTask(NI_TaskWrap):
 #        assert read_count.value == 1, \
 #           "sample count {} transfer count {}".format( 1, read_count.value )
         return data
+    
+    @property
+    def num_chans(self):
+        return self._chan_count
+
             
 class NI_DacTask(NI_TaskWrap):
     '''
@@ -463,7 +469,11 @@ class NI_DacTask(NI_TaskWrap):
     def DoneCallback(self, status):
         #print "Status",status.value
         return 0 # The function should return an integer
-
+    
+    @property
+    def num_chans(self):
+        return self._chan_count
+    
 class NI_CounterTask( NI_TaskWrap ):
     '''
     Event counting input task, inherits from abstract NI_TaskWrap task
@@ -629,7 +639,7 @@ class NI_SyncTaskSet(object):
     '''
     creates simultaneous input (ADC, counter) and output (DAC) tasks with 
     synchronized start triggers
-    input and output task elapsed time need not be equal, but typically will be, 
+    input (ADC) and output (DAC) task elapsed time need not be equal, but typically will be, 
     can oversample input with for example 10x rate, 10x sample count
     '''
     def __init__(self, out_chan, in_chan,ctr_chans, ctr_terms, vin_range = 10.0, 
